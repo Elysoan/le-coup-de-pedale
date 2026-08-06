@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-PVK5ZYQZ6T"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-PVK5ZYQZ6T');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Le coup de pédale — Chaque coup de pédale écrit ta légende</title>
@@ -1838,6 +1846,7 @@ const ACHIEVEMENTS = [
   {id:'bronze-olympique', icon:'🥉', name:'Médaille de bronze olympique', desc:"Terminer 3e de la course en ligne des Jeux Panhelléniques.", category:'carriere'},
   {id:'maillot-pois', icon:'🔴', name:'Roi de la montagne', desc:"Remporter une étape de montagne sur un grand tour, ou le classement de meilleur grimpeur.", category:'carriere'},
   {id:'maillot-vert', icon:'🟢', name:'Maillot vert', desc:"Remporter le classement de meilleur sprinteur d'un grand tour.", category:'carriere'},
+  {id:'maillot-blanc', icon:'⚪', name:'Maillot blanc', desc:"Remporter le classement de meilleur jeune (moins de 25 ans) d'un grand tour.", category:'carriere'},
   {id:'maillot-clm', icon:'⏱️', name:'Spécialiste du chrono', desc:"Remporter une épreuve de contre-la-montre sur un grand tour.", category:'carriere'},
   {id:'premiers-pas', icon:'🚴', name:'Premiers pas', desc:"Terminer une première carrière.", category:'utilisation'},
   {id:'veteran-du-jeu', icon:'🏅', name:'Vétéran du jeu', desc:"Terminer 5 carrières.", category:'utilisation'},
@@ -1959,6 +1968,9 @@ function resumeGame(saved){
   STATE = saved.state;
   window._creation = saved.creation || {name:'', country: COUNTRIES[0].code, style:null};
   if(!STATE){ renderCreationScreen(); return; }
+  /* Compatibilité ascendante : une sauvegarde faite avant l'ajout d'un champ récent
+     (ex. stageWins) ne l'a pas encore — on le complète pour éviter tout NaN/bug. */
+  if(STATE.rider && typeof STATE.rider.stageWins !== 'number') STATE.rider.stageWins = 0;
   const screen = STATE._screen;
   if(screen==='training') renderTrainingScreen();
   else if(screen==='calendar') renderCalendarScreen();
@@ -2614,8 +2626,24 @@ function beginRace(){
   }
 }
 
+/* Couleurs réelles des maillots annexes par grand tour (vérifiées) :
+   Tour de Gaule (TDF) : pois rouges (grimpeur) / vert (points) / blanc (jeune)
+   Giro dell'Impero (Giro) : bleu (grimpeur, maglia azzurra) / cyclamen (points, maglia ciclamino) / blanc (jeune)
+   Vuelta a Iberia (Vuelta) : pois bleus (grimpeur) / vert (points) / blanc (jeune)
+   Le maillot du meilleur jeune est blanc sur les 3 grands tours réels — pas de variation à faire dessus. */
+const GT_JERSEYS = {
+  tdf:    {kom:{icon:'🔴', label:'maillot à pois'},    points:{icon:'🟢', label:'maillot vert'}},
+  giro:   {kom:{icon:'🔵', label:'maillot bleu'},       points:{icon:'🟣', label:'maillot cyclamen'}},
+  vuelta: {kom:{icon:'🔵', label:'maillot à pois bleus'}, points:{icon:'🟢', label:'maillot vert'}},
+};
+function gtJerseys(raceId){
+  return GT_JERSEYS[raceId] || GT_JERSEYS.tdf;
+}
+
 function renderRoleChoice(race){
   if(STATE) STATE._screen='rolechoice';
+  const jerseys = gtJerseys(race.id);
+  const isYoung = STATE.rider.age <= 25;
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card">
@@ -2629,8 +2657,9 @@ function renderRoleChoice(race){
       <p>Jouer le classement général, viser une classification annexe, ou se mettre au service de l'équipe ?</p>
       <button class="btn" onclick="chooseRole('leader')">🎯 Jouer le classement général (leader)</button>
       ${race.type==='grandtour' ? `
-        <button class="btn ghost" onclick="chooseRole('grimpeur')">🔴 Viser le maillot à pois (meilleur grimpeur)</button>
-        <button class="btn ghost" onclick="chooseRole('sprinteur')">🟢 Viser le maillot vert (meilleur sprinteur)</button>
+        <button class="btn ghost" onclick="chooseRole('grimpeur')">${jerseys.kom.icon} Viser le ${jerseys.kom.label} (meilleur grimpeur)</button>
+        <button class="btn ghost" onclick="chooseRole('sprinteur')">${jerseys.points.icon} Viser le ${jerseys.points.label} (meilleur sprinteur)</button>
+        ${isYoung ? `<button class="btn ghost" onclick="chooseRole('jeune')">⚪ Viser le maillot blanc (meilleur jeune)</button>` : ''}
       ` : ''}
       <button class="btn ghost" onclick="chooseRole('equipier')">🤝 Rouler pour l'équipe (équipier)</button>
     </div>
@@ -2857,6 +2886,11 @@ function finalizeRace(){
     } else {
       jerseyResult = {type:STATE.raceRole, tier:null, weeksCount:0};
     }
+  } else if(bestTier !== 'abandon' && STATE.raceRole==='jeune' && race.events && race.events.length > 1){
+    /* Le maillot blanc suit exactement le même calcul que le classement général
+       (moyenne des semaines) — c'est juste réservé aux moins de 25 ans, pas un
+       critère de performance différent. */
+    jerseyResult = {type:'jeune', tier:bestTier, weeksCount:STATE.runRaceAccum.length};
   }
   STATE.pendingJerseyResult = jerseyResult;
 
@@ -2892,6 +2926,7 @@ function finalizeRace(){
   if(jerseyResult && jerseyResult.tier==='victoire'){
     if(jerseyResult.type==='grimpeur') unlockTrophy('maillot-pois');
     else if(jerseyResult.type==='sprinteur') unlockTrophy('maillot-vert');
+    else if(jerseyResult.type==='jeune') unlockTrophy('maillot-blanc');
   }
   checkRivalAppearance(race, bestTier);
   STATE.seasonSummary.results.push({raceName:race.name, type:race.type, bestTier, repGain, events:STATE.runRaceAccum.slice()});
@@ -2976,7 +3011,13 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
 
   let jerseyBanner = '';
   if(jersey){
-    const jerseyName = jersey.type==='grimpeur' ? 'maillot à pois (meilleur grimpeur)' : 'maillot vert (meilleur sprinteur)';
+    const jerseys = gtJerseys(race.id);
+    const jerseyNames = {
+      grimpeur: `${jerseys.kom.label} (meilleur grimpeur)`,
+      sprinteur: `${jerseys.points.label} (meilleur sprinteur)`,
+      jeune: 'maillot blanc (meilleur jeune)',
+    };
+    const jerseyName = jerseyNames[jersey.type] || 'classification annexe';
     if(jersey.tier===null){
       jerseyBanner = `<div class="card" style="border:1.5px solid var(--purple);background:var(--purple-light);">
         <p style="margin:0;"><strong>🎽 Chasse au ${jerseyName}</strong></p>
