@@ -367,6 +367,11 @@ const COUNTRIES = [
   {code:'US', name:'États-Unis', flag:'🇺🇸'},
   {code:'NO', name:'Norvège', flag:'🇳🇴'},
   {code:'LU', name:'Luxembourg', flag:'🇱🇺'},
+  {code:'PT', name:'Portugal', flag:'🇵🇹'},
+  {code:'PL', name:'Pologne', flag:'🇵🇱'},
+  {code:'IE', name:'Irlande', flag:'🇮🇪'},
+  {code:'ER', name:'Érythrée', flag:'🇪🇷'},
+  {code:'RW', name:'Rwanda', flag:'🇷🇼'},
 ];
 
 const STAT_KEYS = ['montagne','sprint','clm','classiques','resistance','recuperation','mental'];
@@ -633,9 +638,414 @@ const PERSONAL_EVENTS = [
       {label:"Te dire que ton tour viendra peut-être plus vite que prévu", effect:{stats:{mental:3}, reputation:1}},
       {label:"Rester réaliste sur ta propre progression, étape par étape", effect:{stats:{mental:1, resistance:1}}},
     ]},
+  {icon:'📱', title:"Une communauté grandissante sur les réseaux", desc:"Tes résultats récents t'attirent de plus en plus d'abonnés — et avec eux, une attention à laquelle tu n'étais pas préparé.",
+    choices:[
+      {label:"Jouer le jeu, partager les coulisses de ta préparation", effect:{reputation:2, stats:{mental:-1}}},
+      {label:"Garder ta vie privée à l'écart de tout ça", effect:{stats:{mental:2}}},
+    ]},
+  {icon:'🚲', title:"Un souci technique récurrent en plein stage", desc:"Ton vélo présente un défaut agaçant qui revient sans qu'on en trouve vraiment la cause, en pleine période de préparation.",
+    choices:[
+      {label:"Insister auprès du service technique jusqu'à la résolution", effect:{stats:{mental:2}, fatigue:3}},
+      {label:"T'adapter et rouler avec, sans faire d'histoires", effect:{stats:{resistance:1, mental:-1}}},
+    ]},
+  {icon:'🗣️', title:"Une intégration linguistique difficile", desc:"Ton nouvel environnement d'équipe ne parle pas ta langue, et les premières semaines sont plus isolantes que prévu.",
+    choices:[
+      {label:"Te plonger dans l'apprentissage de la langue", effect:{stats:{mental:3}, fatigue:2}},
+      {label:"Te reposer sur les gestes et l'entraide sur le vélo", effect:{stats:{mental:1, classiques:1}}},
+    ]},
+  {icon:'🧪', title:"Contrôle antidopage inopiné tard le soir", desc:"Les officiels frappent à la porte bien après le dîner, comme le veut la procédure standard de localisation des coureurs.",
+    choices:[
+      {label:"Le prendre avec philosophie, ça fait partie du métier", effect:{stats:{mental:1}}},
+      {label:"Râler intérieurement contre l'heure tardive", effect:{fatigue:2}},
+    ]},
+  {icon:'🎥', title:"Une caméra suit l'équipe pendant une saison", desc:"Un projet de documentaire s'installe dans le quotidien de l'équipe, jusque dans les moments les plus intimes de la préparation.",
+    choices:[
+      {label:"Te livrer sincèrement devant la caméra", effect:{reputation:2, stats:{mental:-1}}},
+      {label:"Rester en retrait, préférer parler par les jambes", effect:{stats:{mental:2}}},
+    ]},
+  {icon:'💍', title:"Un mariage à préparer en pleine saison", desc:"Un heureux événement personnel tombe en plein calendrier de courses, entre essayages et entraînements.",
+    choices:[
+      {label:"Prendre le temps qu'il faut pour en profiter pleinement", effect:{stats:{mental:4}, fatigue:3}},
+      {label:"Déléguer un maximum pour ne rien sacrifier à la préparation", effect:{stats:{resistance:1, mental:1}}},
+    ]},
+  {icon:'🧑‍🏫', title:"Un jeune coéquipier demande à être coaché", desc:"Un néo-pro de l'équipe vient chercher tes conseils, impressionné par ton expérience du peloton.",
+    choices:[
+      {label:"Prendre le temps de le former, quitte à te fatiguer un peu", effect:{stats:{mental:3}, fatigue:2}},
+      {label:"Rester concentré sur tes propres objectifs", effect:{stats:{mental:1}}},
+    ]},
+  {icon:'🌡️', title:"Un stage en altitude qui tourne mal", desc:"Le mal aigu des montagnes frappe plus fort que prévu lors d'un stage en haute altitude, perturbant toute la préparation.",
+    choices:[
+      {label:"Redescendre immédiatement, la santé avant tout", effect:{fatigue:-4, stats:{resistance:-1}}},
+      {label:"Serrer les dents et rester malgré l'inconfort", effect:{fatigue:6, stats:{montagne:1}}},
+    ]},
+  {icon:'📬', title:"Une pile de courrier de supporters", desc:"Des lettres de jeunes passionnés de cyclisme s'accumulent, pleines d'admiration et de questions sur ta carrière.",
+    choices:[
+      {label:"Prendre le temps de répondre à chacune", effect:{reputation:1, stats:{mental:2}}},
+      {label:"Confier ça au staff de communication de l'équipe", effect:{stats:{mental:0}}},
+    ]},
+  {icon:'🔄', title:"Des rumeurs de transfert circulent", desc:"La presse spécialisée évoque ton possible départ vers une autre équipe, sans que rien ne soit encore officiel.",
+    choices:[
+      {label:"Démentir publiquement pour calmer le jeu", effect:{reputation:1, stats:{mental:1}}},
+      {label:"Laisser dire, sans donner d'importance aux rumeurs", effect:{stats:{mental:-1}}},
+    ]},
+  {icon:'🎗️', title:"Une sollicitation pour une cause caritative", desc:"Une association te propose de devenir ambassadeur d'une cause qui te tient à cœur, en marge de ta carrière sportive.",
+    choices:[
+      {label:"T'engager pleinement, quitte à y consacrer du temps", effect:{reputation:2, fatigue:2}},
+      {label:"Décliner poliment, rester focalisé sur le vélo", effect:{stats:{mental:1}}},
+    ]},
+  {icon:'🧳', title:"Un imprévu logistique avant un déplacement", desc:"Un souci de dernière minute complique sérieusement le trajet vers une course à l'étranger.",
+    choices:[
+      {label:"Gérer le stress avec calme, arriver reposé malgré tout", effect:{stats:{mental:2}}},
+      {label:"Arriver tendu, la fatigue du voyage encore dans les jambes", effect:{fatigue:4, stats:{mental:-1}}},
+    ]},
 ];
 
-const STYLE_ICONS = {grimpeur:'⛰️', sprinteur:'⚡', rouleur:'⏱️', puncheur:'🥊', polyvalent:'🎯'};
+/* ---------- ÉVÈNEMENTS PERSONNELS PAR NATIONALITÉ ----------
+   3 évènements par pays, qui ne se déclenchent que pour un coureur de cette
+   nationalité — viennent enrichir (pas remplacer) le vivier générique ci-dessus.
+   Aucune référence à une vraie course ou un vrai évènement sportif réel. */
+const NATIONAL_EVENTS = {
+  FR: [
+    {icon:'🇫🇷', title:"Une nation biberonnée au vélo", desc:"Tu as grandi dans un pays où le vélo fait partie du paysage culturel, entre les discussions de comptoir et les silhouettes croisées sur les petites routes du dimanche.",
+      choices:[
+        {label:"T'enorgueillir de cet héritage", effect:{reputation:1, stats:{mental:3}}},
+        {label:"Relativiser, ce n'est qu'un sport parmi d'autres", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'☕', title:"Le café du village", desc:"Les habitués du café du coin suivent ta carrière depuis tes débuts, aux nouvelles à chaque course, prêts à refaire le monde cycliste à ton sujet.",
+      choices:[
+        {label:"Passer les voir après une bonne saison", effect:{stats:{mental:3}}},
+        {label:"Rester loin de cette pression amicale", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🎯', title:"Baroudeur dans l'âme", desc:"L'attrait de l'échappée solitaire te tente régulièrement, quitte à sacrifier tes chances au classement pour le panache.",
+      choices:[
+        {label:"Céder à cette tentation romantique", effect:{stats:{classiques:2}, fatigue:3}},
+        {label:"Rester pragmatique, jouer collectif", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  BE: [
+    {icon:'🚵', title:"Les kermesses du dimanche", desc:"Avant d'être pro, tu as fait tes armes sur les kermesses locales — ces courses de village disputées devant une poignée de connaisseurs, un rituel qui façonne encore aujourd'hui la dureté des coureurs belges.",
+      choices:[
+        {label:"T'en inspirer pour rester simple et rugueux", effect:{stats:{mental:2}}},
+        {label:"Reconnaître que ce folklore te manque un peu", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🌧️', title:"Le pavé et la boue", desc:"L'abnégation face aux conditions les plus rudes fait partie de ton éducation cycliste, héritée d'une longue tradition de classiques disputées sous la pluie.",
+      choices:[
+        {label:"En faire une fierté à assumer", effect:{stats:{classiques:2, resistance:1}}},
+        {label:"Reconnaître que c'est un supplice qu'on endure sans grande joie", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🌅', title:"Debout avant l'aube", desc:"La discipline d'entraînement fait partie du folklore, même sous une pluie fine et un ciel gris qui ne se lève jamais vraiment.",
+      choices:[
+        {label:"T'y tenir sans faillir", effect:{stats:{resistance:2}, fatigue:2}},
+        {label:"T'accorder une grasse matinée occasionnelle", effect:{stats:{mental:2}}},
+      ]},
+  ],
+  IT: [
+    {icon:'📣', title:"La ferveur des tifosi", desc:"La passion du public italien peut être aussi galvanisante qu'envahissante, avec des supporters qui te suivent parfois jusque dans les hôtels d'étape.",
+      choices:[
+        {label:"Puiser de l'énergie dans cette ferveur", effect:{stats:{mental:3}}},
+        {label:"Chercher un peu de calme malgré tout", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🎨', title:"L'élégance avant tout", desc:"Dans le cyclisme italien, il y a une vraie pression à \"bien faire les choses\" — jusqu'au style sur le vélo, scruté presque autant que les résultats.",
+      choices:[
+        {label:"Soigner chaque détail, jusqu'à l'allure sur le vélo", effect:{reputation:1, stats:{mental:1}}},
+        {label:"Te moquer des convenances, rester toi-même", effect:{stats:{mental:2}}},
+      ]},
+    {icon:'🚲', title:"Un vélo comme un bijou de famille", desc:"L'artisanat du cyclisme italien fait qu'on te regarde parfois de travers si tu ne chouchoutes pas assez ton matériel.",
+      choices:[
+        {label:"Chérir ton matériel comme un héritage", effect:{stats:{mental:2}}},
+        {label:"Le voir comme un simple outil de travail", effect:{stats:{resistance:1}}},
+      ]},
+  ],
+  NL: [
+    {icon:'💨', title:"Le vent de face permanent", desc:"Grandir en luttant contre un vent plat et constant a façonné ta manière de rouler bien avant ta première course officielle.",
+      choices:[
+        {label:"En faire ta spécialité", effect:{stats:{classiques:2, resistance:1}}},
+        {label:"Continuer d'en pester malgré les années", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🚴', title:"Le vélo, un outil du quotidien", desc:"Dans ton pays, le vélo est autant un moyen de transport qu'un sport — une culture ancrée dès l'enfance, bien avant l'idée d'en faire un métier.",
+      choices:[
+        {label:"Te rappeler que tout a commencé par de simples trajets", effect:{stats:{mental:2}}},
+        {label:"Ne plus vraiment y penser, c'est devenu un métier", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'⏱️', title:"L'art du contre-la-montre par équipes", desc:"Une rigueur collective héritée de longue date, où chaque relais compte autant que la performance individuelle.",
+      choices:[
+        {label:"Investir à fond dans cet exercice collectif", effect:{stats:{clm:2}, fatigue:2}},
+        {label:"Préférer les efforts solitaires", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  ES: [
+    {icon:'😴', title:"La sieste et l'entraînement", desc:"Adapter sa préparation à un rythme de vie différent, entre chaleur de l'après-midi et sorties matinales, fait partie de l'apprentissage.",
+      choices:[
+        {label:"Adopter pleinement ce rythme", effect:{stats:{recuperation:2}}},
+        {label:"Continuer sur un rythme plus classique", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'⛰️', title:"Les arrivées au sommet", desc:"Tu as grandi au pied de cols exigeants, à rêver de les gravir un jour à vive allure plutôt qu'en balade familiale.",
+      choices:[
+        {label:"Avoir passé ton enfance à les gravir en rêvant", effect:{stats:{montagne:2}}},
+        {label:"Avoir préféré les terrains plus roulants", effect:{stats:{sprint:1}}},
+      ]},
+    {icon:'🏛️', title:"L'ombre des légendes espagnoles", desc:"Vivre avec l'héritage de glorieux prédécesseurs, dont on te rappelle sans cesse le nom dès que tu approches d'un bon résultat.",
+      choices:[
+        {label:"T'en inspirer sans complexe", effect:{reputation:1, stats:{mental:2}}},
+        {label:"Tracer ta propre route, loin des comparaisons", effect:{stats:{mental:2}}},
+      ]},
+  ],
+  DE: [
+    {icon:'📐', title:"La rigueur avant tout", desc:"Une préparation méthodique, presque scientifique, où chaque séance est pensée et mesurée avec précision.",
+      choices:[
+        {label:"T'investir à fond dans cette approche", effect:{stats:{clm:1, resistance:1}}},
+        {label:"Garder une part d'instinct malgré tout", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🚴‍♂️', title:"L'héritage du vélodrome", desc:"Tes racines cyclistes viennent en partie de la piste, un monde à part avec ses propres codes et sa propre intensité.",
+      choices:[
+        {label:"Revenir t'entraîner sur piste de temps en temps", effect:{stats:{sprint:2}}},
+        {label:"Rester exclusivement sur route désormais", effect:{stats:{resistance:1}}},
+      ]},
+    {icon:'👥', title:"Le poids d'une génération", desc:"La pression de faire aussi bien que les glorieux anciens pèse parfois plus lourd que celle de tes adversaires du jour.",
+      choices:[
+        {label:"Accepter cette comparaison comme un moteur", effect:{stats:{mental:2}}},
+        {label:"T'en détacher complètement", effect:{stats:{mental:2}}},
+      ]},
+  ],
+  AU: [
+    {icon:'🌵', title:"Les kilomètres du bush", desc:"Des sorties solitaires interminables loin de tout, sur des routes désertes où le silence est parfois plus éprouvant que la distance elle-même.",
+      choices:[
+        {label:"Chérir cette solitude formatrice", effect:{stats:{resistance:2, mental:1}}},
+        {label:"Reconnaître que ça a été difficile à vivre", effect:{stats:{resistance:1}}},
+      ]},
+    {icon:'✈️', title:"Un long voyage vers l'Europe", desc:"L'exil a été une étape nécessaire pour percer, à des milliers de kilomètres de tes proches et de tes repères.",
+      choices:[
+        {label:"T'y être fait avec le temps", effect:{stats:{mental:2}}},
+        {label:"Ressentir encore parfois le mal du pays", effect:{fatigue:2}},
+      ]},
+    {icon:'🧭', title:"Forgé par l'isolement", desc:"Une abnégation propre aux coureurs déracinés, qui doivent souvent se construire une carrière loin de tout soutien familier.",
+      choices:[
+        {label:"En avoir tiré une vraie force de caractère", effect:{stats:{mental:3}}},
+        {label:"Rester marqué par ces années difficiles", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  GB: [
+    {icon:'🚴‍♀️', title:"De la piste à la route", desc:"Ton parcours a été façonné par le vélodrome avant que tu ne bascules définitivement sur route.",
+      choices:[
+        {label:"Garder des automatismes de pistard", effect:{stats:{sprint:2}}},
+        {label:"T'être complètement réinventé sur route", effect:{stats:{resistance:1}}},
+      ]},
+    {icon:'🔬', title:"L'obsession du détail", desc:"Une culture des petites optimisations marginales imprègne ta manière de préparer chaque course, jusqu'au moindre réglage.",
+      choices:[
+        {label:"Adopter cette philosophie à fond", effect:{stats:{clm:1, mental:1}}},
+        {label:"Juger que ça complique inutilement les choses", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'📈', title:"Un sport en pleine explosion", desc:"Tu as grandi dans un pays où le statut du cyclisme change à vue d'œil, passant d'un sport de niche à un vrai phénomène populaire.",
+      choices:[
+        {label:"Profiter de cette vague porteuse", effect:{reputation:2}},
+        {label:"Rester détaché de cet engouement soudain", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  CO: [
+    {icon:'🏔️', title:"Nées dans l'altitude", desc:"Tes poumons se sont formés à plus de 2500 mètres bien avant que tu ne montes sur un vélo de course — un avantage silencieux que peu de rivaux peuvent reproduire.",
+      choices:[
+        {label:"En faire une fierté, revendiquer cet atout", effect:{stats:{montagne:2}}},
+        {label:"Rester humble face à un don qu'on ne choisit pas", effect:{stats:{mental:2}}},
+      ]},
+    {icon:'🐞', title:"Le surnom d'escarabajo", desc:"L'affection populaire pour les grimpeurs colombiens t'a valu ce surnom affectueux, porté par des générations de coureurs avant toi.",
+      choices:[
+        {label:"Assumer ce surnom avec le sourire", effect:{reputation:1, stats:{mental:2}}},
+        {label:"Le trouver un peu réducteur", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🎉', title:"La ferveur qui déborde", desc:"Des routes noires de monde à chaque passage, une ferveur populaire qui n'a que peu d'équivalents ailleurs dans le peloton.",
+      choices:[
+        {label:"Puiser dans cette énergie collective", effect:{stats:{mental:3}}},
+        {label:"Trouver ça parfois oppressant", effect:{stats:{montagne:1}}},
+      ]},
+  ],
+  DK: [
+    {icon:'🎓', title:"Une filière jeunes exemplaire", desc:"Un système de formation très structuré t'a accompagné dès tes débuts, avec une rigueur qui a payé sur le long terme.",
+      choices:[
+        {label:"En reconnaître tous les bienfaits", effect:{stats:{resistance:1, mental:1}}},
+        {label:"Regretter un certain manque de spontanéité", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🌬️', title:"Le vent du Jutland", desc:"T'endurcir sur des routes plates et constamment balayées par le vent a construit une bonne partie de ton mental de rouleur.",
+      choices:[
+        {label:"T'y être forgé un vrai mental de rouleur", effect:{stats:{clm:2}}},
+        {label:"Continuer de trouver ça éprouvant", effect:{stats:{resistance:1}}},
+      ]},
+    {icon:'🧘', title:"La discipline scandinave", desc:"Une rigueur tranquille, sans esbroufe, qui imprègne ta façon d'aborder chaque saison sans grand discours.",
+      choices:[
+        {label:"Cultiver cette sobriété", effect:{stats:{mental:2}}},
+        {label:"Avoir parfois besoin de sortir du cadre", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  CH: [
+    {icon:'🗣️', title:"Jongler avec plusieurs langues", desc:"Évoluer dans un environnement multilingue dès l'enfance a façonné ta capacité à t'adapter à des équipes internationales.",
+      choices:[
+        {label:"Voir ça comme un atout d'adaptation", effect:{stats:{mental:2}}},
+        {label:"Trouver ça parfois fatigant", effect:{fatigue:2}},
+      ]},
+    {icon:'🏔️', title:"Les montagnes à la porte", desc:"Un terrain d'entraînement démesurément accessible, avec des cols exigeants à quelques kilomètres de chez toi.",
+      choices:[
+        {label:"En avoir profité à fond dès le plus jeune âge", effect:{stats:{montagne:2}}},
+        {label:"Avoir aussi cherché d'autres types de terrain", effect:{stats:{classiques:1}}},
+      ]},
+    {icon:'⚙️', title:"La précision suisse", desc:"Une réputation de sérieux à tenir, où chaque détail de ta préparation semble scruté avec une exigence particulière.",
+      choices:[
+        {label:"Vouloir toujours être à la hauteur de cette image", effect:{reputation:1, stats:{mental:1}}},
+        {label:"Trouver cette étiquette un peu lourde à porter", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  SI: [
+    {icon:'🇸🇮', title:"Un petit pays, de grands champions", desc:"Porter les espoirs d'une nation entière, malgré sa taille modeste, est une responsabilité que peu de coureurs ailleurs connaissent aussi intensément.",
+      choices:[
+        {label:"Accepter cette responsabilité avec fierté", effect:{reputation:1, stats:{mental:2}}},
+        {label:"Chercher à t'en détacher pour rester libre", effect:{stats:{mental:2}}},
+      ]},
+    {icon:'🤝', title:"Une communauté soudée", desc:"Le microcosme du cyclisme de ton pays fait que tout le monde se connaît, se croise, se soutient — pour le meilleur et parfois pour la pression que ça ajoute.",
+      choices:[
+        {label:"Rester proche de ce petit monde", effect:{stats:{mental:2}}},
+        {label:"Prendre volontairement un peu de distance", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🌟', title:"Prouver que ce n'est pas un hasard", desc:"L'ombre d'autres champions nationaux récents plane sur ta propre carrière, comme une comparaison permanente à assumer ou à fuir.",
+      choices:[
+        {label:"Vouloir montrer que le pays sait en former d'autres", effect:{stats:{mental:3}}},
+        {label:"Refuser cette pression comparative", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  US: [
+    {icon:'🏈', title:"Un sport de niche à la maison", desc:"Tu as grandi dans un pays où le cyclisme reste relativement confidentiel, loin de l'attention réservée à d'autres disciplines.",
+      choices:[
+        {label:"Cultiver ta passion sans validation extérieure", effect:{stats:{mental:2}}},
+        {label:"Regretter ce manque de reconnaissance locale", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🌍', title:"Convaincre loin de chez soi", desc:"L'obligation de faire tes preuves en Europe, loin de ton pays, a demandé une adaptation supplémentaire à ta carrière.",
+      choices:[
+        {label:"Relever ce défi avec détermination", effect:{stats:{mental:2, resistance:1}}},
+        {label:"Trouver ça éprouvant psychologiquement", effect:{fatigue:2}},
+      ]},
+    {icon:'💼', title:"Chercher des sponsors envers et contre tout", desc:"Un financement moins évident à trouver que dans les nations cyclistes historiques, demandant un vrai sens du contact.",
+      choices:[
+        {label:"Devenir habile à ce jeu-là aussi", effect:{reputation:2}},
+        {label:"Préférer laisser ça à ton entourage", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  NO: [
+    {icon:'❄️', title:"Une saison d'entraînement raccourcie", desc:"Composer avec un hiver interminable a demandé une organisation particulière pour optimiser la courte fenêtre disponible.",
+      choices:[
+        {label:"Optimiser à fond la fenêtre disponible", effect:{stats:{resistance:2}}},
+        {label:"Compenser par d'autres disciplines l'hiver", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🚲', title:"Le home-trainer, fidèle compagnon", desc:"Des mois entiers passés à rouler entre quatre murs, le regard fixé sur un écran, en attendant le retour des beaux jours.",
+      choices:[
+        {label:"En faire une force mentale", effect:{stats:{mental:2, clm:1}}},
+        {label:"Avoir hâte que ça se termine chaque année", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'⛷️', title:"Venu du ski de fond", desc:"Une reconversion sportive qui a fait ses preuves, avec une endurance héritée d'une autre discipline exigeante.",
+      choices:[
+        {label:"Garder cette endurance héritée comme un atout", effect:{stats:{resistance:2}}},
+        {label:"T'être recentré uniquement sur le vélo depuis", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  LU: [
+    {icon:'🏅', title:"Une fierté disproportionnée", desc:"L'attention d'un pays entier repose sur si peu de coureurs professionnels, ce qui démultiplie le poids de chaque résultat.",
+      choices:[
+        {label:"Porter ça avec le sourire", effect:{reputation:1, stats:{mental:2}}},
+        {label:"Trouver ce poids parfois lourd à porter", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'👨‍👩‍👦', title:"Une histoire de famille", desc:"Des lignées de coureurs se sont transmises à travers les générations dans ton entourage, un héritage qui te précède.",
+      choices:[
+        {label:"T'inscrire fièrement dans cette lignée", effect:{stats:{mental:2}}},
+        {label:"Vouloir tracer ton propre chemin", effect:{stats:{mental:2}}},
+      ]},
+    {icon:'🇱🇺', title:"Le poids d'un petit pays qui y croit", desc:"L'attente collective d'une nation entière se fait sentir à chaque grand rendez-vous, même à échelle modeste.",
+      choices:[
+        {label:"Te dire que chaque résultat compte double", effect:{stats:{mental:2}}},
+        {label:"Essayer de ne pas trop y penser", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  PT: [
+    {icon:'🌊', title:"Des routes sinueuses en bord d'Atlantique", desc:"Un terrain technique et changeant, entre reliefs côtiers et vents marins, a façonné ta capacité d'adaptation.",
+      choices:[
+        {label:"Devenir redoutable sur ce genre de terrain", effect:{stats:{classiques:2}}},
+        {label:"Préférer les longues lignes droites", effect:{stats:{clm:1}}},
+      ]},
+    {icon:'⛰️', title:"Grimpeur dans l'âme", desc:"Une tradition ancrée de purs grimpeurs t'a précédé, et tu t'y reconnais pleinement dans ta manière de courir.",
+      choices:[
+        {label:"T'inscrire dans cette lignée", effect:{stats:{montagne:2}}},
+        {label:"Vouloir élargir ta palette de qualités", effect:{stats:{sprint:1}}},
+      ]},
+    {icon:'📻', title:"Une passion locale, peu exportée", desc:"L'envie de faire connaître le cyclisme de ton pays au-delà de ses frontières t'habite depuis tes débuts.",
+      choices:[
+        {label:"Te sentir investi d'une mission", effect:{reputation:1, stats:{mental:2}}},
+        {label:"Rester concentré sur ta seule carrière", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  PL: [
+    {icon:'📈', title:"Une scène en pleine ascension", desc:"Tu fais partie d'une génération qui structure et fait progresser le cyclisme de ton pays, saison après saison.",
+      choices:[
+        {label:"Te sentir pionnier de cet essor", effect:{reputation:1, stats:{mental:2}}},
+        {label:"Simplement vouloir bien courir, sans grand récit", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🪨', title:"Viser enfin une classique", desc:"Une ambition encore neuve dans ton pays, où décrocher une victoire sur les pavés ou les monuments reste un rêve à concrétiser.",
+      choices:[
+        {label:"En faire un objectif personnel fort", effect:{stats:{classiques:2}}},
+        {label:"Rester réaliste sur tes chances actuelles", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🌗', title:"Sortir de l'ombre", desc:"Un pays qui commence tout juste à être respecté dans le peloton, après des années à devoir prouver sa légitimité.",
+      choices:[
+        {label:"Vouloir changer ce regard par tes résultats", effect:{stats:{mental:3}}},
+        {label:"Laisser les résultats parler d'eux-mêmes, sans forcer", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  IE: [
+    {icon:'🍀', title:"La dureté comme héritage", desc:"Une tradition de coureurs increvables précède ta génération, forgée par des décennies de conditions peu clémentes.",
+      choices:[
+        {label:"T'inscrire dans cette réputation", effect:{stats:{resistance:2}}},
+        {label:"Vouloir montrer une autre facette de ton talent", effect:{stats:{montagne:1}}},
+      ]},
+    {icon:'🌧️', title:"Les routes battues par la pluie", desc:"T'endurcir dès le plus jeune âge sous une météo rarement clémente a construit une bonne partie de ton mental de course.",
+      choices:[
+        {label:"Ne plus jamais vraiment craindre le mauvais temps", effect:{stats:{resistance:2, mental:1}}},
+        {label:"Continuer d'espérer un rayon de soleil de temps en temps", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🎭', title:"Le syndrome de l'outsider", desc:"Jouer les trouble-fêtes plutôt que les favoris fait partie de ton identité de coureur, assumée avec un certain plaisir.",
+      choices:[
+        {label:"Cultiver ce statut avec plaisir", effect:{stats:{mental:2}}},
+        {label:"Vouloir enfin être pris au sérieux comme favori", effect:{reputation:1, stats:{mental:1}}},
+      ]},
+  ],
+  ER: [
+    {icon:'📯', title:"Une ferveur populaire immense", desc:"Des foules disproportionnées par rapport à la taille du pays se massent à chaque passage, portées par une passion cycliste intense.",
+      choices:[
+        {label:"Te nourrir de cette ferveur unique", effect:{stats:{mental:3}}},
+        {label:"En ressentir aussi parfois le poids", effect:{fatigue:2}},
+      ]},
+    {icon:'💪', title:"Peu de moyens, beaucoup de talent", desc:"Percer malgré des ressources limitées demande une détermination particulière, loin des infrastructures des nations cyclistes historiques.",
+      choices:[
+        {label:"En tirer une vraie force de caractère", effect:{stats:{mental:3}}},
+        {label:"Espérer que les moyens s'améliorent pour la relève", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🌍', title:"Ouvrir la voie", desc:"Représenter un continent encore trop peu présent dans le peloton mondial ajoute une dimension particulière à chacune de tes courses.",
+      choices:[
+        {label:"Porter fièrement ce rôle de pionnier", effect:{reputation:2, stats:{mental:2}}},
+        {label:"Vouloir simplement être jugé sur tes résultats", effect:{stats:{mental:1}}},
+      ]},
+  ],
+  RW: [
+    {icon:'⛰️', title:"Le pays aux mille collines", desc:"Un relief brutal et omniprésent a naturellement forgé tes qualités de grimpeur, bien avant ta première course officielle.",
+      choices:[
+        {label:"En faire ta plus grande force", effect:{stats:{montagne:3}}},
+        {label:"Reconnaître que ça a aussi été un apprentissage rude", effect:{stats:{mental:1, montagne:1}}},
+      ]},
+    {icon:'🌍', title:"Représenter l'essor du cyclisme africain", desc:"Tu fais partie d'un mouvement plus large qui dépasse ta seule carrière individuelle, porté par tout un continent en pleine progression cycliste.",
+      choices:[
+        {label:"Embrasser pleinement ce rôle", effect:{reputation:2, stats:{mental:2}}},
+        {label:"Préférer rester concentré sur ta propre trajectoire", effect:{stats:{mental:1}}},
+      ]},
+    {icon:'🎗️', title:"Porter un symbole", desc:"Bien plus qu'une simple carrière individuelle est en jeu à chaque grand rendez-vous, et tu le sens à chaque fois un peu plus.",
+      choices:[
+        {label:"Accepter cette responsabilité avec fierté", effect:{stats:{mental:3}}},
+        {label:"Essayer de ne pas laisser ce poids t'écraser", effect:{stats:{mental:1}}},
+      ]},
+  ],
+};
 const STYLE_ICON_BG = {grimpeur:'#FFEBDD', sprinteur:'#FFF2DC', rouleur:'#E4EFFE', puncheur:'#FFE5EC', polyvalent:'#E1F6EB'};
 const STYLE_ICON_IMG = {grimpeur:ICON_GRIMPEUR_B64, sprinteur:ICON_SPRINTEUR_B64, rouleur:ICON_ROULEUR_B64, puncheur:ICON_PUNCHEUR_B64, polyvalent:ICON_POLYVALENT_B64};
 
@@ -1857,12 +2267,22 @@ const ACHIEVEMENTS = [
 let UNLOCKED = new Set();
 let SESSION = {careersCompleted:0, stylesPlayed:new Set(), countriesPlayed:new Set(), tipsShown:{}};
 
-/* ---------- SAUVEGARDE LOCALE ----------
+/* ---------- SAUVEGARDE LOCALE — 3 EMPLACEMENTS ----------
    Utilise localStorage : fonctionne dès que ce fichier est ouvert dans un navigateur,
-   sans serveur ni connexion. Sauvegarde automatique à chaque écran affiché. */
-const SAVE_KEY = 'coupDePedale_save_v1';
+   sans serveur ni connexion. Sauvegarde automatique à chaque écran affiché.
+   Deux clés distinctes :
+   - GLOBAL_KEY : progression partagée entre les 3 emplacements (trophées débloqués,
+     historique de session, palmarès des légendes) — un trophée reste acquis quel que
+     soit l'emplacement où on l'a obtenu.
+   - SLOTS_KEY : un tableau de 3 cases, chacune contenant soit null (vide), soit la
+     carrière en cours dans cet emplacement (état + choix de création en attente). */
+const GLOBAL_KEY = 'coupDePedale_global_v1';
+const SLOTS_KEY = 'coupDePedale_slots_v1';
+const OLD_SAVE_KEY = 'coupDePedale_save_v1'; // ancien format a emplacement unique, pour migration
 
 let SUPPRESS_SAVE = true; // le splash ne doit pas ecraser une sauvegarde existante avant qu'on l'ait lue
+let SLOTS = [null, null, null];
+let CURRENT_SLOT = null;
 
 /* ---------- ACCESSIBILITÉ ---------- */
 const SETTINGS_KEY = 'coupDePedale_settings_v1';
@@ -1911,15 +2331,14 @@ function renderSettingsScreen(keepScroll){
       <p class="small">Désactive les transitions, confettis et effets d'apparition, en plus du réglage de ton système d'exploitation s'il est déjà activé.</p>
       <button class="btn ${SETTINGS.reduceMotion?'':'ghost'}" onclick="toggleReduceMotion()">${SETTINGS.reduceMotion?'✅ Activé':'Désactivé'}</button>
     </div>
-    <button class="btn ghost" onclick="renderCreationScreen()">← Retour</button>
+    <button class="btn ghost" onclick="renderMainMenu()">← Retour</button>
   `, keepScroll);
 }
 
 function saveGame(){
   if(SUPPRESS_SAVE) return;
   try{
-    const data = {
-      state: STATE,
+    const global = {
       unlocked: Array.from(UNLOCKED),
       session: {
         careersCompleted: SESSION.careersCompleted,
@@ -1928,49 +2347,83 @@ function saveGame(){
         tipsShown: SESSION.tipsShown,
       },
       careerHistory: CAREER_HISTORY,
-      creation: window._creation,
+      unlockInfo: UNLOCK_INFO,
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    localStorage.setItem(GLOBAL_KEY, JSON.stringify(global));
+    if(CURRENT_SLOT !== null){
+      SLOTS[CURRENT_SLOT] = {state: STATE, creation: window._creation};
+      localStorage.setItem(SLOTS_KEY, JSON.stringify(SLOTS));
+    }
   } catch(e){ /* stockage indisponible (navigateur restrictif, mode privé...) : on continue sans bloquer le jeu */ }
 }
 
-function loadSavedData(){
+function loadGlobalData(){
   try{
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(GLOBAL_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch(e){ return null; }
 }
 
-function clearSave(){
-  try{ localStorage.removeItem(SAVE_KEY); } catch(e){}
+function loadSlotsData(){
+  try{
+    const raw = localStorage.getItem(SLOTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if(Array.isArray(parsed) && parsed.length===3) return parsed;
+  } catch(e){}
+  return [null, null, null];
 }
 
-function restoreSessionData(saved){
-  if(saved.unlocked) UNLOCKED = new Set(saved.unlocked);
-  if(saved.session){
+/* Migration douce depuis l'ancien format à emplacement unique (avant l'introduction
+   des 3 emplacements) : la carrière en cours devient l'emplacement 1, le reste
+   (trophées, historique) devient la progression globale partagée. */
+function migrateOldSaveIfNeeded(){
+  try{
+    const raw = localStorage.getItem(OLD_SAVE_KEY);
+    if(!raw) return;
+    const old = JSON.parse(raw);
+    const global = {unlocked: old.unlocked||[], session: old.session||null, careerHistory: old.careerHistory||[]};
+    localStorage.setItem(GLOBAL_KEY, JSON.stringify(global));
+    const slots = [null, null, null];
+    if(old.state) slots[0] = {state: old.state, creation: old.creation||null};
+    localStorage.setItem(SLOTS_KEY, JSON.stringify(slots));
+    localStorage.removeItem(OLD_SAVE_KEY);
+  } catch(e){ /* pas grave, on repart sur une base vide */ }
+}
+
+function restoreGlobalData(g){
+  if(!g) return;
+  if(g.unlocked) UNLOCKED = new Set(g.unlocked);
+  if(g.session){
     SESSION = {
-      careersCompleted: saved.session.careersCompleted||0,
-      stylesPlayed: new Set(saved.session.stylesPlayed||[]),
-      countriesPlayed: new Set(saved.session.countriesPlayed||[]),
-      tipsShown: saved.session.tipsShown||{},
+      careersCompleted: g.session.careersCompleted||0,
+      stylesPlayed: new Set(g.session.stylesPlayed||[]),
+      countriesPlayed: new Set(g.session.countriesPlayed||[]),
+      tipsShown: g.session.tipsShown||{},
     };
   }
-  if(saved.careerHistory) CAREER_HISTORY = saved.careerHistory;
+  if(g.careerHistory) CAREER_HISTORY = g.careerHistory;
+  if(g.unlockInfo) UNLOCK_INFO = g.unlockInfo;
 }
 
-/* Reprend la partie exactement là où le joueur l'avait laissée, en redirigeant vers
-   l'écran correspondant au dernier état sauvegardé. Les écrans purement transitoires
-   (affichage d'un résultat) renvoient vers le prochain écran d'action plutôt que de
-   tenter de reconstruire un affichage éphémère. */
-function resumeGame(saved){
+/* Compatibilité ascendante : une sauvegarde faite avant l'ajout d'un champ récent au
+   coureur (ex. stageWins) ne l'a pas encore — on le complète pour éviter tout NaN/bug. */
+function backfillRiderFields(rider){
+  if(!rider) return;
+  if(typeof rider.stageWins !== 'number') rider.stageWins = 0;
+}
+
+/* Reprend la carrière d'un emplacement précis exactement là où elle avait été laissée,
+   en redirigeant vers l'écran correspondant au dernier état sauvegardé. Les écrans
+   purement transitoires (affichage d'un résultat) renvoient vers le prochain écran
+   d'action plutôt que de tenter de reconstruire un affichage éphémère. */
+function resumeSlot(i){
   SUPPRESS_SAVE = false;
-  restoreSessionData(saved);
-  STATE = saved.state;
-  window._creation = saved.creation || {name:'', country: COUNTRIES[0].code, style:null};
+  CURRENT_SLOT = i;
+  const slot = SLOTS[i];
+  STATE = slot ? slot.state : null;
+  window._creation = (slot && slot.creation) || {name:'', country: COUNTRIES[0].code, style:null};
   if(!STATE){ renderCreationScreen(); return; }
-  /* Compatibilité ascendante : une sauvegarde faite avant l'ajout d'un champ récent
-     (ex. stageWins) ne l'a pas encore — on le complète pour éviter tout NaN/bug. */
-  if(STATE.rider && typeof STATE.rider.stageWins !== 'number') STATE.rider.stageWins = 0;
+  backfillRiderFields(STATE.rider);
   const screen = STATE._screen;
   if(screen==='training') renderTrainingScreen();
   else if(screen==='calendar') renderCalendarScreen();
@@ -1983,37 +2436,94 @@ function resumeGame(saved){
   else renderTrainingScreen();
 }
 
-function startFreshCareer(){
-  SUPPRESS_SAVE = false;
-  clearSave();
-  STATE = null;
-  window._creation = {name:'', country: COUNTRIES[0].code, style:null};
-  renderCreationScreen();
+/* Sélectionne un emplacement depuis le menu principal : reprend la carrière en cours
+   si l'emplacement en contient une (non retraitée), ou démarre une création dedans. */
+function selectSlot(i){
+  const slot = SLOTS[i];
+  if(slot && slot.state && slot.state.rider && !slot.state.rider.retired){
+    resumeSlot(i);
+  } else {
+    SUPPRESS_SAVE = false;
+    CURRENT_SLOT = i;
+    STATE = null;
+    window._creation = {name:'', country: COUNTRIES[0].code, style:null};
+    renderCreationScreen();
+  }
 }
 
-let PENDING_RESUME = null;
+function deleteSlot(i){
+  SLOTS[i] = null;
+  try{ localStorage.setItem(SLOTS_KEY, JSON.stringify(SLOTS)); } catch(e){}
+  renderMainMenu();
+}
 
-function renderResumeScreen(saved){
-  PENDING_RESUME = saved;
-  const rider = saved.state.rider;
-  const country = COUNTRIES.find(c=>c.code===rider.countryCode);
+function confirmDeleteSlot(i){
+  const slot = SLOTS[i];
+  const name = slot && slot.state && slot.state.rider ? slot.state.rider.name : 'cette carrière';
   setHTML(`
-    <div class="hero-banner">
-      <img src="${LOGO_B64}" alt="Le coup de pédale" class="hero-logo hero-logo-solo">
-    </div>
     <div class="card center">
-      <h2>Reprendre ta carrière ?</h2>
-      <p>${country?country.flag:''} <strong>${rider.name}</strong> — Saison ${rider.season}, ${rider.age} ans</p>
-      <p class="small">${STYLES.find(s=>s.id===rider.styleId).name} · ${currentTeam(rider).name}</p>
-      <button class="btn" onclick="resumeGame(PENDING_RESUME)">▶️ Reprendre où j'en étais</button>
-      <button class="btn ghost" onclick="startFreshCareer()">🆕 Commencer une nouvelle carrière</button>
+      <h2>🗑️ Supprimer cette carrière ?</h2>
+      <p>${name} sera <strong>définitivement effacé</strong> de cet emplacement — impossible de revenir en arrière.</p>
+      <button class="btn" style="background:var(--red);box-shadow:0 6px 0 #C23B3B, 0 10px 20px -8px rgba(194,59,59,0.45);" onclick="deleteSlot(${i})">Supprimer définitivement</button>
+      <button class="btn ghost" onclick="renderMainMenu()">← Annuler</button>
     </div>
   `);
 }
 
+function renderMainMenu(){
+  SUPPRESS_SAVE = false;
+  CURRENT_SLOT = null;
+  STATE = null;
+  const slotCardHTML = (i)=>{
+    const slot = SLOTS[i];
+    if(slot && slot.state && slot.state.rider){
+      const r = slot.state.rider;
+      const country = COUNTRIES.find(c=>c.code===r.countryCode);
+      const style = STYLES.find(s=>s.id===r.styleId);
+      const label = r.retired ? 'Carrière terminée' : `Saison ${r.season} · ${r.age} ans`;
+      return `<div class="race-item" style="align-items:center;">
+        <div>
+          <strong>${country?country.flag:''} ${r.name}</strong>
+          <p class="small" style="margin:2px 0 0;">${style?style.name:''} · ${label}</p>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn" style="width:auto;margin:0;padding:10px 16px;" onclick="selectSlot(${i})">${r.retired?'Voir':'▶️ Reprendre'}</button>
+          <button class="footer-link" onclick="confirmDeleteSlot(${i})">🗑️</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="race-item" style="align-items:center;">
+      <div><strong>Emplacement ${i+1} — vide</strong><p class="small" style="margin:2px 0 0;">Aucune carrière en cours.</p></div>
+      <button class="btn" style="width:auto;margin:0;padding:10px 16px;" onclick="selectSlot(${i})">🆕 Nouvelle carrière</button>
+    </div>`;
+  };
+  setHTML(`
+    <div class="hero-banner">
+      <img src="${LOGO_B64}" alt="Le coup de pédale" class="hero-logo hero-logo-solo">
+    </div>
+    <div class="card">
+      <h3>💾 Tes 3 emplacements de carrière</h3>
+      ${[0,1,2].map(slotCardHTML).join('')}
+    </div>
+    <div class="grid2">
+      <button class="btn ghost" onclick="renderHallOfFame()">🏆 Palmarès des légendes</button>
+      <button class="btn ghost" onclick="renderTrophiesScreen()">🎖️ Trophées (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
+    </div>
+    <div class="footer-links">
+      <button class="footer-link" onclick="renderTutorialScreen()">📖 Comment jouer ?</button>
+      <button class="footer-link" onclick="renderSettingsScreen()">♿ Accessibilité</button>
+    </div>
+  `);
+}
+
+let UNLOCK_INFO = {}; // id trophée -> {riderName, season, countryCode}
+
 function unlockTrophy(id){
   if(UNLOCKED.has(id)) return;
   UNLOCKED.add(id);
+  if(STATE && STATE.rider){
+    UNLOCK_INFO[id] = {riderName: STATE.rider.name, season: STATE.rider.season, countryCode: STATE.rider.countryCode};
+  }
   if(STATE){
     STATE.pendingTrophyUnlocks = STATE.pendingTrophyUnlocks || [];
     STATE.pendingTrophyUnlocks.push(id);
@@ -2167,6 +2677,7 @@ function riderHeaderHTML(){
       <div class="stat-label"><span>🔥 Fatigue</span><span>${Math.round(r.fatigue)}</span></div>
       <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.fatigue))}%;background:linear-gradient(90deg,var(--green),var(--red));"></div></div>
     </div>
+    <button class="footer-link" style="margin-top:6px;" onclick="renderMainMenu()">🏠 Menu principal</button>
   </div>`;
 }
 
@@ -2239,10 +2750,7 @@ function renderCreationScreen(keepScroll){
     </div>
     ${nameBlock}
     <button class="btn" ${cr.style?'':'disabled'} onclick="confirmCreation()">🚀 Débuter la carrière</button>
-    <div class="grid2">
-      <button class="btn ghost" onclick="renderHallOfFame()">🏆 Palmarès des légendes</button>
-      <button class="btn ghost" onclick="renderTrophiesScreen()">🎖️ Trophées (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
-    </div>
+    <button class="btn ghost" onclick="renderMainMenu()">← Retour au menu principal</button>
     <div class="footer-links">
       <button class="footer-link" onclick="renderTutorialScreen()">📖 Comment jouer ?</button>
       <button class="footer-link" onclick="renderSettingsScreen()">♿ Accessibilité</button>
@@ -2294,7 +2802,7 @@ function renderTutorialScreen(){
       <h3>🏆 Les trophées et le palmarès</h3>
       <p>33 trophées à débloquer au fil de tes carrières (certains "légendaires" bien plus difficiles), et un Hall of Fame qui conserve tes 5 meilleures carrières pour toute la session.</p>
     </div>
-    <button class="btn ghost" onclick="renderCreationScreen()">← Retour</button>
+    <button class="btn ghost" onclick="renderMainMenu()">← Retour</button>
   `);
 }
 
@@ -2328,7 +2836,7 @@ function renderHallOfFame(){
         </div>`;
       }).join('')
     }
-    <button class="btn ghost" onclick="renderCreationScreen()">← Retour</button>
+    <button class="btn ghost" onclick="renderMainMenu()">← Retour</button>
   `);
 }
 
@@ -2338,6 +2846,11 @@ function renderTrophiesScreen(){
     {key:'utilisation', label:'🎮 Trophées du joueur'},
   ];
   const rareOnes = ACHIEVEMENTS.filter(a=>a.rare);
+  const unlockLine = (id)=>{
+    const info = UNLOCK_INFO[id];
+    if(!info) return '';
+    return `<p class="small" style="margin:4px 0 0;font-style:italic;">Débloqué par ${info.riderName}, saison ${info.season}</p>`;
+  };
   setHTML(`
     <h1>🎖️ Trophées</h1>
     <p>${UNLOCKED.size} / ${ACHIEVEMENTS.length} débloqués depuis l'ouverture de cette partie.</p>
@@ -2350,6 +2863,7 @@ function renderTrophiesScreen(){
           <div>
             <strong>${unlocked?a.icon:'🔒'} ${a.name}</strong>
             <p class="small" style="margin:2px 0 0;">${a.desc}</p>
+            ${unlocked?unlockLine(a.id):''}
           </div>
         </div>`;
       }).join('')}
@@ -2363,12 +2877,13 @@ function renderTrophiesScreen(){
             <div>
               <strong>${unlocked?a.icon:'🔒'} ${a.name}</strong>
               <p class="small" style="margin:2px 0 0;">${a.desc}</p>
+              ${unlocked?unlockLine(a.id):''}
             </div>
           </div>`;
         }).join('')}
       </div>
     `).join('')}
-    <button class="btn ghost" onclick="renderCreationScreen()">← Retour</button>
+    <button class="btn ghost" onclick="renderMainMenu()">← Retour</button>
   `);
 }
 
@@ -2438,9 +2953,20 @@ function proceedFromTraining(){
 
 /* ---- Évènement personnel (vie hors vélo) ---- */
 
+/* Constitue le vivier d'évènements personnels pour un coureur donné : le vivier
+   générique (privé des évènements réservés au début de saison si non pertinent) plus
+   les évènements spécifiques à sa nationalité, s'il y en a. */
+function personalEventPool(rider, includeSeasonStartOnly){
+  let pool = includeSeasonStartOnly ? PERSONAL_EVENTS : PERSONAL_EVENTS.filter(e=>!e.seasonStartOnly);
+  const national = NATIONAL_EVENTS[rider.countryCode];
+  if(national && national.length) pool = pool.concat(national);
+  return pool;
+}
+
 function maybeShowPersonalEvent(){
   if(Math.random() < 0.3){
-    STATE.pendingPersonalEvent = PERSONAL_EVENTS[Math.floor(Math.random()*PERSONAL_EVENTS.length)];
+    const pool = personalEventPool(STATE.rider, true);
+    STATE.pendingPersonalEvent = pool[Math.floor(Math.random()*pool.length)];
     renderPersonalEvent();
   } else {
     renderCalendarScreen();
@@ -2453,7 +2979,7 @@ function maybeShowPersonalEvent(){
    seasonStartOnly (liés à la coupure hivernale) restent réservés au début de saison. */
 function maybeShowMidSeasonPersonalEvent(){
   STATE.personalEventReturnTo = 'race';
-  const pool = PERSONAL_EVENTS.filter(e=>!e.seasonStartOnly);
+  const pool = personalEventPool(STATE.rider, false);
   if(Math.random() < 0.15){
     STATE.pendingPersonalEvent = pool[Math.floor(Math.random()*pool.length)];
     renderPersonalEvent();
@@ -3236,7 +3762,8 @@ function renderCareerEnd(){
       <h3>🏆 Top 5 des carrières de la partie</h3>
       ${top.map((c,i)=>`<div class="race-item"><div><strong>#${i+1} ${c.name}</strong><p class="small" style="margin:2px 0 0;">${c.title}</p></div><span class="pill">${c.wins} 🏆</span></div>`).join('')}
     </div>
-    <button class="btn" onclick="resetGame()">Commencer une nouvelle carrière</button>
+    <button class="btn" onclick="openShareCard()">📤 Partager ma carrière</button>
+    <button class="btn ghost" onclick="resetGame()">Commencer une nouvelle carrière</button>
     <button class="btn ghost" onclick="renderTrophiesScreen()">🏆 Voir mes trophées (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
   `);
 }
@@ -3244,7 +3771,145 @@ function renderCareerEnd(){
 function resetGame(){
   STATE = null;
   window._creation = {name:'', country: COUNTRIES[0].code, style:null};
+  if(CURRENT_SLOT !== null) SLOTS[CURRENT_SLOT] = null;
   renderCreationScreen();
+}
+
+/* ---------- CARTE DE PARTAGE (fin de carrière) ---------- */
+
+function openShareCard(){
+  if(STATE) STATE._screen = 'sharecard';
+  setHTML(`
+    <h1>📤 Partager ma carrière</h1>
+    <div class="card center">
+      <canvas id="shareCanvas" width="1080" height="1080" style="width:100%;max-width:420px;border-radius:18px;box-shadow:0 6px 24px rgba(43,36,24,0.18);"></canvas>
+      <p class="small" style="margin-top:12px;">Image prête à partager sur les réseaux — aucune donnée envoyée nulle part, tout se génère dans ton navigateur.</p>
+      <button class="btn" onclick="downloadShareCard()">⬇️ Télécharger l'image</button>
+      <button class="btn ghost" id="shareNativeBtn" style="display:none;" onclick="nativeShareCard()">📤 Partager directement</button>
+      <button class="btn ghost" onclick="renderCareerEnd()">← Retour au bilan</button>
+    </div>
+  `);
+  drawShareCard(STATE.rider);
+  if(navigator.share && navigator.canShare){
+    const btn = document.getElementById('shareNativeBtn');
+    if(btn) btn.style.display = 'block';
+  }
+}
+
+function drawShareCard(r){
+  const canvas = document.getElementById('shareCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const logo = new Image();
+  logo.onload = () => {
+    const paint = () => paintShareCard(ctx, canvas, r, logo);
+    if(document.fonts && document.fonts.ready){ document.fonts.ready.then(paint); }
+    else { paint(); }
+  };
+  logo.src = LOGO_B64;
+}
+
+function paintShareCard(ctx, canvas, r, logo){
+  const W = canvas.width, H = canvas.height;
+  const country = COUNTRIES.find(c=>c.code===r.countryCode);
+  const style = STYLES.find(s=>s.id===r.styleId);
+  const wins = r.palmares.filter(p=>p.tier==='victoire');
+  const title = legacyTitle(r);
+
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, '#FBF7EF');
+  grad.addColorStop(1, '#FFEBDD');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,H);
+
+  ctx.textAlign = 'center';
+
+  /* Réduit la taille de police jusqu'à ce que le texte tienne dans la largeur
+     disponible — évite tout débordement sur les noms/titres les plus longs. */
+  function fitFontSize(text, maxWidth, maxSize, minSize, weight){
+    let size = maxSize;
+    do {
+      ctx.font = `${weight} ${size}px 'Nunito', sans-serif`;
+      if(ctx.measureText(text).width <= maxWidth) break;
+      size -= 3;
+    } while(size > minSize);
+    return size;
+  }
+
+  const safeWidth = W - 140;
+
+  const logoW = 130, logoH = logoW * (logo.height/logo.width || 180/160);
+  ctx.drawImage(logo, W/2 - logoW/2, 56, logoW, logoH);
+
+  ctx.fillStyle = '#FF8A3D';
+  ctx.font = "900 40px 'Nunito', sans-serif";
+  ctx.fillText('LE COUP DE PÉDALE', W/2, logoH + 130);
+
+  ctx.fillStyle = '#2B2418';
+  fitFontSize(r.name, safeWidth, 68, 28, 900);
+  ctx.fillText(r.name, W/2, logoH + 235);
+
+  const subLine = `${country?country.flag:''} ${country?country.name:''} · ${style?style.name:''}`;
+  ctx.fillStyle = '#8A7F68';
+  fitFontSize(subLine, safeWidth, 32, 18, 700);
+  ctx.fillText(subLine, W/2, logoH + 285);
+
+  ctx.fillStyle = '#D4881B';
+  fitFontSize(title, safeWidth, 42, 22, 800);
+  ctx.fillText(title, W/2, logoH + 360);
+
+  const stats = [
+    [String(r.season-1), 'saisons'],
+    [String(wins.length), 'victoires'],
+    [String(UNLOCKED.size), 'trophées'],
+  ];
+  const statY = H - 300;
+  stats.forEach((s,i)=>{
+    const x = (W/3)*i + (W/3)/2;
+    ctx.fillStyle = '#3CB878';
+    ctx.font = "900 74px 'Nunito', sans-serif";
+    ctx.fillText(s[0], x, statY);
+    ctx.fillStyle = '#8A7F68';
+    ctx.font = "700 28px 'Nunito', sans-serif";
+    ctx.fillText(s[1], x, statY + 44);
+  });
+
+  ctx.strokeStyle = '#ECE4D2';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(80, H-140);
+  ctx.lineTo(W-80, H-140);
+  ctx.stroke();
+
+  ctx.fillStyle = '#FF5C8A';
+  ctx.font = "800 38px 'Nunito', sans-serif";
+  ctx.fillText('lecoupdepedale.com', W/2, H-70);
+}
+
+function downloadShareCard(){
+  const canvas = document.getElementById('shareCanvas');
+  if(!canvas) return;
+  canvas.toBlob(blob=>{
+    if(!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ma-carriere-le-coup-de-pedale.png';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 3000);
+  }, 'image/png');
+}
+
+function nativeShareCard(){
+  const canvas = document.getElementById('shareCanvas');
+  if(!canvas) return;
+  canvas.toBlob(blob=>{
+    if(!blob) return;
+    const file = new File([blob], 'ma-carriere-le-coup-de-pedale.png', {type:'image/png'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      navigator.share({files:[file], title:'Le coup de pédale', text:'Ma carrière de coureur cycliste — lecoupdepedale.com'}).catch(()=>{});
+    }
+  }, 'image/png');
 }
 
 /* Quelques moments forts choisis dans la carrière, pour donner un vrai résumé plutôt
@@ -3319,14 +3984,13 @@ function showSplash(){
 }
 
 function afterSplash(){
-  const saved = loadSavedData();
-  if(saved && saved.state && saved.state.rider && !saved.state.rider.retired){
-    renderResumeScreen(saved);
-  } else {
-    SUPPRESS_SAVE = false;
-    if(saved) restoreSessionData(saved);
-    renderCreationScreen();
-  }
+  migrateOldSaveIfNeeded();
+  const global = loadGlobalData();
+  restoreGlobalData(global);
+  SLOTS = loadSlotsData();
+  SLOTS.forEach(s=>{ if(s && s.state && s.state.rider) backfillRiderFields(s.state.rider); });
+  SUPPRESS_SAVE = false;
+  renderMainMenu();
 }
 
 /* ---- Démarrage ---- */
