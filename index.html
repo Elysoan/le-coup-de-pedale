@@ -2761,8 +2761,9 @@ function finalizeRace(){
      que soit la nationalité du coureur. Purement narratif, avec un tout petit effet sur
      le mental selon la façon dont le coureur encaisse la chose. */
   let poisseEvent = null;
-  const nearMiss = STATE.runRaceAccum.some(e=>e.tier==='podium' && e.perf>=84);
-  if((bestTier==='abandon' || nearMiss) && Math.random() < 0.35){
+  const nearMiss = STATE.runRaceAccum.some(e=>e.tier==='podium' && e.perf>=86);
+  const knownEnough = STATE.rider.reputation >= 15;
+  if(knownEnough && (bestTier==='abandon' || nearMiss) && Math.random() < 0.35){
     poisseEvent = CONFRERIE_POISSE_EVENTS[Math.floor(Math.random()*CONFRERIE_POISSE_EVENTS.length)];
     const k = 'mental';
     STATE.rider.stats[k] = clamp(STATE.rider.stats[k] + poisseEvent.effect.mental, 10, 99);
