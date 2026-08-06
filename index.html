@@ -1493,6 +1493,7 @@ function newRider(name, countryCode, styleId){
     isNationalChampion: false,
     nationalTitles: 0,
     olympicGold: 0,
+    stageWins: 0,
     olympicSilver: 0,
     olympicBronze: 0,
     olympicSelections: 0,
@@ -1807,6 +1808,8 @@ function topCareers(n){
 
 const ACHIEVEMENTS = [
   {id:'first-win', icon:'🏆', name:'Première victoire', desc:"Remporter sa première course.", category:'carriere'},
+  {id:'premiere-etape', icon:'🚩', name:"Première victoire d'étape", desc:"Remporter sa première étape (grand tour ou course à plusieurs jours).", category:'carriere'},
+  {id:'centurion-etapes', icon:'💯', name:"Grand chasseur d'étapes", desc:"Remporter 20 victoires d'étape au cours d'une même carrière.", category:'carriere', rare:true},
   {id:'maillot-jaune', icon:'🟡', name:'Maillot jaune', desc:"Remporter le Tour de Gaule.", category:'carriere'},
   {id:'corsa-rosa', icon:'🎀', name:'Corsa Rosa', desc:"Remporter le Giro dell'Impero.", category:'carriere'},
   {id:'la-vuelta', icon:'🔴', name:'La Vuelta', desc:"Remporter la Vuelta a Iberia.", category:'carriere'},
@@ -2737,6 +2740,49 @@ const CONFRERIE_POISSE_EVENTS = [
     choiceLabel:"Accepter avec fierté, une pointe d'autodérision", effect:{mental:3}},
 ];
 
+/* Traduit le résultat d'un seul évènement en un résumé narratif étalé sur les jours
+   réels de la course (sans jouer plusieurs évènements ni ajouter de clic) — histoire de
+   donner un peu de chair à un "Paris-Nice" de 8 jours qui, mécaniquement, ne repose que
+   sur une seule résolution. Purement narratif : aucune incidence sur les stats, l'argent
+   ou les trophées, qui restent basés sur le résultat global déjà calculé par ailleurs. */
+const STAGE_TYPE_LABELS = {
+  montagne: 'étape de montagne', sprint: 'étape de sprint', clm: 'contre-la-montre',
+  classiques: 'étape vallonnée', resistance: 'étape de plat', mental: 'étape nerveuse',
+  recuperation: 'étape de transition',
+};
+function synthesizeStageSummary(race, focus, tier){
+  if(!race.days || race.days <= 1) return null;
+  const styles = (focus||[]).map(f=>STAGE_TYPE_LABELS[f]).filter(Boolean);
+  if(!styles.length) styles.push('étape roulante');
+  const pickStyle = ()=> styles[Math.floor(Math.random()*styles.length)];
+  const usedDays = new Set();
+  const pickDay = (maxDay)=>{
+    let d, tries=0;
+    do { d = 1 + Math.floor(Math.random()*maxDay); tries++; } while(usedDays.has(d) && tries<20);
+    usedDays.add(d);
+    return d;
+  };
+  const lines = [];
+  if(tier==='victoire'){
+    const extraWins = race.days>=5 ? Math.floor(race.days/4) : 0; // plus la course est longue, plus une domination peut se traduire par plusieurs étapes
+    const winCount = 1 + Math.floor(Math.random()*(extraWins+1));
+    for(let i=0;i<winCount;i++) lines.push({day:pickDay(race.days), style:pickStyle(), result:"Victoire d'étape"});
+    if(race.days>=5 && Math.random()<0.4) lines.push({day:pickDay(race.days), style:pickStyle(), result:"Podium d'étape"});
+  } else if(tier==='podium'){
+    lines.push({day:pickDay(race.days), style:pickStyle(), result:"Podium d'étape"});
+    if(race.days>=5) lines.push({day:pickDay(race.days), style:pickStyle(), result:'Top 10'});
+  } else if(tier==='top10'){
+    lines.push({day:pickDay(race.days), style:pickStyle(), result:'Top 10'});
+  } else if(tier==='peloton'){
+    lines.push({day:pickDay(race.days), style:pickStyle(), result:'Dans le peloton'});
+  } else if(tier==='jourssans'){
+    lines.push({day:pickDay(race.days), style:pickStyle(), result:'Jour difficile'});
+  } else if(tier==='abandon'){
+    lines.push({day:pickDay(Math.max(1,Math.ceil(race.days/2))), style:pickStyle(), result:'Abandon en cours de course'});
+  }
+  return lines.sort((a,b)=>a.day-b.day);
+}
+
 function finalizeRace(){
   const race = STATE.runQueue[STATE.runRaceIdx];
   let bestTier;
@@ -2755,6 +2801,23 @@ function finalizeRace(){
   } else {
     bestTier = STATE.runRaceAccum[0] ? STATE.runRaceAccum[0].tier : 'jourssans';
   }
+
+  /* Résumé jour par jour, uniquement pour les courses à un seul évènement mais qui
+     durent plusieurs jours (les grands tours ont déjà leurs propres semaines réelles). */
+  STATE.pendingStageSummary = (STATE.runRaceAccum.length === 1 && race.events && race.events[0])
+    ? synthesizeStageSummary(race, race.events[0].focus, bestTier)
+    : null;
+
+  /* Compteur de victoires d'étape en carrière : une semaine de grand tour remportée
+     compte comme une victoire d'étape, tout comme un "Jour X : Victoire d'étape" du
+     résumé synthétique ci-dessus — indépendant du résultat global de la course. */
+  if(STATE.runRaceAccum.length > 1){
+    STATE.rider.stageWins += STATE.runRaceAccum.filter(e=>e.tier==='victoire').reduce((sum,e)=>sum + (e.perf>=105 ? 2 : 1), 0);
+  } else if(STATE.pendingStageSummary){
+    STATE.rider.stageWins += STATE.pendingStageSummary.filter(l=>l.result==="Victoire d'étape").length;
+  }
+  if(STATE.rider.stageWins>=1) unlockTrophy('premiere-etape');
+  if(STATE.rider.stageWins>=20) unlockTrophy('centurion-etapes');
 
   /* La Confrérie de la Poisse : un clin d'œil à l'autodérision sportive, qui peut
      s'inviter après un abandon ou une défaite serrée dans les derniers mètres — quelle
@@ -2904,6 +2967,13 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
     <p class="small" style="font-style:italic;">${poisse.choiceLabel}</p>
   </div>` : '';
 
+  const stageSummary = STATE.pendingStageSummary;
+  STATE.pendingStageSummary = null;
+  const stageSummaryHTML = stageSummary ? `<div class="small" style="margin:8px 0;">
+      <strong>📋 Sur les ${race.days} jours de course :</strong>
+      ${stageSummary.map(l=>`<div class="log-line">Jour ${l.day} (${l.style}) : ${l.result}</div>`).join('')}
+    </div>` : '';
+
   let jerseyBanner = '';
   if(jersey){
     const jerseyName = jersey.type==='grimpeur' ? 'maillot à pois (meilleur grimpeur)' : 'maillot vert (meilleur sprinteur)';
@@ -2943,7 +3013,8 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
       ${confettiRow}
       <p class="result-tier ${tierPopClass} ${tierClass(bestTier)}">${TIER_LABEL[bestTier]}</p>
       <p class="narrative-text">${tierNarrative(bestTier)}</p>
-      <p class="small">🏁 Classement (indicatif) : ${estimatePlacement(bestTier)}</p>
+      <p class="small">🏁 Classement : ${estimatePlacement(bestTier)}</p>
+      ${stageSummaryHTML}
       ${weeklyRecap}
       ${trainedList.map(k=>`<p class="small">📈 ${STAT_LABELS[k]} en hausse</p>`).join('')}
       ${detrainedList.map(k=>`<p class="small">📉 ${STAT_LABELS[k]} en baisse</p>`).join('')}
