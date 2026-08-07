@@ -388,7 +388,7 @@ const STAT_ICONS = {
 const NAME_POOLS = {
   FR:{first:['Julien','Romain','Thibault','Antoine','Clément','Maxime','Baptiste'], last:['Vasseur','Moreau','Girard','Lefèvre','Rousseau','Perrin','Fournier']},
   BE:{first:['Wout','Tim','Jasper','Yves','Dries','Kobe','Arnaud'], last:['Van Damme','Vermeulen','Claeys','De Backer','Peeters','Willems','De Lie']},
-  IT:{first:['Matteo','Alessandro','Davide','Giulio','Lorenzo','Filippo','Simone'], last:['Ferrari','Bianchi','Colombo','Moretti','Ricci','Conti','Marchetti']},
+  IT:{first:['Matteo','Alessandro','Davide','Giulio','Lorenzo','Filippo','Simone','Lucca'], last:['Ferrari','Bianchi','Colombo','Moretti','Ricci','Conti','Marchetti','Buido']},
   NL:{first:['Mathieu','Bram','Sven','Daan','Thijs','Niels','Koen'], last:['de Groot','Bakker','Visser','Jansen','Smit','Mulder','Dekker']},
   ES:{first:['Alejandro','Pablo','Iñaki','Marc','Rubén','Óscar','Enrique'], last:['García','Fernández','Pérez','Martínez','Sánchez','Romero','Navarro']},
   DE:{first:['Lukas','Jonas','Felix','Tobias','Maximilian','Jan','Simon'], last:['Müller','Schneider','Becker','Hoffmann','Wagner','Richter','Zimmermann']},
@@ -401,6 +401,11 @@ const NAME_POOLS = {
   US:{first:['Tyler','Brandon','Sean','Kyle','Chris','Alex','Grant'], last:['Anderson','Miller','Reynolds','Coleman','Parker','Bishop','Harding']},
   NO:{first:['Kristoffer','Magnus','Sindre','Odd','Vegard','Tobias','Erlend'], last:['Hansen','Olsen','Johansen','Berg','Haugen','Solberg','Dahl']},
   LU:{first:['Bob','Laurent','Kevin','Michel','Pit','Nicolas','Tom'], last:['Weber','Kirsch','Schmit','Wagner','Muller','Thill','Braun']},
+  PT:{first:['João','Rui','Nuno','Tiago','Miguel','Bruno','André'], last:['Silva','Costa','Ferreira','Oliveira','Sousa','Rodrigues','Carvalho']},
+  PL:{first:['Michał','Kamil','Paweł','Piotr','Wojciech','Adam','Marcin'], last:['Kowalski','Nowak','Wiśniewski','Wójcik','Kamiński','Lewandowski','Zieliński']},
+  IE:{first:['Sean','Conor','Liam','Cian','Darragh','Eoin','Ronan'], last:['Murphy','Kelly',"O'Brien",'Ryan','Byrne','Doyle','Walsh']},
+  ER:{first:['Daniel','Natnael','Merhawi','Amanuel','Henok','Yonas','Robel'], last:['Tesfay','Ghebremedhin','Kidane','Weldu','Habte','Solomon','Mengistu']},
+  RW:{first:['Jean','Eric','Joseph','Emmanuel','Patrick','Moise','Bonaventure'], last:['Uwimana','Nkurunziza','Habimana','Nsengimana','Mugisha','Niyonzima','Bizimana']},
 };
 
 function generateRiderName(countryCode){
@@ -483,12 +488,19 @@ const TEAMMATE_EVENTS = {
 function generateRivals(rider){
   const others = COUNTRIES.filter(c=>c.code!==rider.countryCode);
   const picks = shuffleArr(others).slice(0,3);
-  return picks.map(c=>({
-    name: generateRiderName(c.code),
-    countryCode: c.code,
-    styleId: STYLES[Math.floor(Math.random()*STYLES.length)].id,
-    strength: clamp(42 + Math.random()*16, 25, 90),
-  }));
+  const usedNames = new Set([rider.name]);
+  return picks.map(c=>{
+    let name;
+    let tries = 0;
+    do { name = generateRiderName(c.code); tries++; } while(usedNames.has(name) && tries<30);
+    usedNames.add(name);
+    return {
+      name,
+      countryCode: c.code,
+      styleId: STYLES[Math.floor(Math.random()*STYLES.length)].id,
+      strength: clamp(42 + Math.random()*16, 25, 90),
+    };
+  });
 }
 
 /* ---------- VOLET FINANCIER (salaire + primes individuelles + primes d'équipe) ---------- */
@@ -2081,17 +2093,38 @@ function weatherCrashMult(weatherId){
   return weatherId==='pluie' ? 1.5 : 1;
 }
 
-function resolveEvent(rider, event, choice, weatherId){
+function resolveEvent(rider, event, choice, weatherId, racePrestige){
   const statAvg = statFocusAverage(rider, event.focus);
   const forme = clamp(100 - rider.fatigue*0.75 + (Math.random()*16-8), 5, 100);
-  let base = statAvg*0.55 + forme*0.30 + rider.stats.mental*0.15;
+  /* Les stats pèsent plus lourd qu'avant (0.62 contre 0.55), la part de forme du jour et
+     de mental un peu moins — un coureur avec de meilleures stats doit gagner plus souvent,
+     sans que le résultat ne devienne pour autant totalement déterministe. */
+  let base = statAvg*0.62 + forme*0.26 + rider.stats.mental*0.12;
   if(weatherId) base += weatherPerfModifier(weatherId, event.focus);
+
+  /* Sur les courses prestigieuses (monuments, grands tours...), un coureur très jeune
+     n'a statistiquement presque jamais course la victoire dans la réalité (le plus jeune
+     vainqueur de Paris-Roubaix depuis 1950 avait 22 ans) — un frein progressif s'applique
+     avant 24 ans, proportionnel au prestige de la course, sans jamais rendre la victoire
+     strictement impossible. */
+  if(racePrestige >= 3 && rider.age < 24){
+    const yearsUnder = 24 - rider.age;
+    const prestigeMult = racePrestige >= 4 ? 1 : 0.5;
+    base -= yearsUnder * 4 * prestigeMult;
+  }
 
   let perf, spread;
   if(choice.risk==='sur'){ perf = base*0.92; spread = 7; }
   else if(choice.risk==='audacieux'){ perf = base*1.08; spread = 25; }
   else if(choice.risk==='loufoque'){ perf = 35 + statAvg*0.25; spread = 42; }
   else { perf = base; spread = 15; }
+
+  /* La variance se resserre modérément sur les courses les plus prestigieuses (le résultat
+     y reflète davantage le niveau réel), sans jamais l'écraser complètement — une partie
+     non négligeable de hasard doit rester, certaines carrières décollent vite, d'autres non. */
+  if(racePrestige >= 4) spread *= 0.72;
+  else if(racePrestige === 3) spread *= 0.86;
+
   perf += (Math.random()*2-1)*spread;
   perf = clamp(perf, 0, 118);
 
@@ -2109,10 +2142,6 @@ function resolveEvent(rider, event, choice, weatherId){
     const k = event.focus[Math.floor(Math.random()*event.focus.length)];
     rider.stats[k] = clamp(rider.stats[k] + (0.4+Math.random()*0.5), 15, 99);
     trained = k;
-  }
-  if(rider.age>=33 && Math.random()<0.25){
-    const k = STAT_KEYS[Math.floor(Math.random()*STAT_KEYS.length)];
-    rider.stats[k] = clamp(rider.stats[k] - (0.3+Math.random()*0.4), 10, 99);
   }
 
   /* Un choix risqué (audacieux ou loufoque) qui tourne mal peut aussi coûter un peu de
@@ -2263,16 +2292,32 @@ function confidenceDeltaFor(bestTier){
   return Math.round((tv - 1) * 2.2);
 }
 
+/* Âge de pic propre à chaque qualité physique (calibré sur des données réelles de
+   cyclisme pro, puis reculé d'un an sur demande) : le sprint pur culmine tôt et décline
+   vite, l'endurance/contre-la-montre culmine plus tard et décline plus doucement, le
+   mental ne décline quasiment jamais (l'expérience compense la physiologie). */
+const STAT_PEAK_AGE = {
+  sprint:26, montagne:28, classiques:28, clm:30, resistance:30, recuperation:30, mental:34,
+};
+function statAgeDelta(key, age){
+  const peak = STAT_PEAK_AGE[key];
+  const diff = age - peak;
+  if(key==='mental'){
+    return diff<=0 ? 0.5 : -0.15;
+  }
+  if(diff<=-4) return 0.7;
+  if(diff<=-1) return 0.4;
+  if(diff<=1) return 0.05;
+  if(diff<=5) return -0.35;
+  return -1.3;
+}
+
 function endSeasonAging(rider, trainingFocus){
   rider.age += 1;
   const age = rider.age;
   STAT_KEYS.forEach(k=>{
-    let delta = 0;
-    if(age<=24) delta = 0.6;
-    else if(age<=30) delta = 0.3;
-    else if(age<=34) delta = -0.4;
-    else delta = -1.6;
-    if(k===trainingFocus) delta += (age<=34? 1.4 : 0.4);
+    let delta = statAgeDelta(k, age);
+    if(k===trainingFocus) delta += (age <= STAT_PEAK_AGE[k]+4 ? 1.4 : 0.4);
     rider.stats[k] = clamp(rider.stats[k]+delta, 8, 99);
   });
   // Repos hivernal : la part de fatigue non évacuée dépend de la récupération et de l'âge.
@@ -2740,6 +2785,9 @@ const TYPE_LABEL = {grandtour:'Grand Tour', monument:'Monument', classique:'Clas
 function app(){ return document.getElementById('app'); }
 function setHTML(html, keepScroll){
   app().innerHTML = html;
+  if(STATE && STATE.rider){
+    app().insertAdjacentHTML('beforeend', `<button class="footer-link" style="display:block;margin:18px auto 0;text-align:center;" onclick="renderMainMenu()">🏠 Menu principal</button>`);
+  }
   if(!keepScroll) window.scrollTo(0,0);
   saveGame();
   const bars = app().querySelectorAll('.stat-fill.animated-fill');
@@ -2764,6 +2812,24 @@ function statBarsHTML(stats){
       <div class="stat-track"><div class="stat-fill animated-fill" data-w="${v}" style="width:0%"></div></div>
     </div>`;
   }).join('');
+}
+
+function globalStatsPanelHTML(){
+  const best = topCareers(1)[0];
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="const b=document.getElementById('statsPanelBody'), a=document.getElementById('statsPanelArrow'); const open = b.style.display!=='none'; b.style.display = open?'none':'block'; a.textContent = open?'▼ Déplier':'▲ Replier';">
+      <h3 style="margin:0;">📊 Ta progression</h3>
+      <span class="small" id="statsPanelArrow">▼ Déplier</span>
+    </div>
+    <div id="statsPanelBody" style="display:none;margin-top:8px;">
+      <div class="grid3">
+        <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.3rem;color:var(--green-dark);">${SESSION.careersCompleted}</p><p class="small" style="margin:0;">carrière${SESSION.careersCompleted>1?'s':''}</p></div>
+        <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.3rem;color:var(--yellow-dark);">${UNLOCKED.size}/${ACHIEVEMENTS.length}</p><p class="small" style="margin:0;">trophées</p></div>
+        <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.3rem;color:var(--pink);">${SESSION.countriesPlayed.size}/${COUNTRIES.length}</p><p class="small" style="margin:0;">pays</p></div>
+      </div>
+      ${best ? `<p class="small" style="margin-top:8px;text-align:center;">🏆 Meilleure carrière : <strong>${best.name}</strong> — ${best.title}</p>` : ''}
+    </div>
+  </div>`;
 }
 
 function riderHeaderHTML(){
@@ -2798,8 +2864,7 @@ function riderHeaderHTML(){
       <div class="stat-label"><span>🔥 Fatigue</span><span>${Math.round(r.fatigue)}</span></div>
       <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.fatigue))}%;background:linear-gradient(90deg,var(--green),var(--red));"></div></div>
     </div>
-    <button class="footer-link" style="margin-top:6px;" onclick="renderMainMenu()">🏠 Menu principal</button>
-  </div>`;
+  </div>` + globalStatsPanelHTML();
 }
 
 /* ---- Création ---- */
@@ -3485,7 +3550,7 @@ function chooseOption(i){
     return;
   }
 
-  const result = resolveEvent(STATE.rider, event, choice, weatherId);
+  const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige);
   applyFatigue(STATE.rider, race, choice, weatherId);
   STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained});
   STATE.runEventIdx++;
