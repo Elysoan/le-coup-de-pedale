@@ -561,7 +561,7 @@ const PERSONAL_EVENTS = [
       {label:"Prendre du recul et savourer ce moment", effect:{stats:{mental:4}, fatigue:4}},
       {label:"Rester focus sur la préparation malgré tout", effect:{stats:{mental:-2, resistance:1}}},
     ]},
-  {icon:'📰', title:"Un article critique dans la presse spécialisée", desc:"Un journaliste spécialisé doute publiquement du niveau du coureur après une saison moyenne.",
+  {icon:'📰', title:"Un article critique dans la presse spécialisée", desc:"Un journaliste spécialisé doute publiquement du niveau du coureur après plusieurs contre-performances récentes.",
     choices:[
       {label:"Répondre par la performance, en silence", effect:{stats:{mental:3}}},
       {label:"Réagir publiquement et créer la polémique", effect:{reputation:-3, stats:{mental:1}}},
@@ -775,6 +775,56 @@ const PERSONAL_EVENTS = [
     choices:[
       {label:"Gérer le stress avec calme, arriver reposé malgré tout", effect:{stats:{mental:2}}},
       {label:"Arriver tendu, la fatigue du voyage encore dans les jambes", effect:{fatigue:4, stats:{mental:-1}}},
+    ]},
+  {icon:'💼', title:"Une offre de reconversion précoce", desc:"Une marque te propose un pont d'or pour arrêter dès maintenant et devenir ambassadeur — une tentation à laquelle peu de coureurs peuvent résister sereinement.",
+    choices:[
+      {label:"Décliner fermement, la carrière sportive avant tout", effect:{stats:{mental:2}}},
+      {label:"Prendre le temps d'y réfléchir sérieusement", effect:{stats:{mental:1}, fatigue:2}},
+    ]},
+  {icon:'📢', title:"Un désaccord tactique en course", desc:"Le directeur sportif donne une consigne par oreillette que tu juges mauvaise, en pleine étape, sans le temps de vraiment en discuter.",
+    choices:[
+      {label:"Suivre la consigne malgré tes doutes", effect:{stats:{mental:1}}},
+      {label:"Improviser à ta façon, quitte à en payer le prix ensuite", effect:{stats:{mental:2}, reputation:-1}},
+    ]},
+  {icon:'👶', title:"La naissance d'un enfant", desc:"Un heureux événement familial vient bouleverser ton quotidien en pleine saison.",
+    choices:[
+      {label:"Prendre le temps qu'il faut, quitte à lever un peu le pied", effect:{stats:{mental:4}, fatigue:3}},
+      {label:"Reprendre l'entraînement très vite malgré tout", effect:{stats:{mental:1}, fatigue:2}},
+    ]},
+  {icon:'🚲', title:"Un vol de matériel", desc:"Ton vélo ou tes affaires personnelles disparaissent juste avant une course importante, semant la panique dans l'équipe.",
+    choices:[
+      {label:"Garder ton calme, le matériel de secours suffira", effect:{stats:{mental:2}}},
+      {label:"Rester perturbé toute la journée par cet incident", effect:{fatigue:2, stats:{mental:-1}}},
+    ]},
+  {icon:'🎬', title:"Une invitation à un gala people", desc:"Le monde du cyclisme croise soudain celui des célébrités, avec une invitation inattendue à un évènement mondain.",
+    choices:[
+      {label:"Y aller, profiter de cette parenthèse insolite", effect:{reputation:2, fatigue:2}},
+      {label:"Décliner poliment, préférer le calme avant course", effect:{stats:{mental:1}}},
+    ]},
+  {icon:'🔁', title:"Un ancien coéquipier devient adversaire", desc:"Des retrouvailles amères t'attendent dans le peloton, face à un ancien coéquipier parti sous une autre tunique après un transfert houleux.",
+    choices:[
+      {label:"Rester professionnel, sans animosité inutile", effect:{stats:{mental:2}}},
+      {label:"Laisser transparaître une rivalité non digérée", effect:{stats:{mental:1}, reputation:1}},
+    ]},
+  {icon:'🧑‍🏫', title:"Une reconversion vers le coaching en parallèle", desc:"Tu commences à conseiller de jeunes coureurs amateurs sur ton temps libre, une activité qui te prend un peu plus que prévu.",
+    choices:[
+      {label:"Continuer, ça te fait aussi progresser toi-même", effect:{stats:{mental:2}, fatigue:1}},
+      {label:"Lever le pied sur cette activité annexe", effect:{stats:{mental:1}}},
+    ]},
+  {icon:'🔧', title:"Un contrôle technique qui tourne mal", desc:"Un souci mécanique inattendu est découvert sur ton vélo juste avant le départ, semant la panique dans le camion technique.",
+    choices:[
+      {label:"Garder ton sang-froid pendant la réparation d'urgence", effect:{stats:{mental:2}}},
+      {label:"Monter sur la ligne de départ encore agacé", effect:{stats:{mental:-1}, fatigue:1}},
+    ]},
+  {icon:'🎥', title:"Une proposition de biopic", desc:"Un réalisateur s'intéresse à ta carrière et souhaite en tirer un film — une perspective aussi flatteuse qu'intimidante.",
+    choices:[
+      {label:"Te prêter au jeu avec enthousiasme", effect:{reputation:2, stats:{mental:1}}},
+      {label:"Rester réservé, pas certain de vouloir cette exposition", effect:{stats:{mental:1}}},
+    ]},
+  {icon:'🩹', title:"Le retour d'une ancienne blessure", desc:"Une douleur familière refait surface sans prévenir, réveillant le souvenir d'une blessure passée.",
+    choices:[
+      {label:"Consulter immédiatement par précaution", effect:{fatigue:-2, stats:{mental:1}}},
+      {label:"Serrer les dents et continuer comme si de rien n'était", effect:{fatigue:3, stats:{resistance:-1}}},
     ]},
 ];
 
@@ -1162,25 +1212,15 @@ function RACE_DEFS(){ return [
     ]},
   {id:'paris-nice', name:'La Course au Soleil', type:'semitour', month:3, prestige:2, fatCost:6, days:8,flag:'🇫🇷',
     eventDefs:[
-      {focus:['montagne','mental'], choices:[
+      {focus:['montagne','clm','mental'], choices:[
           {label:"Suivre les meilleurs sans attaquer", risk:'sur', tilt:['mental']},
           {label:"Placer une attaque à 2km de l'arrivée", risk:'equilibre', tilt:['montagne']},
           {label:"Partir seul dès le pied de la côte", risk:'audacieux', tilt:['montagne','mental']},
         ], variants:[
           {title:"Étape du Mont Faron", desc:"La course au soleil sort les premiers vrais leaders de la saison sur une arrivée en côte."},
-          {title:"Étape de La Colle-sur-Loup", desc:"Une arrivée vallonnée dans l'arrière-pays niçois, propice aux baroudeurs."},
-        
+          {title:"Contre-la-montre final avant l'arrivée à Nice", desc:"Souvent l'exercice qui scelle le classement général de cette course."},
           {title:"Étape dans l'arrière-pays niçois", desc:"Un final vallonné qui referme cette semaine de mise en jambes avant le printemps."},
           {title:"Étape sous la neige en Haute-Provence", desc:"Un contraste saisissant avec le soleil promis par le nom de la course."},
-        ]},
-      {focus:['clm'], choices:[
-          {label:"Rouler à un effort constant et prudent", risk:'sur', tilt:['clm']},
-          {label:"Attaquer fort dès le départ", risk:'audacieux', tilt:['clm','mental']},
-        ], variants:[
-          {title:"Contre-la-montre vallonné", desc:"Un exercice solitaire contre le chrono, sur un tracé irrégulier."},
-          {title:"Chrono de Contres", desc:"Un exercice solitaire à plat, où chaque seconde compte avant l'arrivée sur la Côte d'Azur."},
-          {title:"Chrono individuel dans l'arrière-pays", desc:"Un tracé technique qui récompense les rouleurs les plus complets."},
-          {title:"Contre-la-montre final avant l'arrivée à Nice", desc:"Souvent l'exercice qui scelle le classement général de cette course."},
         ]},
     ]},
   {id:'tirreno', name:"D'une Mer à l'Autre", type:'semitour', month:3, prestige:2, fatCost:6, days:7,flag:'🇮🇹',
@@ -1873,6 +1913,55 @@ function RACE_DEFS(){ return [
           {title:"Étape disputée sous une chaleur inhabituelle pour la saison", desc:"Une chaleur précoce surprend le peloton en plein mois de juin."},
         ]}
     ]},
+  {id:'koln', name:'Rund um Köln', type:'classique', month:8, prestige:2, fatCost:5, days:1, flag:'🇩🇪',
+    eventDefs:[
+      {focus:['classiques','resistance'], choices:[
+          {label:"Rester au chaud dans le peloton jusqu'au final", risk:'sur', tilt:['resistance']},
+          {label:"Anticiper l'attaque dans la dernière côte pavée", risk:'equilibre', tilt:['classiques']},
+          {label:"Placer une offensive à 20km de l'arrivée", risk:'audacieux', tilt:['classiques','mental']},
+        ], variants:[
+          {title:"Sur les hauteurs de la Rhénanie", desc:"Un circuit vallonné autour de la ville, ponctué de courtes côtes pavées qui usent les organismes."},
+          {title:"La montée du Königsforst", desc:"La difficulté principale du jour, franchie plusieurs fois avant le final."},
+          {title:"Un final nerveux dans les faubourgs", desc:"Les organisations s'affûtent à l'approche de la dernière ascension."},
+        ]},
+    ]},
+  {id:'california', name:'Le Tour de Californie', type:'semitour', month:4, prestige:2, fatCost:6, days:7, flag:'🇺🇸',
+    eventDefs:[
+      {focus:['montagne','clm','resistance'], choices:[
+          {label:"Contrôler la course sans prendre de risques", risk:'sur', tilt:['resistance']},
+          {label:"Placer une attaque dans l'ascension finale", risk:'equilibre', tilt:['montagne']},
+          {label:"Tenter une offensive solitaire sur la côte", risk:'audacieux', tilt:['montagne','mental']},
+        ], variants:[
+          {title:"Étape des sommets de la Sierra", desc:"Une arrivée en altitude qui départage les meilleurs grimpeurs du plateau."},
+          {title:"Chrono le long du Pacifique", desc:"Un tracé venteux en bord de côte, où chaque seconde compte."},
+          {title:"Étape à travers les vignobles", desc:"Un terrain roulant et technique, favorable aux attaques opportunistes."},
+          {title:"Étape dans l'arrière-pays désertique", desc:"Chaleur sèche et longues lignes droites, une épreuve à part entière."},
+        ]},
+    ]},
+  {id:'manche', name:'Le Tour de la Manche', type:'classique', month:5, prestige:2, fatCost:5, days:1, flag:'🇬🇧',
+    eventDefs:[
+      {focus:['classiques','resistance'], choices:[
+          {label:"Se protéger du vent au cœur du peloton", risk:'sur', tilt:['resistance']},
+          {label:"Anticiper la formation d'une bordure", risk:'equilibre', tilt:['classiques']},
+          {label:"Provoquer la bordure en prenant les devants", risk:'audacieux', tilt:['classiques','mental']},
+        ], variants:[
+          {title:"Sur les petites routes du Kent", desc:"Un tracé étroit et exposé, où le vent de la Manche redistribue les cartes."},
+          {title:"Le long des falaises", desc:"Un final spectaculaire mais traître, balayé par les rafales."},
+          {title:"Une échappée dans le vent de travers", desc:"La moindre inattention se paie cash sur ce genre de parcours."},
+        ]},
+    ]},
+  {id:'fjords', name:'Le Grand Prix des Fjords', type:'classique', month:9, prestige:2, fatCost:6, days:1, flag:'🇳🇴',
+    eventDefs:[
+      {focus:['montagne','resistance'], choices:[
+          {label:"Gérer l'effort face au froid", risk:'sur', tilt:['resistance']},
+          {label:"Suivre le rythme imposé dans la montée finale", risk:'equilibre', tilt:['montagne']},
+          {label:"Attaquer tôt pour surprendre avant le froid le plus vif", risk:'audacieux', tilt:['montagne','mental']},
+        ], variants:[
+          {title:"Le long des eaux glacées", desc:"Un parcours spectaculaire mais rude, où la température chute vite en altitude."},
+          {title:"L'ascension du plateau", desc:"Une montée longue et irrégulière, exigeante pour le mental autant que pour les jambes."},
+          {title:"Un final exposé aux éléments", desc:"Le vent et le froid s'invitent dans les derniers kilomètres décisifs."},
+        ]},
+    ]},
 ]; }
 
 /* Choisit une variante aléatoire pour un évènement donné (permet de rejouer une même
@@ -2072,10 +2161,20 @@ const WEATHER_TYPES = [
   {id:'canicule', label:'Canicule', icon:'🥵', weight:15},
   {id:'froid', label:'Froid mordant', icon:'🥶', weight:10},
 ];
-function rollWeather(){
-  const total = WEATHER_TYPES.reduce((s,w)=>s+w.weight, 0);
+function rollWeather(month, southernHemisphere){
+  let m = month;
+  if(southernHemisphere) m = ((month + 5) % 12) + 1;
+  const winterish = m===12||m===1||m===2;
+  const summerish = m>=6 && m<=8;
+  const weights = WEATHER_TYPES.map(w=>{
+    let wt = w.weight;
+    if(w.id==='canicule') wt = summerish ? wt*2.2 : (winterish ? wt*0.05 : wt*0.6);
+    if(w.id==='froid') wt = winterish ? wt*2.5 : (summerish ? wt*0.05 : wt*0.7);
+    return wt;
+  });
+  const total = weights.reduce((a,b)=>a+b, 0);
   let r = Math.random()*total;
-  for(const w of WEATHER_TYPES){ if(r<w.weight) return w; r-=w.weight; }
+  for(let i=0;i<WEATHER_TYPES.length;i++){ if(r<weights[i]) return WEATHER_TYPES[i]; r-=weights[i]; }
   return WEATHER_TYPES[0];
 }
 function weatherPerfModifier(weatherId, focus){
@@ -2266,6 +2365,13 @@ function pickImposedRaces(rider, trainingFocus, pool){
     const remaining = shuffleArr(all.filter(r=>!chosen.includes(r)));
     chosen = chosen.concat(remaining.slice(0, 3-chosen.length));
   }
+  // Jamais plus de 2 grands tours imposés dans la même saison, même par tirage.
+  let gtSeen = 0;
+  chosen = chosen.filter(r=>{
+    if(r.type!=='grandtour') return true;
+    gtSeen++;
+    return gtSeen<=2;
+  });
   return chosen.map(r=>r.id);
 }
 
@@ -2578,6 +2684,7 @@ function resumeSlot(i){
   backfillRiderFields(STATE.rider);
   const screen = STATE._screen;
   if(screen==='training') renderTrainingScreen();
+  else if(screen==='stagescreen') renderStageScreen();
   else if(screen==='sponsorscreen') renderSponsorScreen();
   else if(screen==='interview') renderInterviewScreen();
   else if(screen==='calendar') renderCalendarScreen();
@@ -2814,20 +2921,25 @@ function statBarsHTML(stats){
   }).join('');
 }
 
+/* Pondération pour la note globale : les qualités les plus décisives pour gagner
+   (montagne, résistance, clm, classiques) comptent plus que le sprint (utile sur moins
+   de courses) ou la récupération/mental (effets plus indirects sur la performance brute). */
+const GLOBAL_RATING_WEIGHTS = {montagne:0.18, clm:0.15, classiques:0.15, resistance:0.16, sprint:0.12, recuperation:0.10, mental:0.14};
+function globalRiderRating(stats){
+  let sum = 0;
+  STAT_KEYS.forEach(k=>{ sum += stats[k] * (GLOBAL_RATING_WEIGHTS[k]||0); });
+  return Math.round(sum);
+}
+
 function globalStatsPanelHTML(){
-  const best = topCareers(1)[0];
+  const rating = globalRiderRating(STATE.rider.stats);
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="const b=document.getElementById('statsPanelBody'), a=document.getElementById('statsPanelArrow'); const open = b.style.display!=='none'; b.style.display = open?'none':'block'; a.textContent = open?'▼ Déplier':'▲ Replier';">
-      <h3 style="margin:0;">📊 Ta progression</h3>
+      <h3 style="margin:0;">📊 Statistiques — Note globale : ${rating}/100</h3>
       <span class="small" id="statsPanelArrow">▼ Déplier</span>
     </div>
     <div id="statsPanelBody" style="display:none;margin-top:8px;">
-      <div class="grid3">
-        <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.3rem;color:var(--green-dark);">${SESSION.careersCompleted}</p><p class="small" style="margin:0;">carrière${SESSION.careersCompleted>1?'s':''}</p></div>
-        <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.3rem;color:var(--yellow-dark);">${UNLOCKED.size}/${ACHIEVEMENTS.length}</p><p class="small" style="margin:0;">trophées</p></div>
-        <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.3rem;color:var(--pink);">${SESSION.countriesPlayed.size}/${COUNTRIES.length}</p><p class="small" style="margin:0;">pays</p></div>
-      </div>
-      ${best ? `<p class="small" style="margin-top:8px;text-align:center;">🏆 Meilleure carrière : <strong>${best.name}</strong> — ${best.title}</p>` : ''}
+      ${statBarsHTML(STATE.rider.stats)}
     </div>
   </div>`;
 }
@@ -3197,12 +3309,43 @@ function proceedFromTraining(){
   STATE.imposedRaceIds = imposed;
   STATE.selectedRaceIds = imposed.slice();
   STATE.personalEventReturnTo = 'calendar';
+  renderStageScreen();
+}
+
+function afterStageStep(){
   if(!STATE.rider.sponsor){
     renderSponsorScreen();
   } else {
     maybeShowPersonalEvent();
   }
 }
+
+/* ---------- STAGE DE PRÉPARATION ----------
+   Une fois par saison, un stage optionnel permet de booster délibérément une qualité —
+   au prix d'un peu de fatigue, et le plus souvent d'un léger recul d'une qualité opposée :
+   on ne peut pas tout travailler à la fois, un vrai compromis de spécialisation. */
+const STAGE_PAIRS = {montagne:'sprint', sprint:'montagne', clm:'classiques', classiques:'clm', resistance:'recuperation', recuperation:'resistance', mental:null};
+function renderStageScreen(){
+  if(STATE) STATE._screen='stagescreen';
+  setHTML(`
+    ${riderHeaderHTML()}
+    <div class="card">
+      <h2>🏕️ Stage de préparation</h2>
+      <p>Un stage ciblé fait progresser une qualité plus vite qu'un entraînement classique — au prix d'un peu de fatigue, et souvent d'un léger recul d'une qualité opposée : on ne peut pas tout travailler à la fois.</p>
+      ${STAT_KEYS.map(k=>`<button class="btn ghost" onclick="doStage('${k}')">${STAT_ICONS[k]} ${STAT_LABELS[k]}${STAGE_PAIRS[k]?` <span class="small">(léger recul en ${STAT_LABELS[STAGE_PAIRS[k]]})</span>`:''}</button>`).join('')}
+      <button class="btn ghost" onclick="skipStage()">Pas de stage cette saison</button>
+    </div>
+  `);
+}
+function doStage(key){
+  const r = STATE.rider;
+  r.stats[key] = clamp(r.stats[key] + 4 + Math.random()*3, 8, 99);
+  r.fatigue = clamp(r.fatigue + 8, 0, 130);
+  const pair = STAGE_PAIRS[key];
+  if(pair) r.stats[pair] = clamp(r.stats[pair] - (2+Math.random()*2), 8, 99);
+  afterStageStep();
+}
+function skipStage(){ afterStageStep(); }
 
 /* ---- Évènement personnel (vie hors vélo) ---- */
 
@@ -3212,7 +3355,7 @@ function proceedFromTraining(){
 function personalEventPool(rider, includeSeasonStartOnly){
   let pool = includeSeasonStartOnly ? PERSONAL_EVENTS : PERSONAL_EVENTS.filter(e=>!e.seasonStartOnly);
   const national = NATIONAL_EVENTS[rider.countryCode];
-  if(national && national.length) pool = pool.concat(national);
+  if(national && national.length) pool = pool.concat(national, national);
   if(rider.teammate){
     const tmEvents = TEAMMATE_EVENTS[rider.teammate.archetype];
     if(tmEvents && tmEvents.length){
@@ -3223,7 +3366,9 @@ function personalEventPool(rider, includeSeasonStartOnly){
         desc: ev.desc.replace(/\{name\}/g, name),
         choices: ev.choices,
       }));
-      pool = pool.concat(materialized);
+      /* Dupliqué plusieurs fois : sinon noyé dans les 45 évènements génériques et
+         quasiment jamais tiré sur une carrière entière. */
+      pool = pool.concat(materialized, materialized, materialized);
     }
   }
   return pool;
@@ -3372,6 +3517,13 @@ function toggleRace(id){
   else if(STATE.selectedRaceIds.length<10){
     const race = STATE.seasonRacePool.find(r=>r.id===id);
     if(selectedDaysTotal() + race.days > 65) return;
+    if(race.type==='grandtour'){
+      const gtCount = STATE.selectedRaceIds.filter(rid=>{
+        const rr = STATE.seasonRacePool.find(r=>r.id===rid);
+        return rr && rr.type==='grandtour';
+      }).length;
+      if(gtCount >= 2) return; // impossible de disputer 3 grands tours la meme saison
+    }
     STATE.selectedRaceIds.push(id);
   }
   renderCalendarScreen(true);
@@ -3396,6 +3548,7 @@ function beginRace(){
   applyInterRaceRecovery(STATE.rider, prev, race);
   STATE.runRaceAccum = [];
   STATE.runEventIdx = 0;
+  STATE.raceRole = null;
 
   if(STATE.injuryAbsenceRemaining > 0){
     STATE.injuryAbsenceRemaining--;
@@ -3515,7 +3668,7 @@ function renderCurrentEvent(){
     }
   }
   if(!event._weather){
-    event._weather = rollWeather().id;
+    event._weather = rollWeather(race.month, race.flag==='🇦🇺').id;
   }
   const weather = WEATHER_TYPES.find(w=>w.id===event._weather);
   const riskIcon = {sur:'🛡️', equilibre:'⚖️', audacieux:'🎲', loufoque:'🤪'};
@@ -3567,7 +3720,7 @@ const CONFRERIE_POISSE_EVENTS = [
     choiceLabel:"En rire avec eux, autodérision assumée", effect:{mental:2}},
   {icon:'📸', title:"Le ralenti qui tourne en boucle", desc:"Ta chute ou ton abandon devient l'extrait le plus partagé de la semaine chez La Confrérie de la Poisse, musique dramatique en fond sonore.",
     choiceLabel:"Répondre avec humour plutôt que de s'en offusquer", effect:{mental:1}},
-  {icon:'🎖️', title:"Intronisation surprise", desc:"La Confrérie de la Poisse t'invite officiellement à rejoindre son panthéon informel des défaites les plus héroïques du sport français.",
+  {icon:'🎖️', title:"Intronisation surprise", desc:"La Confrérie de la Poisse t'invite officiellement à rejoindre son panthéon informel des défaites les plus héroïques du peloton.",
     choiceLabel:"Accepter avec fierté, une pointe d'autodérision", effect:{mental:3}},
 ];
 
@@ -3675,6 +3828,10 @@ function finalizeRace(){
       const ev = race.events[i];
       return ev && ev.focus.some(f=>wantFocuses.includes(f));
     });
+    const matchingWeeks = STATE.runRaceAccum.map((e,i)=>{
+      const ev = race.events[i];
+      return (ev && ev.focus.some(f=>wantFocuses.includes(f))) ? i+1 : null;
+    }).filter(x=>x!==null);
     if(matching.length){
       const avgJersey = matching.reduce((s,e)=>s+e.perf, 0) / matching.length;
       let jTier;
@@ -3683,16 +3840,16 @@ function finalizeRace(){
       else if(avgJersey>=55) jTier='top10';
       else if(avgJersey>=32) jTier='peloton';
       else jTier='jourssans';
-      jerseyResult = {type:STATE.raceRole, tier:jTier, weeksCount:matching.length};
+      jerseyResult = {type:STATE.raceRole, tier:jTier, weeksCount:matching.length, weeks:matchingWeeks};
       bestTier = jTier;
     } else {
-      jerseyResult = {type:STATE.raceRole, tier:null, weeksCount:0};
+      jerseyResult = {type:STATE.raceRole, tier:null, weeksCount:0, weeks:[]};
     }
   } else if(bestTier !== 'abandon' && STATE.raceRole==='jeune' && race.events && race.events.length > 1){
     /* Le maillot blanc suit exactement le même calcul que le classement général
        (moyenne des semaines) — c'est juste réservé aux moins de 25 ans, pas un
        critère de performance différent. */
-    jerseyResult = {type:'jeune', tier:bestTier, weeksCount:STATE.runRaceAccum.length};
+    jerseyResult = {type:'jeune', tier:bestTier, weeksCount:STATE.runRaceAccum.length, weeks:STATE.runRaceAccum.map((e,i)=>i+1)};
   }
   STATE.pendingJerseyResult = jerseyResult;
 
@@ -3724,16 +3881,21 @@ function finalizeRace(){
     unlockTrophy('champion-national');
   }
   if(race.olympic){
-    const perf = (STATE.runRaceAccum[0] && STATE.runRaceAccum[0].perf) || 0;
-    if(perf>=99){
+    /* La médaille doit correspondre à ce que le joueur voit réellement affiché (le tier),
+       pas à un seuil séparé plus strict : sinon "Victoire !" avec confettis peut se
+       terminer en simple médaille d'argent, ce qui n'a aucun sens. */
+    if(bestTier==='victoire'){
       STATE.rider.olympicGold = (STATE.rider.olympicGold||0) + 1;
       unlockTrophy('or-olympique');
-    } else if(perf>=91){
-      STATE.rider.olympicSilver = (STATE.rider.olympicSilver||0) + 1;
-      unlockTrophy('argent-olympique');
-    } else if(perf>=79){
-      STATE.rider.olympicBronze = (STATE.rider.olympicBronze||0) + 1;
-      unlockTrophy('bronze-olympique');
+    } else if(bestTier==='podium'){
+      const perf = (STATE.runRaceAccum[0] && STATE.runRaceAccum[0].perf) || 0;
+      if(perf>=80){
+        STATE.rider.olympicSilver = (STATE.rider.olympicSilver||0) + 1;
+        unlockTrophy('argent-olympique');
+      } else {
+        STATE.rider.olympicBronze = (STATE.rider.olympicBronze||0) + 1;
+        unlockTrophy('bronze-olympique');
+      }
     }
   }
   STATE.rider.palmares.push({season:STATE.rider.season, raceName:race.name, type:race.type, tier:bestTier});
@@ -3753,6 +3915,7 @@ function finalizeRace(){
 function checkRivalAppearance(race, bestTier){
   STATE.pendingRivalNote = null;
   if(!STATE.rivals || STATE.rivals.length===0 || race.prestige < 3) return;
+  if(race.id==='champnat') return; // un rival est toujours d'une autre nationalité, absurde sur un championnat national
   if(Math.random() >= 0.4) return;
   const rival = STATE.rivals[Math.floor(Math.random()*STATE.rivals.length)];
   const rivalPerf = clamp(rival.strength + (Math.random()*30-15) + race.prestige*2, 0, 100);
@@ -3863,7 +4026,7 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
     } else {
       jerseyBanner = `<div class="card" style="border:1.5px solid var(--purple);background:var(--purple-light);">
         <p style="margin:0;"><strong>🎽 Objectif : ${jerseyName}</strong></p>
-        <p class="small" style="margin:2px 0 0;">Résultat basé sur ${jersey.weeksCount} semaine${jersey.weeksCount>1?'s':''} pertinente${jersey.weeksCount>1?'s':''} de ce grand tour.</p>
+        <p class="small" style="margin:2px 0 0;">Résultat sur ce maillot : <strong>${TIER_LABEL[jersey.tier]}</strong> — basé sur la/les semaine${jersey.weeksCount>1?'s':''} ${jersey.weeks.join(' et ')} (${jersey.weeksCount} pertinente${jersey.weeksCount>1?'s':''} sur ${race.events.length}).</p>
       </div>`;
     }
   }
@@ -3881,7 +4044,7 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
 
   /* Une victoire marquante (course de prestige) déclenche une brève interview
      d'après-course, sauf si une blessure grave a déjà orienté vers la fin de carrière. */
-  if(bestTier==='victoire' && race.prestige>=3 && continueLabel==='Continuer'){
+  if(bestTier==='victoire' && race.prestige>=2 && continueLabel==='Continuer'){
     continueAttr = `onclick="renderInterviewScreen()"`;
   }
 
@@ -4013,7 +4176,7 @@ function renderSeasonRecap(){
   const repChange = Math.round(r.reputation - repStart);
   const seasonsPlayed = r.season - 1;
   const forcedByAge = r.age >= 41;
-  const forcedBySeasons = seasonsPlayed >= 12;
+  const forcedBySeasons = seasonsPlayed >= 15;
   const forcedRetire = forcedByAge || forcedBySeasons;
   const canRetire = r.age >= 30;
   const contractOver = r.contractYearsLeft <= 0;
