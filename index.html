@@ -128,6 +128,12 @@ p{line-height:1.5;color:var(--text-soft);margin:6px 0;font-weight:600;font-size:
 .pill{display:inline-block;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;padding:5px 12px;border-radius:20px;background:var(--yellow-light);border:none;color:#8A5A00;margin-right:6px;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.chip{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;padding:9px 14px;border-radius:999px;background:var(--surface-alt);border:2px solid var(--line);color:var(--text);cursor:pointer;}
+.chip.active{background:var(--green-light);border-color:var(--green);color:var(--green-dark);}
+.row-item{cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--line);}
+.row-item:last-child{border-bottom:none;}
+.row-item.active{background:var(--yellow-light);border-radius:12px;border-bottom-color:transparent;}
 select,input[type=text]{
   width:100%;
   background:var(--surface-alt);
@@ -386,8 +392,8 @@ const STAT_ICONS = {
 /* ---------- NOMS DE COUREURS (générés aléatoirement par nationalité) ---------- */
 
 const NAME_POOLS = {
-  FR:{first:['Julien','Romain','Thibault','Antoine','Clément','Maxime','Baptiste'], last:['Vasseur','Moreau','Girard','Lefèvre','Rousseau','Perrin','Fournier']},
-  BE:{first:['Wout','Tim','Jasper','Yves','Dries','Kobe','Arnaud'], last:['Van Damme','Vermeulen','Claeys','De Backer','Peeters','Willems','De Lie']},
+  FR:{first:['Julien','Romain','Thibault','Antoine','Clément','Maxime','Baptiste','Mathieu'], last:['Vasseur','Moreau','Girard','Lefèvre','Rousseau','Perrin','Fournier','Stapor']},
+  BE:{first:['Wout','Tim','Jasper','Yves','Dries','Kobe','Arnaud','Antoine'], last:['Van Damme','Vermeulen','Claeys','De Backer','Peeters','Willems','De Lie','Dusoulier']},
   IT:{first:['Matteo','Alessandro','Davide','Giulio','Lorenzo','Filippo','Simone','Lucca'], last:['Ferrari','Bianchi','Colombo','Moretti','Ricci','Conti','Marchetti','Buido']},
   NL:{first:['Mathieu','Bram','Sven','Daan','Thijs','Niels','Koen'], last:['de Groot','Bakker','Visser','Jansen','Smit','Mulder','Dekker']},
   ES:{first:['Alejandro','Pablo','Iñaki','Marc','Rubén','Óscar','Enrique'], last:['García','Fernández','Pérez','Martínez','Sánchez','Romero','Navarro']},
@@ -2122,6 +2128,8 @@ function newRider(name, countryCode, styleId){
     journal: [],
     isMentor: false,
     mentorOfferDeclined: false,
+    worldRank: 450,
+    fame: 20,
     olympicSilver: 0,
     olympicBronze: 0,
     olympicSelections: 0,
@@ -2542,7 +2550,7 @@ const ACHIEVEMENTS = [
   {id:'longevite', icon:'🕰️', name:'Longévité', desc:"Faire une carrière complète de 12 saisons.", category:'carriere', rare:true},
   {id:'legende', icon:'⭐', name:'Légende du peloton', desc:"Atteindre 95 de réputation.", category:'carriere'},
   {id:'fidelite', icon:'🤝', name:'Fidélité', desc:"Terminer une carrière d'au moins 5 saisons sans jamais changer d'équipe.", category:'carriere'},
-  {id:'retraite-doree', icon:'🏖️', name:'Retraite dorée', desc:"Prendre volontairement sa retraite au sommet (90+ de réputation).", category:'carriere'},
+  {id:'retraite-doree', icon:'🏖️', name:'Retraite dorée', desc:"Prendre volontairement sa retraite au sommet (86+ de réputation).", category:'carriere'},
   {id:'destin-brise', icon:'💔', name:'Destin brisé', desc:"Voir une carrière s'arrêter prématurément sur une blessure grave.", category:'carriere'},
   {id:'fortune-peloton', icon:'💰', name:'Fortune du peloton', desc:"Amasser 600 000 € ou plus au cours d'une carrière.", category:'carriere', rare:true},
   {id:'bete-noire', icon:'👊', name:'Sa bête noire', desc:"Dominer un même rival avec au moins 5 victoires de plus que de défaites face à lui.", category:'carriere'},
@@ -2712,6 +2720,8 @@ function backfillRiderFields(rider){
   if(!Array.isArray(rider.journal)) rider.journal = [];
   if(typeof rider.isMentor !== 'boolean') rider.isMentor = false;
   if(typeof rider.mentorOfferDeclined !== 'boolean') rider.mentorOfferDeclined = false;
+  if(typeof rider.worldRank !== 'number') rider.worldRank = 450;
+  if(typeof rider.fame !== 'number') rider.fame = 20;
 }
 
 /* Journal de carrière : quelques lignes chronologiques sur les vrais temps forts,
@@ -2734,12 +2744,9 @@ function resumeSlot(i){
   if(!STATE){ renderCreationScreen(); return; }
   backfillRiderFields(STATE.rider);
   const screen = STATE._screen;
-  if(screen==='training') renderTrainingScreen();
-  else if(screen==='stagescreen') renderStageScreen();
+  if(screen==='seasonsetup') renderSeasonSetupScreen();
+  else if(screen==='convalescence') renderConvalescenceScreen(STATE.runQueue[STATE.runRaceIdx]);
   else if(screen==='mentoroffer') renderMentorOffer();
-  else if(screen==='seasonobjective') renderSeasonObjectiveScreen();
-  else if(screen==='sidechallenge') renderSideChallengeScreen();
-  else if(screen==='sponsorscreen') renderSponsorScreen();
   else if(screen==='interview') renderInterviewScreen();
   else if(screen==='calendar') renderCalendarScreen();
   else if(screen==='rolechoice') renderRoleChoice(STATE.runQueue[STATE.runRaceIdx]);
@@ -2748,7 +2755,7 @@ function resumeSlot(i){
   else if(screen==='contractscreen') renderContractScreen();
   else if(screen==='personalevent' && STATE.pendingPersonalEvent) renderPersonalEvent();
   else if(STATE.runQueue && STATE.runQueue.length) renderCalendarScreen();
-  else renderTrainingScreen();
+  else renderSeasonSetupScreen();
 }
 
 /* Sélectionne un emplacement depuis le menu principal : reprend la carrière en cours
@@ -2848,6 +2855,8 @@ function unlockTrophy(id){
   UNLOCKED.add(id);
   if(STATE && STATE.rider){
     UNLOCK_INFO[id] = {riderName: STATE.rider.name, season: STATE.rider.season, countryCode: STATE.rider.countryCode};
+    const t = ACHIEVEMENTS.find(a=>a.id===id);
+    STATE.rider.fame = clamp(STATE.rider.fame + (t && t.rare ? 3 : 1), 0, 100);
   }
   if(STATE){
     STATE.pendingTrophyUnlocks = STATE.pendingTrophyUnlocks || [];
@@ -2908,7 +2917,7 @@ function checkCareerAchievements(rider){
   if(rider.season-1 >= 12) unlockTrophy('longevite');
   if(rider.reputation >= 95) unlockTrophy('legende');
   if((rider.teamChanges||0) === 0 && rider.season-1 >= 5) unlockTrophy('fidelite');
-  if(rider.retireReason==='voluntary' && rider.reputation >= 90) unlockTrophy('retraite-doree');
+  if(rider.retireReason==='voluntary' && rider.reputation >= 86) unlockTrophy('retraite-doree');
   if(rider.retireReason==='injury') unlockTrophy('destin-brise');
   if(rider.money >= 600000) unlockTrophy('fortune-peloton');
 }
@@ -2949,6 +2958,7 @@ function setHTML(html, keepScroll){
   if(STATE && STATE.rider){
     app().insertAdjacentHTML('beforeend', `<button class="footer-link" style="display:block;margin:18px auto 0;text-align:center;" onclick="renderMainMenu()">🏠 Menu principal</button>`);
   }
+  app().insertAdjacentHTML('beforeend', `<a href="https://x.com/lecoupdepedale" target="_blank" rel="noopener" style="display:block;text-align:center;margin:14px auto 6px;font-size:0.72rem;color:var(--text-soft);text-decoration:none;opacity:0.75;">𝕏 @lecoupdepedale</a>`);
   if(!keepScroll) window.scrollTo(0,0);
   saveGame();
   const bars = app().querySelectorAll('.stat-fill.animated-fill');
@@ -3014,6 +3024,7 @@ function riderHeaderHTML(){
       </div>
     </div>
     <p class="small">${riderRole(r)} — ${team.name} · 📋 contrat : ${r.contractYearsLeft} saison${r.contractYearsLeft>1?'s':''} restante${r.contractYearsLeft>1?'s':''}</p>
+    <p class="small">🌍 <strong>${r.worldRank}${r.worldRank===1?'er':'e'}</strong> mondial · 📣 Notoriété : <strong>${Math.round(r.fame)}</strong>/100</p>
     ${r.sponsor ? `<p class="small">${r.sponsor.icon} Sponsor : ${r.sponsor.name}</p>` : ''}
     ${r.teammate ? `<p class="small">🤝 Coéquipier : ${r.teammate.name} (${TEAMMATE_ARCHETYPE_LABELS[r.teammate.archetype]})${r.isMentor?' · 🧑‍🏫 Tu es son mentor':''}</p>` : ''}
     <div class="grid2">
@@ -3168,7 +3179,7 @@ function confirmCreation(){
   rivals.forEach(rv=>{ rivalRecords[rv.name] = {wins:0, losses:0}; });
   rider.teammate = generateTeammate();
   STATE = { rider, trainingFocus:null, selectedRaceIds:[], imposedRaceIds:[], seasonRacePool:[], seasonTotalDays:0, runQueue:[], runRaceIdx:0, runEventIdx:0, runRaceAccum:[], seasonSummary:null, pendingPersonalEvent:null, pendingInjury:null, injuryAbsenceRemaining:0, injuryEndNote:null, pendingTrophyUnlocks:[], rivals, rivalRecords, pendingRivalNote:null, domestiqueBonus:false };
-  renderTrainingScreen();
+  renderSeasonSetupScreen();
 }
 
 function renderHallOfFame(){
@@ -3242,29 +3253,6 @@ function renderTrophiesScreen(){
 
 /* ---- Entraînement ---- */
 
-function renderTrainingScreen(keepScroll){
-  if(STATE) STATE._screen='training';
-  const r = STATE.rider;
-  STATE.selectedRaceIds = [];
-  setHTML(`
-    ${riderHeaderHTML()}
-    ${trophyBannerHTML()}
-    <div class="card">
-      <h2>🎯 Saison ${r.season} — Axe d'entraînement</h2>
-      <p>Choisis la qualité que ton coureur va travailler en priorité cette saison.</p>
-      ${statBarsHTML(r.stats)}
-    </div>
-    <div class="card">
-      <h3>🏋️ Priorité de la saison</h3>
-      <div class="grid2">
-        ${STAT_KEYS.map(k=>`<button class="btn ${STATE.trainingFocus===k?'':'ghost'}" onclick="selectTrainingFocus('${k}')">${STAT_ICONS[k]} ${STAT_LABELS[k]}</button>`).join('')}
-      </div>
-    </div>
-    ${rivalsCardHTML()}
-    <button class="btn" ${STATE.trainingFocus?'':'disabled'} onclick="proceedFromTraining()">Continuer</button>
-  `, keepScroll);
-}
-
 function rivalsCardHTML(){
   if(!STATE.rivals || STATE.rivals.length===0) return '';
   return `<div class="card">
@@ -3286,7 +3274,12 @@ function rivalsCardHTML(){
 function startNewSeason(){
   STATE.trainingFocus = null;
   STATE.rider.isNationalChampion = false;
-  renderTrainingScreen();
+  const r = STATE.rider;
+  if(r.age>=33 && r.teammate && !r.isMentor && !r.mentorOfferDeclined){
+    renderMentorOffer();
+  } else {
+    renderSeasonSetupScreen();
+  }
 }
 
 /* ---------- SPONSOR PERSONNEL ----------
@@ -3306,75 +3299,19 @@ function generateSponsorOffers(rider){
   const picks = shuffleArr(SPONSOR_BRANDS.slice()).slice(0,3);
   return picks.map(b=>{
     const personality = Math.random()<0.5 ? 'exigeant' : 'fidele';
-    const basePay = 800 + Math.round(rider.reputation*25);
-    const pay = personality==='exigeant' ? Math.round(basePay*1.5) : basePay;
+    const basePay = (800 + Math.round(rider.reputation*25)) * (1 + rider.fame/150);
+    const pay = Math.round(personality==='exigeant' ? basePay*1.5 : basePay);
     const seasons = 1 + Math.floor(Math.random()*3);
     return {...b, personality, pay, seasonsLeft:seasons};
   });
 }
 
-function renderSponsorScreen(){
-  if(STATE) STATE._screen='sponsorscreen';
-  if(!STATE.sponsorOffers) STATE.sponsorOffers = generateSponsorOffers(STATE.rider);
-  const offers = STATE.sponsorOffers;
-  setHTML(`
-    ${riderHeaderHTML()}
-    <div class="card">
-      <h2>🤝 Un sponsor personnel ?</h2>
-      <p>En plus de ton contrat d'équipe, tu peux signer avec un équipementier personnel — un revenu supplémentaire, mais avec ses propres exigences.</p>
-      ${offers.map((o,i)=>`
-        <div class="opt-card" onclick="chooseSponsor(${i})">
-          <div style="font-size:1.5rem;">${o.icon}</div>
-          <div>
-            <strong>${o.name}</strong> <span class="pill">${o.category}</span>
-            <p class="small" style="margin:4px 0 0;">${o.personality==='exigeant'
-              ? "Exigeant : paie mieux, mais rompt le contrat si tu ne décroches pas au moins un podium dans la saison."
-              : "Fidèle : moins généreux, mais reste à tes côtés quels que soient les résultats."}</p>
-            <p class="small" style="margin:2px 0 0;">💰 ${o.pay.toLocaleString('fr-FR')} €/saison · ${o.seasonsLeft} saison${o.seasonsLeft>1?'s':''}</p>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-    <button class="btn ghost" onclick="skipSponsor()">Pas de sponsor personnel cette fois</button>
-  `);
-}
-
-function chooseSponsor(i){
-  const o = STATE.sponsorOffers[i];
-  STATE.rider.sponsor = {name:o.name, icon:o.icon, category:o.category, personality:o.personality, pay:o.pay, seasonsLeft:o.seasonsLeft};
-  STATE.sponsorOffers = null;
-  maybeShowPersonalEvent();
-}
-
-function skipSponsor(){
-  STATE.sponsorOffers = null;
-  maybeShowPersonalEvent();
-}
-
-function selectTrainingFocus(k){
-  STATE.trainingFocus = k;
-  renderTrainingScreen(true);
-}
-
-function proceedFromTraining(){
-  if(!STATE.trainingFocus) return;
-  STATE.seasonRacePool = pickRaceOffers();
-  const imposed = pickImposedRaces(STATE.rider, STATE.trainingFocus, STATE.seasonRacePool);
-  STATE.imposedRaceIds = imposed;
-  STATE.selectedRaceIds = imposed.slice();
-  STATE.personalEventReturnTo = 'calendar';
-  const r = STATE.rider;
-  if(r.age>=33 && r.teammate && !r.isMentor && !r.mentorOfferDeclined){
-    renderMentorOffer();
-  } else {
-    renderStageScreen();
-  }
-}
-
 /* ---------- RÔLE DE MENTOR EN FIN DE CARRIÈRE ----------
    Proposé une seule fois, dès 33 ans, si un coéquipier récurrent est présent : sacrifier
    une partie de ses propres ambitions pour investir dans la progression du coéquipier —
-   une vraie alternative narrative à "courir jusqu'au bout pour soi-même". */
+   une vraie alternative narrative à "courir jusqu'au bout pour soi-même". Reste un écran
+   à part (contrairement au reste du démarrage de saison) : c'est rare et ça mérite son
+   propre moment plutôt qu'une case de plus dans un formulaire. */
 function renderMentorOffer(){
   if(STATE) STATE._screen='mentoroffer';
   const tm = STATE.rider.teammate;
@@ -3393,45 +3330,22 @@ function acceptMentorRole(){
   const r = STATE.rider;
   r.isMentor = true;
   if(r.teammate) r.teammate.bond = clamp(r.teammate.bond + 10, 0, 100);
-  renderStageScreen();
+  renderSeasonSetupScreen();
 }
 function declineMentorRole(){
   STATE.rider.mentorOfferDeclined = true;
-  renderStageScreen();
-}
-
-function afterStageStep(){
-  if(STATE.rider.isMentor){
-    if(!STATE.rider.sponsor){ renderSponsorScreen(); } else { maybeShowPersonalEvent(); }
-  } else {
-    renderSeasonObjectiveScreen();
-  }
+  renderSeasonSetupScreen();
 }
 
 /* ---------- OBJECTIF DE SAISON ----------
    Déclaré en début de saison, évalué en fin de saison (finishSeason) : un vrai bonus/malus
    de réputation selon que l'objectif a été tenu ou non — pas juste subir la saison, la piloter. */
 const SEASON_OBJECTIVES = [
-  {id:'monument', icon:'🏔️', label:"Viser un monument", desc:"L'équipe attend une victoire sur une course de prestige élevé (monument, grand tour...)."},
-  {id:'solide', icon:'🛡️', label:"Assurer une saison solide, sans prise de risque", desc:"Pas d'ambition démesurée : l'important est de ne pas connaître de contre-performance majeure."},
-  {id:'etapes', icon:'📈', label:"Te révéler sur les courses à étapes", desc:"L'équipe veut te voir performer sur les semaines de course, plus que sur les classiques d'un jour."},
-  {id:'aucun', icon:'🤷', label:"Aucun objectif particulier cette saison", desc:"Une saison sans attente précise, ni bonus ni malus à la clé."},
+  {id:'monument', icon:'🏔️', label:"Viser un monument", desc:"L'équipe attend une victoire sur une course de prestige élevé."},
+  {id:'solide', icon:'🛡️', label:"Saison solide, sans prise de risque", desc:"Pas d'ambition démesurée : éviter toute contre-performance majeure."},
+  {id:'etapes', icon:'📈', label:"Te révéler sur les courses à étapes", desc:"Performer sur les semaines de course plutôt que sur les classiques d'un jour."},
+  {id:'aucun', icon:'🤷', label:"Aucun objectif particulier", desc:"Ni bonus ni malus à la clé."},
 ];
-function renderSeasonObjectiveScreen(){
-  if(STATE) STATE._screen='seasonobjective';
-  setHTML(`
-    ${riderHeaderHTML()}
-    <div class="card">
-      <h2>🎯 Objectif de la saison</h2>
-      <p>Annonce à ton équipe ce que tu vises cette saison — ça influence ce qu'on attendra de toi en fin de saison.</p>
-      ${SEASON_OBJECTIVES.map(o=>`<button class="btn ghost" onclick="chooseSeasonObjective('${o.id}')">${o.icon} ${o.label}<br><span class="small">${o.desc}</span></button>`).join('')}
-    </div>
-  `);
-}
-function chooseSeasonObjective(id){
-  STATE.seasonObjective = id;
-  renderSideChallengeScreen();
-}
 
 /* ---------- DÉFI SECONDAIRE OPTIONNEL ----------
    Un tirage parmi quelques mini-quêtes facultatives par saison, en plus du calendrier
@@ -3442,58 +3356,122 @@ const SIDE_CHALLENGES = [
   {id:'une-victoire', icon:'🏆', label:"Remporte au moins une course cette saison", check:(results)=>results.some(x=>x.bestTier==='victoire'), reward:{money:2000}},
   {id:'trois-podiums', icon:'🥈', label:"Décroche 3 podiums ou mieux cette saison", check:(results)=>results.filter(x=>['victoire','podium'].includes(x.bestTier)).length>=3, reward:{reputation:2}},
 ];
-function renderSideChallengeScreen(){
-  if(STATE) STATE._screen='sidechallenge';
-  if(!STATE.sideChallenge) STATE.sideChallenge = SIDE_CHALLENGES[Math.floor(Math.random()*SIDE_CHALLENGES.length)];
-  const c = STATE.sideChallenge;
-  setHTML(`
-    ${riderHeaderHTML()}
-    <div class="card">
-      <h2>🎲 Défi de la saison</h2>
-      <p>Un petit défi facultatif t'est proposé — aucune obligation, juste un bonus si tu le relèves.</p>
-      <p style="font-weight:800;">${c.icon} ${c.label}</p>
-      <p class="small">Récompense : ${c.reward.money?`💰 ${c.reward.money.toLocaleString('fr-FR')} €`:''}${c.reward.reputation?`⭐ Réputation +${c.reward.reputation}`:''}</p>
-      <button class="btn" onclick="acceptSideChallenge()">Relever le défi</button>
-      <button class="btn ghost" onclick="declineSideChallenge()">Ignorer, continuer normalement</button>
-    </div>
-  `);
-}
-function acceptSideChallenge(){
-  STATE.sideChallengeActive = true;
-  if(!STATE.rider.sponsor){ renderSponsorScreen(); } else { maybeShowPersonalEvent(); }
-}
-function declineSideChallenge(){
-  STATE.sideChallenge = null;
-  STATE.sideChallengeActive = false;
-  if(!STATE.rider.sponsor){ renderSponsorScreen(); } else { maybeShowPersonalEvent(); }
-}
 
 /* ---------- STAGE DE PRÉPARATION ----------
    Une fois par saison, un stage optionnel permet de booster délibérément une qualité —
    au prix d'un peu de fatigue, et le plus souvent d'un léger recul d'une qualité opposée :
    on ne peut pas tout travailler à la fois, un vrai compromis de spécialisation. */
 const STAGE_PAIRS = {montagne:'sprint', sprint:'montagne', clm:'classiques', classiques:'clm', resistance:'recuperation', recuperation:'resistance', mental:null};
-function renderStageScreen(){
-  if(STATE) STATE._screen='stagescreen';
+
+/* ---------- ÉCRAN CONSOLIDÉ DE DÉBUT DE SAISON ----------
+   Regroupe en un seul écran ce qui prenait auparavant 4-5 écrans successifs (priorité,
+   stage, objectif, sponsor, défi) — tous les choix se font d'un coup, validés ensemble
+   par un unique bouton, plutôt qu'une série d'écrans à traverser un par un. */
+function renderSeasonSetupScreen(keepScroll){
+  if(STATE) STATE._screen='seasonsetup';
+  const r = STATE.rider;
+  if(!STATE.pendingSetup){
+    STATE.pendingSetup = {focus:null, stage:'aucun', objective:'aucun', sponsorIdx:'skip', challengeAccept:true};
+  }
+  const setup = STATE.pendingSetup;
+  const hasSponsor = !!r.sponsor;
+  if(!hasSponsor && !STATE.sponsorOffers) STATE.sponsorOffers = generateSponsorOffers(r);
+  if(!STATE.sideChallenge) STATE.sideChallenge = SIDE_CHALLENGES[Math.floor(Math.random()*SIDE_CHALLENGES.length)];
+  const challenge = STATE.sideChallenge;
+
+  const chip = (label, active, onclick) => `<span class="chip ${active?'active':''}" onclick="${onclick}">${label}</span>`;
+
+  const focusChips = STAT_KEYS.map(k=>chip(`${STAT_ICONS[k]} ${STAT_LABELS[k]}`, setup.focus===k, `setSeasonSetup('focus','${k}')`)).join('');
+  const stageChips = STAT_KEYS.map(k=>chip(`${STAT_ICONS[k]}`, setup.stage===k, `setSeasonSetup('stage','${k}')`)).join('') + chip('Aucun', setup.stage==='aucun', `setSeasonSetup('stage','aucun')`);
+
+  const objectiveRows = SEASON_OBJECTIVES.map(o=>`<div class="row-item ${setup.objective===o.id?'active':''}" onclick="setSeasonSetup('objective','${o.id}')">
+      <div><strong>${o.icon} ${o.label}</strong><p class="small" style="margin:2px 0 0;">${o.desc}</p></div>
+    </div>`).join('');
+
+  let sponsorHTML;
+  if(hasSponsor){
+    sponsorHTML = `<p class="small">${r.sponsor.icon} Déjà sous contrat avec <strong>${r.sponsor.name}</strong> (${r.sponsor.seasonsLeft} saison${r.sponsor.seasonsLeft>1?'s':''} restante${r.sponsor.seasonsLeft>1?'s':''}).</p>`;
+  } else {
+    sponsorHTML = STATE.sponsorOffers.map((o,i)=>`<div class="row-item ${setup.sponsorIdx===i?'active':''}" onclick="setSeasonSetup('sponsorIdx',${i})">
+        <div><strong>${o.icon} ${o.name}</strong> <span class="small">(${o.personality==='exigeant'?'exigeant':'fidèle'})</span></div>
+        <span class="pill">${o.pay.toLocaleString('fr-FR')}€</span>
+      </div>`).join('') + `<div class="row-item ${setup.sponsorIdx==='skip'?'active':''}" onclick="setSeasonSetup('sponsorIdx','skip')"><span>Pas de sponsor cette saison</span></div>`;
+  }
+
   setHTML(`
     ${riderHeaderHTML()}
+    ${trophyBannerHTML()}
+    <h1>🚀 Préparer la saison ${r.season}</h1>
     <div class="card">
-      <h2>🏕️ Stage de préparation</h2>
-      <p>Un stage ciblé fait progresser une qualité plus vite qu'un entraînement classique — au prix d'un peu de fatigue, et souvent d'un léger recul d'une qualité opposée : on ne peut pas tout travailler à la fois.</p>
-      ${STAT_KEYS.map(k=>`<button class="btn ghost" onclick="doStage('${k}')">${STAT_ICONS[k]} ${STAT_LABELS[k]}${STAGE_PAIRS[k]?` <span class="small">(léger recul en ${STAT_LABELS[STAGE_PAIRS[k]]})</span>`:''}</button>`).join('')}
-      <button class="btn ghost" onclick="skipStage()">Pas de stage cette saison</button>
+      <h3>⭐ Priorité de saison</h3>
+      <div class="chip-row">${focusChips}</div>
     </div>
-  `);
+    <div class="card">
+      <h3>🏕️ Stage de préparation</h3>
+      <p class="small" style="margin-top:0;">Optionnel — booste une qualité, léger recul d'une autre.</p>
+      <div class="chip-row">${stageChips}</div>
+    </div>
+    <div class="card">
+      <h3>🎯 Objectif de saison</h3>
+      ${objectiveRows}
+    </div>
+    <div class="card">
+      <h3>🤝 Sponsor personnel</h3>
+      ${sponsorHTML}
+    </div>
+    <div class="card">
+      <h3>🎲 Défi de la saison</h3>
+      <div class="row-item ${setup.challengeAccept?'active':''}" onclick="setSeasonSetup('challengeAccept',true)">
+        <span>${challenge.icon} ${challenge.label}</span>
+        <span class="pill">${challenge.reward.money?`💰 ${challenge.reward.money}€`:''}${challenge.reward.reputation?`⭐ +${challenge.reward.reputation}`:''}</span>
+      </div>
+      <div class="row-item ${!setup.challengeAccept?'active':''}" onclick="setSeasonSetup('challengeAccept',false)"><span>Ignorer ce défi</span></div>
+    </div>
+    ${rivalsCardHTML()}
+    <button class="btn" ${setup.focus?'':'disabled'} onclick="confirmSeasonSetup()">✅ Valider et débuter la saison</button>
+  `, keepScroll);
 }
-function doStage(key){
+
+function setSeasonSetup(field, value){
+  STATE.pendingSetup[field] = value;
+  renderSeasonSetupScreen(true);
+}
+
+function confirmSeasonSetup(){
+  const setup = STATE.pendingSetup;
+  if(!setup.focus) return;
   const r = STATE.rider;
-  r.stats[key] = clamp(r.stats[key] + 4 + Math.random()*3, 8, 99);
-  r.fatigue = clamp(r.fatigue + 8, 0, 130);
-  const pair = STAGE_PAIRS[key];
-  if(pair) r.stats[pair] = clamp(r.stats[pair] - (2+Math.random()*2), 8, 99);
-  afterStageStep();
+
+  STATE.trainingFocus = setup.focus;
+
+  if(setup.stage !== 'aucun'){
+    const key = setup.stage;
+    r.stats[key] = clamp(r.stats[key] + 4 + Math.random()*3, 8, 99);
+    r.fatigue = clamp(r.fatigue + 8, 0, 130);
+    const pair = STAGE_PAIRS[key];
+    if(pair) r.stats[pair] = clamp(r.stats[pair] - (2+Math.random()*2), 8, 99);
+  }
+
+  STATE.seasonObjective = setup.objective;
+
+  if(!r.sponsor && setup.sponsorIdx !== 'skip' && STATE.sponsorOffers[setup.sponsorIdx]){
+    const o = STATE.sponsorOffers[setup.sponsorIdx];
+    r.sponsor = {name:o.name, icon:o.icon, category:o.category, personality:o.personality, pay:o.pay, seasonsLeft:o.seasonsLeft};
+  }
+  STATE.sponsorOffers = null;
+
+  STATE.sideChallengeActive = !!setup.challengeAccept;
+  if(!setup.challengeAccept) STATE.sideChallenge = null;
+
+  STATE.pendingSetup = null;
+
+  STATE.seasonRacePool = pickRaceOffers();
+  const imposed = pickImposedRaces(r, STATE.trainingFocus, STATE.seasonRacePool);
+  STATE.imposedRaceIds = imposed;
+  STATE.selectedRaceIds = imposed.slice();
+  STATE.personalEventReturnTo = 'calendar';
+  maybeShowPersonalEvent();
 }
-function skipStage(){ afterStageStep(); }
 
 /* ---- Évènement personnel (vie hors vélo) ---- */
 
@@ -3678,7 +3656,38 @@ function renderCalendarScreen(keepScroll){
       </div>`;
     }).join('')}
     <button class="btn" ${n===0?'disabled':''} onclick="confirmCalendar()">🚀 Lancer la saison (${n} course${n>1?'s':''}, ${totalDays} j)</button>
+    <button class="btn ghost" onclick="renderRaceAlmanac()">📖 Almanach des courses</button>
   `, keepScroll);
+}
+
+/* ---------- ALMANACH DES COURSES ----------
+   Un écran de référence listant les 50 courses du jeu, avec l'historique personnel du
+   coureur sur chacune (nombre de participations, victoires, meilleur résultat) — dérivé
+   entièrement du palmarès déjà suivi, aucun nouveau système de données. */
+function renderRaceAlmanac(){
+  const r = STATE.rider;
+  const TIER_ORDER = ['victoire','podium','top10','peloton','jourssans','abandon','forfait'];
+  const rows = RACES_DATA().map(race=>{
+    const history = r.palmares.filter(p=>p.raceName===race.name);
+    const wins = history.filter(p=>p.tier==='victoire').length;
+    let best = null;
+    history.forEach(p=>{ if(!best || TIER_ORDER.indexOf(p.tier) < TIER_ORDER.indexOf(best.tier)) best = p; });
+    return {race, timesRaced:history.length, wins, best};
+  }).sort((a,b)=> b.timesRaced - a.timesRaced);
+  setHTML(`
+    <h1>📖 Almanach des courses</h1>
+    <p class="small">Ton historique personnel sur les 50 courses du jeu, cette carrière.</p>
+    <div class="card">
+      ${rows.map(row=>`<div class="race-item" style="cursor:default;">
+        <div>
+          <strong>${row.race.flag?row.race.flag+' ':''}${row.race.name}</strong>
+          <p class="small" style="margin:2px 0 0;">${row.timesRaced ? `${row.timesRaced}x disputée · ${row.wins} victoire${row.wins!==1?'s':''} · meilleur résultat : ${TIER_LABEL[row.best.tier]}` : 'Jamais disputée'}</p>
+        </div>
+        ${badgeHTML(row.race.type)}
+      </div>`).join('')}
+    </div>
+    <button class="btn ghost" onclick="renderCalendarScreen()">← Retour au calendrier</button>
+  `);
 }
 
 function toggleRace(id){
@@ -3713,6 +3722,46 @@ function confirmCalendar(){
 
 /* ---- Déroulé des courses ---- */
 
+/* ---------- CONVALESCENCE ACTIVE ----------
+   Remplace l'ancien forfait automatique et passif : un vrai choix de rythme de reprise,
+   avec un compromis réel — suivre le protocole (sûr, régulier) ou pousser la reprise
+   (peut accélérer nettement le retour, mais risque un revers qui la prolonge). */
+function renderConvalescenceScreen(race){
+  if(STATE) STATE._screen='convalescence';
+  setHTML(`
+    ${riderHeaderHTML()}
+    <div class="card">
+      <h2>🚑 Convalescence</h2>
+      <p>Encore en soins après la blessure — forfait sur « ${race.name} ». Comment abordes-tu cette étape de la rééducation ?</p>
+      <button class="btn ghost" onclick="convalescenceChoice('protocole')">🩺 Suivre le protocole à la lettre <span class="small">(sûr, régulier)</span></button>
+      <button class="btn ghost" onclick="convalescenceChoice('pousser')">⚡ Pousser la reprise <span class="small">(peut accélérer le retour, ou provoquer un revers)</span></button>
+    </div>
+  `);
+}
+function convalescenceChoice(mode){
+  const race = STATE.runQueue[STATE.runRaceIdx];
+  const r = STATE.rider;
+  let note;
+  if(mode==='protocole'){
+    STATE.injuryAbsenceRemaining--;
+    r.fatigue = clamp(r.fatigue - 14, 0, 130);
+    note = "Rééducation suivie sereinement, selon le protocole prévu.";
+  } else if(Math.random() < 0.3){
+    STATE.injuryAbsenceRemaining += 1;
+    r.fatigue = clamp(r.fatigue - 4, 0, 130);
+    note = "La reprise précipitée a été un revers — la convalescence se prolonge.";
+  } else {
+    STATE.injuryAbsenceRemaining = Math.max(0, STATE.injuryAbsenceRemaining - 2);
+    r.fatigue = clamp(r.fatigue - 8, 0, 130);
+    note = "Le pari d'une reprise accélérée a payé — retour plus rapide que prévu.";
+  }
+  r.teamConfidence = clamp(r.teamConfidence - 1, 0, 100);
+  r.palmares.push({season:r.season, raceName:race.name, type:race.type, tier:'forfait'});
+  STATE.seasonSummary.results.push({raceName:race.name, type:race.type, prestige:race.prestige, bestTier:'forfait', repGain:0,
+    events:[{title:'Convalescence', choiceLabel:`🚑 ${note}`, risk:'sur', tier:'forfait', perf:0, trained:null}]});
+  renderRaceResult(race, 'forfait', 0, -1);
+}
+
 function beginRace(){
   const race = STATE.runQueue[STATE.runRaceIdx];
   const prev = STATE.runRaceIdx>0 ? STATE.runQueue[STATE.runRaceIdx-1] : null;
@@ -3722,13 +3771,7 @@ function beginRace(){
   STATE.raceRole = null;
 
   if(STATE.injuryAbsenceRemaining > 0){
-    STATE.injuryAbsenceRemaining--;
-    STATE.rider.fatigue = clamp(STATE.rider.fatigue - 12, 0, 130);
-    STATE.rider.teamConfidence = clamp(STATE.rider.teamConfidence - 1, 0, 100);
-    STATE.rider.palmares.push({season:STATE.rider.season, raceName:race.name, type:race.type, tier:'forfait'});
-    STATE.seasonSummary.results.push({raceName:race.name, type:race.type, prestige:race.prestige, bestTier:'forfait', repGain:0,
-      events:[{title:'Convalescence', choiceLabel:'🚑 Encore en soins après la blessure, forfait sur cette course', risk:'sur', tier:'forfait', perf:0, trained:null}]});
-    renderRaceResult(race, 'forfait', 0, -1);
+    renderConvalescenceScreen(race);
     return;
   }
 
@@ -3826,6 +3869,34 @@ const WACKY_CHOICE_LABELS = [
   "Laisser un coéquipier choisir la tactique du jour à ta place",
 ];
 
+/* ---------- FORME DU JOUR ----------
+   Rend visible au joueur une info déjà calculée en interne (fatigue) combinée aux
+   résultats récents, pour aider à décider si c'est le bon moment de jouer audacieux. */
+/* ---------- CLASSEMENT MONDIAL SIMULÉ ----------
+   Un repère concret et gratifiant, complémentaire à la réputation (plus abstraite) —
+   évolue course après course face à un peloton simulé, façon classement UCI. */
+function updateWorldRank(rider, bestTier, racePrestige){
+  if(typeof rider.worldRank !== 'number') rider.worldRank = 450;
+  const tierMove = {victoire:-40, podium:-15, top10:-6, peloton:1, jourssans:3, abandon:5, forfait:0}[bestTier] || 0;
+  const prestigeMult = 1 + (racePrestige-1)*0.3;
+  rider.worldRank = clamp(Math.round(rider.worldRank + tierMove*prestigeMult), 1, 900);
+}
+
+function riderFormStatus(rider){
+  const results = STATE.seasonSummary ? STATE.seasonSummary.results : [];
+  const last = results[results.length-1];
+  let score = 100 - rider.fatigue;
+  if(last){
+    if(last.bestTier==='victoire') score += 12;
+    else if(last.bestTier==='podium') score += 6;
+    else if(last.bestTier==='jourssans' || last.bestTier==='abandon') score -= 10;
+  }
+  if(score>=75) return {icon:'💪', label:'En pleine forme'};
+  if(score>=50) return {icon:'🙂', label:'Jambes correctes'};
+  if(score>=25) return {icon:'😓', label:'Jambes lourdes'};
+  return {icon:'🥵', label:'Épuisé'};
+}
+
 function renderCurrentEvent(){
   if(STATE) STATE._screen='currentevent';
   if(STATE.runRaceIdx >= STATE.runQueue.length){ finishSeason(); return; }
@@ -3842,6 +3913,7 @@ function renderCurrentEvent(){
     event._weather = rollWeather(race.month, race.flag==='🇦🇺').id;
   }
   const weather = WEATHER_TYPES.find(w=>w.id===event._weather);
+  const form = riderFormStatus(STATE.rider);
   const riskIcon = {sur:'🛡️', equilibre:'⚖️', audacieux:'🎲', loufoque:'🤪'};
   setHTML(`
     ${riderHeaderHTML()}
@@ -3851,7 +3923,7 @@ function renderCurrentEvent(){
         ${badgeHTML(race.type)}
       </div>
       <p class="small">🗓️ ${MONTHS[race.month]} · Évènement ${STATE.runEventIdx+1}/${race.events.length} · Course ${STATE.runRaceIdx+1}/${STATE.runQueue.length} de la saison</p>
-      <p class="small">${weather.icon} ${weather.label}</p>
+      <p class="small">${weather.icon} ${weather.label} · ${form.icon} ${form.label}</p>
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
       <h3>${event.title}</h3>
       <p>${event.desc}</p>
@@ -4029,6 +4101,7 @@ function finalizeRace(){
   let confDelta = confidenceDeltaFor(bestTier);
   if(STATE.domestiqueBonus){ confDelta += 5; STATE.domestiqueBonus = false; }
   STATE.rider.reputation = clamp(STATE.rider.reputation + repGain, 0, 100);
+  updateWorldRank(STATE.rider, bestTier, race.prestige);
 
   /* Paiement différé d'une déclaration confiante en interview : si le résultat de
      cette course-ci n'est pas au moins un podium, la confiance affichée la dernière
@@ -4286,12 +4359,15 @@ function applyInterviewChoice(choice){
   if(choice==='humble'){
     r.reputation = clamp(r.reputation+1, 0, 100);
     r.teamConfidence = clamp(r.teamConfidence+2, 0, 100);
+    r.fame = clamp(r.fame+1, 0, 100);
   } else if(choice==='confiant'){
     r.reputation = clamp(r.reputation+3, 0, 100);
     r.pendingConfidentBet = true;
+    r.fame = clamp(r.fame+3, 0, 100);
   } else if(choice==='piquant'){
     r.reputation = clamp(r.reputation+2, 0, 100);
     r.stats.mental = clamp(r.stats.mental+2, 10, 99);
+    r.fame = clamp(r.fame+4, 0, 100);
   }
   nextAfterRaceResult();
 }
@@ -4742,6 +4818,11 @@ function careerHighlights(r){
     }
   } else {
     highlights.push(`Une carrière sans victoire marquante, mais ${r.palmares.length} course${r.palmares.length>1?'s':''} disputée${r.palmares.length>1?'s':''} avec constance.`);
+  }
+
+  const podiums = r.palmares.filter(p=>p.tier==='podium');
+  if(podiums.length){
+    highlights.push(`🥈 ${podiums.length} podium${podiums.length>1?'s':''} décroché${podiums.length>1?'s':''} au fil de la carrière, en plus des victoires.`);
   }
 
   if(r.nationalTitles) highlights.push(`🏅 ${r.nationalTitles} titre${r.nationalTitles>1?'s':''} de champion national décroché${r.nationalTitles>1?'s':''} en cours de carrière.`);
