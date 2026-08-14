@@ -489,6 +489,15 @@ const I18N = {
     olympicBronzeEntry:'Bronze medal at the Panhellenic Games.',
     victoryOnEntry:'Victory at',
     mentorFarewellPrefix:'Last season as mentor to', mentorFarewellSuffix:"the torch has been passed on.",
+    lockedContinental:'Reserved for ProTeam and above',
+    lockedConfidence:"Your team doesn't trust you enough yet to commit to this",
+    homeCrowdNote:"The crowd is with you — you're racing on home soil!",
+    publicReactions:'Public reactions',
+    careerComparator:'📊 Career comparator',
+    careerComparatorDesc:'An overview of every career played since this session began.',
+    overview:'Overview', careersPlayed:'careers played', avgWins:'average wins', avgFinalRep:'average final reputation',
+    stylesUsed:'Styles used', countriesUsed:'Countries tried', allCareers:'All careers',
+    validateStartSeason:'Validate and start the season',
     objectiveWord:'Objective', objectiveMetText:"achieved — the team is pleased.",
     objectiveMissedText:'not achieved this season.',
     challengeWord:'Challenge', challengeMetText:'completed successfully!',
@@ -2595,10 +2604,33 @@ function olympicSelectionChance(rider){
   return clamp(0.3 + margin*0.025, 0.3, 0.92);
 }
 
+/* ---------- ACCÈS AUX GRANDS TOURS ET MONUMENTS ----------
+   Fidèle à la réalité UCI : les équipes WorldTour (et le niveau fictif "légende" au-dessus)
+   sont automatiquement invitées à toutes les grandes courses. Les ProTeams doivent
+   espérer une invitation au cas par cas — représenté ici par la confiance d'équipe, qui
+   reflète si le staff est prêt à te pousser pour un dossard. Les équipes Continentales,
+   elles, n'y participent quasiment jamais dans la réalité — verrouillé tant qu'on n'a
+   pas progressé vers un meilleur contrat. Les championnats (national/mondial) restent
+   à part : ce sont des sélections fédérales, pas liées à l'équipe trade. */
+function raceAccessCheck(race, rider){
+  if(race.type!=='grandtour' && race.type!=='monument') return {allowed:true};
+  const team = currentTeam(rider);
+  if(team.tier==='WorldTour' || team.tier==='Équipe de légende') return {allowed:true};
+  if(team.tier==='Continentale') return {allowed:false, reason:'continental'};
+  // ProTeam : l'invitation dépend de la confiance que l'équipe a en toi.
+  if(rider.teamConfidence >= 50) return {allowed:true};
+  return {allowed:false, reason:'confidence'};
+}
+
 function pickRaceOffers(){
   const all = RACES_DATA();
   const rider = STATE.rider;
   const core = all.filter(r => (r.type==='grandtour' || r.type==='monument' || r.type==='champ') && !r.olympic);
+  core.forEach(r=>{
+    const access = raceAccessCheck(r, rider);
+    r.locked = !access.allowed;
+    r.lockReason = access.reason;
+  });
   const rotatingPool = shuffleArr(all.filter(r => r.type==='semitour' || r.type==='crit' || r.type==='classique'));
   const rotateCount = Math.min(rotatingPool.length, 11);
   let offered = core.concat(rotatingPool.slice(0, rotateCount));
@@ -2668,7 +2700,7 @@ function weatherCrashMult(weatherId){
   return weatherId==='pluie' ? 1.5 : 1;
 }
 
-function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour){
+function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour, isHomeRace){
   const statAvg = statFocusAverage(rider, event.focus);
   const forme = clamp(100 - rider.fatigue*0.75 + (Math.random()*16-8), 5, 100);
   /* Les stats pèsent plus lourd qu'avant (0.62 contre 0.55), la part de forme du jour et
@@ -2676,6 +2708,11 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
      sans que le résultat ne devienne pour autant totalement déterministe. */
   let base = statAvg*0.62 + forme*0.26 + rider.stats.mental*0.12;
   if(weatherId) base += weatherPerfModifier(weatherId, event.focus);
+
+  /* Ferveur du public à domicile : courir dans son propre pays donne un léger coup de
+     fouet mental, un classique du cyclisme (cf. l'avantage constaté des coureurs locaux
+     sur les classiques de leur pays). Effet modeste, jamais décisif à lui seul. */
+  if(isHomeRace) base += 3;
 
   /* Sur les courses prestigieuses (monuments, grands tours...), un coureur très jeune
      n'a statistiquement presque jamais course la victoire dans la réalité (le plus jeune
@@ -2848,7 +2885,7 @@ function shuffleArr(arr){
    Le pool fourni doit être celui déjà tiré pour la saison (voir chooseTraining),
    pour que les courses imposées correspondent bien à celles affichées ensuite. */
 function pickImposedRaces(rider, trainingFocus, pool){
-  const all = pool.filter(r=>!r.olympic);
+  const all = pool.filter(r=>!r.olympic && !r.locked);
   const team = currentTeam(rider);
   const priorityStats = [trainingFocus, team.specialty].filter(Boolean);
   let chosen = [];
@@ -3200,6 +3237,7 @@ function resumeSlot(i){
   else if(screen==='convalescence') renderConvalescenceScreen(STATE.runQueue[STATE.runRaceIdx]);
   else if(screen==='mentoroffer') renderMentorOffer();
   else if(screen==='interview') renderInterviewScreen();
+  else if(screen==='interviewreaction') renderInterviewReactionScreen();
   else if(screen==='calendar') renderCalendarScreen();
   else if(screen==='rolechoice') renderRoleChoice(STATE.runQueue[STATE.runRaceIdx]);
   else if(screen==='currentevent') renderCurrentEvent();
@@ -3297,6 +3335,7 @@ function renderMainMenu(){
       <button class="btn ghost" onclick="renderHallOfFame()">${tf('hallOfFame','🏆 Palmarès des légendes')}</button>
       <button class="btn ghost" onclick="renderTrophiesScreen()">${tf('trophies','🎖️ Trophées')} (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
     </div>
+    <button class="btn ghost" onclick="renderCareerComparator()">${tf('careerComparator','📊 Comparateur de carrières')}</button>
     <div class="footer-links">
       <button class="footer-link" onclick="renderTutorialScreen()">${tf('howToPlay','📖 Comment jouer ?')}</button>
       <button class="footer-link" onclick="renderSettingsScreen()">${tf('accessibility','♿ Accessibilité')}</button>
@@ -3696,6 +3735,66 @@ function renderHallOfFame(){
   `);
 }
 
+/* ---------- COMPARATEUR DE CARRIÈRES ----------
+   Vue d'ensemble de toutes les carrières jouées dans la session (pas seulement le top 5
+   du Hall of Fame) : styles/pays essayés, moyennes, et la liste complète — pour donner
+   une vraie perspective sur ses habitudes de jeu au fil des parties. */
+function renderCareerComparator(){
+  const careers = CAREER_HISTORY;
+  if(careers.length===0){
+    setHTML(`
+      <h1>📊 ${tf('careerComparator','Comparateur de carrières')}</h1>
+      <div class="card center"><p>${tf('noCareerYet',"Aucune carrière enregistrée pour l'instant. Termine une carrière pour apparaître ici.")}</p></div>
+      <button class="btn ghost" onclick="renderMainMenu()">${tf('back','← Retour')}</button>
+    `);
+    return;
+  }
+  const avgWins = (careers.reduce((s,c)=>s+c.wins,0)/careers.length).toFixed(1);
+  const avgRep = Math.round(careers.reduce((s,c)=>s+c.finalReputation,0)/careers.length);
+
+  const styleCounts = {};
+  careers.forEach(c=>{ styleCounts[c.styleId] = (styleCounts[c.styleId]||0)+1; });
+  const styleRows = STYLES.map(s=>({s, count: styleCounts[s.id]||0})).filter(x=>x.count>0).sort((a,b)=>b.count-a.count);
+
+  const countryCounts = {};
+  careers.forEach(c=>{ countryCounts[c.countryCode] = (countryCounts[c.countryCode]||0)+1; });
+  const countryRows = Object.entries(countryCounts)
+    .map(([code,count])=>({country:COUNTRIES.find(x=>x.code===code), count}))
+    .sort((a,b)=>b.count-a.count);
+
+  setHTML(`
+    <h1>📊 ${tf('careerComparator','Comparateur de carrières')}</h1>
+    <p class="small">${tf('careerComparatorDesc',"Vue d'ensemble de toutes les carrières jouées depuis l'ouverture de cette partie.")}</p>
+    <div class="card">
+      <h3>${tf('overview',"Vue d'ensemble")}</h3>
+      <div class="grid3">
+        <div class="center"><p style="margin:0;font-weight:800;font-size:1.4rem;color:var(--green-dark);">${careers.length}</p><p class="small" style="margin:0;">${tf('careersPlayed','carrières jouées')}</p></div>
+        <div class="center"><p style="margin:0;font-weight:800;font-size:1.4rem;color:var(--yellow-dark);">${avgWins}</p><p class="small" style="margin:0;">${tf('avgWins','victoires en moyenne')}</p></div>
+        <div class="center"><p style="margin:0;font-weight:800;font-size:1.4rem;color:var(--pink);">${avgRep}</p><p class="small" style="margin:0;">${tf('avgFinalRep','réputation moyenne')}</p></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>${tf('stylesUsed','Styles utilisés')}</h3>
+      ${styleRows.map(x=>`<div class="race-item" style="cursor:default;"><strong>${x.s.name}</strong><span class="pill">${x.count}×</span></div>`).join('')}
+    </div>
+    <div class="card">
+      <h3>${tf('countriesUsed','Pays essayés')}</h3>
+      ${countryRows.map(x=>`<div class="race-item" style="cursor:default;"><strong>${x.country?x.country.flag+' '+x.country.name:'?'}</strong><span class="pill">${x.count}×</span></div>`).join('')}
+    </div>
+    <div class="card">
+      <h3>${tf('allCareers','Toutes les carrières')}</h3>
+      ${careers.slice().reverse().map(c=>{
+        const country = COUNTRIES.find(x=>x.code===c.countryCode);
+        return `<div class="race-item" style="cursor:default;">
+          <div><strong>${country?country.flag:''} ${c.name}</strong><p class="small" style="margin:2px 0 0;">${STYLES.find(s=>s.id===c.styleId).name} · ${c.seasons} ${tf('seasonsBareLower','saisons')}</p></div>
+          <span class="pill mono">${c.wins}🏆 ${c.podiums}🥈</span>
+        </div>`;
+      }).join('')}
+    </div>
+    <button class="btn ghost" onclick="renderMainMenu()">${tf('back','← Retour')}</button>
+  `);
+}
+
 function renderTrophiesScreen(){
   const cats = [
     {key:'carriere', label:tf('careerTrophies','🏁 Trophées de carrière')},
@@ -3925,7 +4024,7 @@ function renderSeasonSetupScreen(keepScroll){
       <div class="row-item ${!setup.challengeAccept?'active':''}" onclick="setSeasonSetup('challengeAccept',false)"><span>${tf('ignoreChallenge','Ignorer ce défi')}</span></div>
     </div>
     ${rivalsCardHTML()}
-    <button class="btn" ${setup.focus?'':'disabled'} onclick="confirmSeasonSetup()">✅ Valider et débuter la saison</button>
+    <button class="btn" ${setup.focus?'':'disabled'} onclick="confirmSeasonSetup()">✅ ${tf('validateStartSeason','Valider et débuter la saison')}</button>
   `, keepScroll);
 }
 
@@ -4167,16 +4266,21 @@ function renderCalendarScreen(keepScroll){
       const imposed = STATE.imposedRaceIds.includes(race.id);
       const wouldExceed = !picked && (totalDays + race.days > 65);
       const full = !picked && n>=10;
-      const clickable = !imposed && !full && !wouldExceed;
+      const tierLocked = !!race.locked;
+      const clickable = !imposed && !full && !wouldExceed && !tierLocked;
       const diff = difficultyForRace(race, r);
-      return `<div class="race-item ${picked?'picked':''} ${imposed?'imposed':''} ${(full||wouldExceed)?'locked':''}" onclick="${clickable?`toggleRace('${race.id}')`:''}">
+      const lockMsg = race.lockReason==='continental'
+        ? tf('lockedContinental',"Réservé aux équipes ProTeam et au-dessus")
+        : tf('lockedConfidence',"Ton équipe ne te fait pas encore assez confiance pour t'y engager");
+      return `<div class="race-item ${picked?'picked':''} ${imposed?'imposed':''} ${(full||wouldExceed||tierLocked)?'locked':''}" onclick="${clickable?`toggleRace('${race.id}')`:''}">
         <div>
-          <strong>${race.flag?race.flag+' ':''}${race.name}</strong>
+          <strong>${tierLocked?'🔒 ':''}${race.flag?race.flag+' ':''}${race.name}</strong>
           <p class="small" style="margin:2px 0 0;">${MONTHS[race.month]} · ${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)}${imposed?` · <span class="pill" style="border-color:var(--red);color:var(--red);">${tf('imposedByTeamPill',"Imposée par l'équipe")}</span>`:''}${wouldExceed?` · <span class="small diff-4">${tf('exceeds65','Dépasse 65 j')}</span>`:''}</p>
+          ${tierLocked?`<p class="small" style="margin:2px 0 0;color:var(--text-soft);font-style:italic;">🔒 ${lockMsg}</p>`:''}
         </div>
         <div style="text-align:right;">
           ${badgeHTML(race.type)}
-          <p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p>
+          <p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${tierLocked?'':diff.label}</p>
         </div>
       </div>`;
     }).join('')}
@@ -4221,6 +4325,7 @@ function toggleRace(id){
   if(i>=0){ STATE.selectedRaceIds.splice(i,1); }
   else if(STATE.selectedRaceIds.length<10){
     const race = STATE.seasonRacePool.find(r=>r.id===id);
+    if(race.locked) return;
     if(selectedDaysTotal() + race.days > 65) return;
     if(race.type==='grandtour'){
       const gtCount = STATE.selectedRaceIds.filter(rid=>{
@@ -4463,6 +4568,7 @@ function renderCurrentEvent(){
   }
   const weather = WEATHER_TYPES.find(w=>w.id===event._weather);
   const form = riderFormStatus(STATE.rider);
+  const isHomeRace = race.flag && race.flag === COUNTRIES.find(c=>c.code===STATE.rider.countryCode)?.flag;
   const riskIcon = {sur:'🛡️', equilibre:'⚖️', audacieux:'🎲', loufoque:'🤪'};
   setHTML(`
     ${riderHeaderHTML()}
@@ -4473,6 +4579,7 @@ function renderCurrentEvent(){
       </div>
       <p class="small">🗓️ ${MONTHS[race.month]} · ${tf('eventCounter','Évènement')} ${STATE.runEventIdx+1}/${race.events.length} · ${tf('raceCounter','Course')} ${STATE.runRaceIdx+1}/${STATE.runQueue.length} ${tf('ofSeason','de la saison')}</p>
       <p class="small">${weather.icon} ${weather.label} · ${form.icon} ${form.label}</p>
+      ${isHomeRace ? `<p class="small" style="color:var(--green-dark);font-weight:700;">📣 ${tf('homeCrowdNote','Le public te porte — tu cours à domicile !')}</p>` : ''}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
       <h3>${event.title}</h3>
       <p>${event.desc}</p>
@@ -4495,7 +4602,8 @@ function chooseOption(i){
     return;
   }
 
-  const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour');
+  const isHomeRace = race.flag && race.flag === COUNTRIES.find(c=>c.code===STATE.rider.countryCode)?.flag;
+  const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace);
   applyFatigue(STATE.rider, race, choice, weatherId);
   STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained});
   STATE.runEventIdx++;
@@ -4908,6 +5016,45 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
    paie plus aujourd'hui mais se retourne contre le coureur si la course suivante n'est
    pas au moins un podium (voir finalizeRace), et la pique enflamme un peu plus le
    duel avec le rival croisé sur cette course, s'il y en avait un. */
+const INTERVIEW_REACTIONS_FR = {
+  humble: [
+    "Les commentateurs saluent ton humilité — « un vrai exemple pour la jeune génération ».",
+    "Le public apprécie ta modestie, même si certains regrettent un peu plus de panache.",
+    "Peu de bruit sur les réseaux, mais une sympathie tranquille qui s'installe durablement.",
+  ],
+  confiant: [
+    "Tes propos font le tour des réseaux — certains y voient de l'assurance, d'autres de la provocation.",
+    "Le ton confiant divise les commentateurs, mais personne ne reste indifférent.",
+    "Les paris s'enflamment sur les réseaux après cette déclaration osée.",
+  ],
+  piquant: [
+    "La pique fait immédiatement le buzz — les comptes rivaux s'en donnent à cœur joie dans les réponses.",
+    "Le milieu du cyclisme s'agite, entre ceux qui apprécient le culot et ceux qui s'en offusquent.",
+    "Tes mots enflamment la toile — pour le meilleur ou pour le pire.",
+  ],
+};
+const INTERVIEW_REACTIONS_EN = {
+  humble: [
+    "Commentators praise your humility — \"a real example for the younger generation\".",
+    "The public appreciates your modesty, though some wish for a bit more flair.",
+    "Not much noise online, but a quiet, lasting sympathy builds up.",
+  ],
+  confiant: [
+    "Your words spread fast online — some read confidence, others provocation.",
+    "The confident tone divides the commentators, but nobody stays indifferent.",
+    "Betting odds shift online after that bold statement.",
+  ],
+  piquant: [
+    "The jab instantly goes viral — rival accounts have a field day in the replies.",
+    "The cycling world stirs, split between those who admire the nerve and those offended by it.",
+    "Your words set social media alight — for better or worse.",
+  ],
+};
+function interviewReaction(choice){
+  const pool = (SETTINGS.lang==='en' ? INTERVIEW_REACTIONS_EN : INTERVIEW_REACTIONS_FR)[choice] || [];
+  return pool[Math.floor(Math.random()*pool.length)] || '';
+}
+
 function renderInterviewScreen(){
   if(STATE) STATE._screen='interview';
   const rivalName = STATE.lastRivalName;
@@ -4938,7 +5085,20 @@ function applyInterviewChoice(choice){
     r.stats.mental = clamp(r.stats.mental+2, 10, 99);
     r.fame = clamp(r.fame+4, 0, 100);
   }
-  nextAfterRaceResult();
+  STATE.pendingInterviewReaction = interviewReaction(choice);
+  renderInterviewReactionScreen();
+}
+
+function renderInterviewReactionScreen(){
+  if(STATE) STATE._screen='interviewreaction';
+  setHTML(`
+    ${riderHeaderHTML()}
+    <div class="card">
+      <h2>📱 ${tf('publicReactions','Réactions du public')}</h2>
+      <p class="narrative-text" style="font-style:italic;">${STATE.pendingInterviewReaction}</p>
+    </div>
+    <button class="btn" onclick="nextAfterRaceResult()">${tf('continue','Continuer')}</button>
+  `);
 }
 
 function nextAfterRaceResult(){
