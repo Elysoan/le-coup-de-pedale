@@ -447,6 +447,52 @@ const I18N = {
     and:'and', relevant:'relevant', relevantP:'relevant', outOf:'out of', week:'Week',
     finalRanking:'Final ranking', statUp:'improving', statDown:'declining',
     reputationWord:'Reputation', confidenceWord:'Confidence', fatigueWord:'Fatigue', team:'team',
+    roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
+    roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
+    arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
+    expand:'▼ Expand', collapse:'▲ Collapse', statsGlobalRating:'Statistics — Overall rating',
+    nationalChampionBadge:'National champion', contractWord:'contract',
+    ordinalSt:'st', ordinalTh:'th', worldwide:'in the world', fameWord:'Fame',
+    sponsorWord:'Sponsor', teammateWord:'Teammate', youAreMentor:"You're his mentor",
+    teamConfidenceWord:'Team confidence',
+    careerRivals:'Career rivals', winAbbr:'W', lossAbbr:'L',
+    legendaryTrophyBanner:'LEGENDARY TROPHY', trophyUnlockedBanner:'Trophy unlocked',
+    tierContinental:'Continental', tierLegend:'Legend team',
+    bondWith:'Bond with', consequences:'Consequences', noMeasurableConsequence:'No measurable consequence this time.',
+    firstProWin:'first professional victory, at', neverForget:"A moment you never forget.",
+    winOn:'victory at', careerPeak:'one of the peaks of the career.',
+    noNotableWin:'A career without a standout win, but', racesRun:'race raced', racesRunP:'races raced',
+    withConsistency:'with consistency.',
+    podiumWon:'podium earned', podiumsWonP:'podiums earned', throughoutCareer:'throughout the career, on top of the wins.',
+    nationalTitleWon:'national championship title won', nationalTitleWonP:'national championship titles won',
+    duringCareer:'during the career.', olympicChampion:'Olympic champion',
+    rareAchievement:'an extremely rare achievement, forever etched into the career.',
+    olympicMedalWon:'An Olympic medal won during the career — an unforgettable memory.',
+    notableRivalry:'A notable rivalry with', winAgainst:'win', winsAgainstP:'wins',
+    againstHim:'against him over the seasons.', rareLongevity:'Rare longevity',
+    proSeasonsCompleted:"professional seasons completed to the very end.",
+    legacyGrandTourLegend:'Grand tour legend', legacyClassicsLord:'Lord of the classics',
+    legacyCompleteRider:'A complete rider, etched into history', legacyTirelessBreakaway:'Tireless breakaway specialist',
+    legacyRespectedFigure:'A respected figure of the world peloton', legacyRespectedWinner:'Respected winner',
+    legacyModestDomestique:'A modest domestique, loyal to the peloton',
+    rollingStageDefault:'rolling stage',
+    shareNativeText:'My professional cycling career — lecoupdepedale.com',
+    duringRace:'in', careerEndsPrematurely:'career cut short prematurely.',
+    fallWord:'Crash', overexertionWord:'Overexertion', bodyDoneRest:'Body exhausted, medical staff orders rest',
+    thisCareer:'this career', deleteCareerTitle:'Delete this career?',
+    willBeErased:'will be', permanentlyErased:'permanently deleted',
+    fromThisSlot:'from this slot — this cannot be undone.',
+    deletePermanently:'Delete permanently', cancel:'← Cancel',
+    nationalChampionEntry:'National champion — victory at the national championship.',
+    olympicChampionEntry:'Olympic champion — crowned at the Panhellenic Games.',
+    olympicSilverEntry:'Silver medal at the Panhellenic Games.',
+    olympicBronzeEntry:'Bronze medal at the Panhellenic Games.',
+    victoryOnEntry:'Victory at',
+    mentorFarewellPrefix:'Last season as mentor to', mentorFarewellSuffix:"the torch has been passed on.",
+    objectiveWord:'Objective', objectiveMetText:"achieved — the team is pleased.",
+    objectiveMissedText:'not achieved this season.',
+    challengeWord:'Challenge', challengeMetText:'completed successfully!',
+    challengeMissedText:'not achieved this time.',
     mentorTitle:'Switch to a mentor role?',
     mentorDesc1:"You're approaching the end of your career. You could now invest part of your energy into developing",
     mentorDesc1b:"rather than racing only for yourself.",
@@ -690,7 +736,10 @@ function generateRiderName(countryCode){
    saisons (renouvelé à chaque changement d'équipe) — avec sa propre petite trajectoire
    plutôt que d'être un simple figurant interchangeable. */
 const TEAMMATE_ARCHETYPES = ['domestique', 'espoir', 'veteran'];
-const TEAMMATE_ARCHETYPE_LABELS = {domestique:'domestique fidèle', espoir:'jeune espoir', veteran:'vétéran en fin de carrière'};
+const TEAMMATE_ARCHETYPE_LABELS_FR = {domestique:'domestique fidèle', espoir:'jeune espoir', veteran:'vétéran en fin de carrière'};
+const TEAMMATE_ARCHETYPE_LABELS = new Proxy(TEAMMATE_ARCHETYPE_LABELS_FR, {
+  get(target, prop){ const v = t('arch_'+prop); return v!==null ? v : target[prop]; }
+});
 function generateTeammate(){
   const archetype = TEAMMATE_ARCHETYPES[Math.floor(Math.random()*TEAMMATE_ARCHETYPES.length)];
   const country = COUNTRIES[Math.floor(Math.random()*COUNTRIES.length)];
@@ -2304,15 +2353,15 @@ function RACE_DEFS(){ return [
    course d'une saison à l'autre sans retomber systématiquement sur le même scénario). */
 function pickVariant(def){
   const v = def.variants[Math.floor(Math.random()*def.variants.length)];
-  const lang = SETTINGS.lang;
-  const title = (lang==='en' && v.titleEN) ? v.titleEN : v.title;
-  const desc = (lang==='en' && v.descEN) ? v.descEN : v.desc;
-  const choices = def.choices.map(c => ({
-    label: (lang==='en' && c.labelEN) ? c.labelEN : c.label,
-    risk: c.risk,
-    tilt: c.tilt,
-  }));
-  return {title, desc, focus:def.focus, choices};
+  const event = {focus:def.focus};
+  Object.defineProperty(event, 'title', {enumerable:true, get(){ return (SETTINGS.lang==='en' && v.titleEN) ? v.titleEN : v.title; }});
+  Object.defineProperty(event, 'desc', {enumerable:true, get(){ return (SETTINGS.lang==='en' && v.descEN) ? v.descEN : v.desc; }});
+  event.choices = def.choices.map(c => {
+    const choice = {risk:c.risk, tilt:c.tilt};
+    Object.defineProperty(choice, 'label', {enumerable:true, get(){ return (SETTINGS.lang==='en' && c.labelEN) ? c.labelEN : c.label; }});
+    return choice;
+  });
+  return event;
 }
 
 function RACES_DATA(){
@@ -2503,13 +2552,22 @@ function currentTeam(rider){
   return TEAMS.find(t=>t.id===rider.teamId) || TEAMS[0];
 }
 
+/* ProTeam et WorldTour sont de vraies catégories UCI, jamais traduites même dans la
+   presse cycliste francophone — seuls "Continentale" et "Équipe de légende" (fictif)
+   ont besoin d'un équivalent anglais. */
+function teamTierLabel(tier){
+  if(tier==='Continentale') return tf('tierContinental','Continentale');
+  if(tier==='Équipe de légende') return tf('tierLegend','Équipe de légende');
+  return tier;
+}
+
 function riderRole(rider){
   const rep = rider.reputation;
-  if(rep >= 82) return 'Superstar mondiale';
-  if(rep >= 60) return 'Leader désigné';
-  if(rep >= 35) return 'Co-leader';
-  if(rep >= 16) return 'Équipier de luxe';
-  return 'Équipier / jeune espoir';
+  if(rep >= 82) return tf('roleSuperstar','Superstar mondiale');
+  if(rep >= 60) return tf('roleLeader','Leader désigné');
+  if(rep >= 35) return tf('roleCoLeader','Co-leader');
+  if(rep >= 16) return tf('roleDeluxe','Équipier de luxe');
+  return tf('roleDomestique','Équipier / jeune espoir');
 }
 
 /* ---------- MOTEUR DE COURSE ---------- */
@@ -2746,11 +2804,18 @@ function injurySeverity(rider, cause){
 /* Point d'entrée unique pour traiter une blessure (chute en course ou surmenage avant course) :
    ajoute l'évènement au récapitulatif de la course en cours puis la finalise. La gravité et
    ses conséquences (absence, fin de carrière) sont gérées à l'affichage du résultat. */
+/* Libellé de cause de blessure calculé à la demande (pas figé au moment de la blessure) —
+   pour rester juste même si la langue est changée entre la blessure et l'affichage du
+   résultat, plusieurs écrans plus tard. */
+function causeLabelFor(cause){
+  return cause==='chute' ? `💥 ${tf('fallWord','Chute')}` : `🥵 ${tf('overexertionWord','Surmenage')}`;
+}
+
 function handleInjury(cause, race, precomputedEntry){
   STATE.hadInjuryThisSeason = true;
-  const causeLabel = cause==='chute' ? '💥 Chute' : '🥵 Surmenage';
+  const causeLabel = causeLabelFor(cause);
   const entry = precomputedEntry || {
-    title:causeLabel, choiceLabel:'Corps à bout, le staff médical impose le repos',
+    title:causeLabel, choiceLabel:tf('bodyDoneRest','Corps à bout, le staff médical impose le repos'),
     risk:'sur', tier:'abandon', perf:0, trained:null
   };
   STATE.runRaceAccum.push(entry);
@@ -2899,7 +2964,7 @@ function recordCareer(rider){
     wins, podiums,
     finalReputation: Math.round(rider.reputation),
     finalTeam: currentTeam(rider).name,
-    title: legacyTitle(rider),
+    title: legacyTitleKey(rider),
   });
 }
 
@@ -3168,13 +3233,13 @@ function deleteSlot(i){
 
 function confirmDeleteSlot(i){
   const slot = SLOTS[i];
-  const name = slot && slot.state && slot.state.rider ? slot.state.rider.name : 'cette carrière';
+  const name = slot && slot.state && slot.state.rider ? slot.state.rider.name : tf('thisCareer','cette carrière');
   setHTML(`
     <div class="card center">
-      <h2>🗑️ Supprimer cette carrière ?</h2>
-      <p>${name} sera <strong>définitivement effacé</strong> de cet emplacement — impossible de revenir en arrière.</p>
-      <button class="btn" style="background:var(--red);box-shadow:0 6px 0 #C23B3B, 0 10px 20px -8px rgba(194,59,59,0.45);" onclick="deleteSlot(${i})">Supprimer définitivement</button>
-      <button class="btn ghost" onclick="renderMainMenu()">← Annuler</button>
+      <h2>🗑️ ${tf('deleteCareerTitle','Supprimer cette carrière ?')}</h2>
+      <p>${name} ${tf('willBeErased','sera')} <strong>${tf('permanentlyErased','définitivement effacé')}</strong> ${tf('fromThisSlot',"de cet emplacement — impossible de revenir en arrière.")}</p>
+      <button class="btn" style="background:var(--red);box-shadow:0 6px 0 #C23B3B, 0 10px 20px -8px rgba(194,59,59,0.45);" onclick="deleteSlot(${i})">${tf('deletePermanently','Supprimer définitivement')}</button>
+      <button class="btn ghost" onclick="renderMainMenu()">${tf('cancel','← Annuler')}</button>
     </div>
   `);
 }
@@ -3222,7 +3287,7 @@ function renderMainMenu(){
         <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.4rem;color:var(--yellow-dark);">${UNLOCKED.size}/${ACHIEVEMENTS.length}</p><p class="small" style="margin:0;">${tf('trophiesWord','trophées')}</p></div>
         <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.4rem;color:var(--pink);">${SESSION.countriesPlayed.size}/${COUNTRIES.length}</p><p class="small" style="margin:0;">${tf('countriesTried','pays essayés')}</p></div>
       </div>
-      ${best ? `<p class="small" style="margin-top:10px;text-align:center;">🏆 ${tf('bestCareer','Meilleure carrière')} : <strong>${best.name}</strong> — ${best.title}</p>` : ''}
+      ${best ? `<p class="small" style="margin-top:10px;text-align:center;">🏆 ${tf('bestCareer','Meilleure carrière')} : <strong>${best.name}</strong> — ${legacyTitleText(best.title)}</p>` : ''}
     </div>
     <div class="card">
       <h3>💾 ${tf('yourSlots','Tes 3 emplacements de carrière')}</h3>
@@ -3261,7 +3326,7 @@ function trophyBannerHTML(){
     const t = ACHIEVEMENTS.find(a=>a.id===id);
     if(!t) return '';
     return `<div class="card trophy-shimmer" style="border:1.5px solid var(--yellow);">
-      <p style="margin:0;"><strong>${t.rare?'🌟 TROPHÉE LÉGENDAIRE — ':'🎉 Trophée débloqué — '}${t.icon} ${t.name}</strong></p>
+      <p style="margin:0;"><strong>${t.rare?`🌟 ${tf('legendaryTrophyBanner','TROPHÉE LÉGENDAIRE')} — `:`🎉 ${tf('trophyUnlockedBanner','Trophée débloqué')} — `}${t.icon} ${t.name}</strong></p>
       <p class="small" style="margin:2px 0 0;">${t.desc}</p>
     </div>`;
   }).join('');
@@ -3323,17 +3388,40 @@ function checkSessionAchievements(rider){
   if(SESSION.stylesPlayed.size>=STYLES.length) unlockTrophy('polyvalent-joueur');
 }
 
-function legacyTitle(rider){
+const LEGACY_TITLE_FR = {
+  legacyGrandTourLegend:"Légende des grands tours",
+  legacyClassicsLord:"Seigneur des classiques",
+  legacyCompleteRider:"Coureur complet, entré dans l'histoire",
+  legacyTirelessBreakaway:"Baroudeur increvable",
+  legacyRespectedFigure:"Cadre reconnu du peloton mondial",
+  legacyRespectedWinner:"Vainqueur respecté",
+  legacyModestDomestique:"Modeste équipier, fidèle au peloton",
+};
+/* Retourne uniquement la clé (pas le texte résolu) — utilisée pour le stockage dans
+   l'historique de session (CAREER_HISTORY), afin que le titre reste traduisible même
+   après un changement de langue survenu après la fin de cette carrière. */
+function legacyTitleKey(rider){
   const wins = rider.palmares.filter(p=>p.tier==='victoire');
   const gtWins = wins.filter(p=>p.type==='grandtour').length;
   const monWins = wins.filter(p=>p.type==='monument').length;
-  if(gtWins>=3) return "Légende des grands tours";
-  if(monWins>=3) return "Seigneur des classiques";
-  if(gtWins>=1 && monWins>=1) return "Coureur complet, entré dans l'histoire";
-  if(wins.length>=5) return "Baroudeur increvable";
-  if(rider.reputation>=60) return "Cadre reconnu du peloton mondial";
-  if(wins.length>=1) return "Vainqueur respecté";
-  return "Modeste équipier, fidèle au peloton";
+  if(gtWins>=3) return 'legacyGrandTourLegend';
+  if(monWins>=3) return 'legacyClassicsLord';
+  if(gtWins>=1 && monWins>=1) return 'legacyCompleteRider';
+  if(wins.length>=5) return 'legacyTirelessBreakaway';
+  if(rider.reputation>=60) return 'legacyRespectedFigure';
+  if(wins.length>=1) return 'legacyRespectedWinner';
+  return 'legacyModestDomestique';
+}
+function legacyTitleText(key){
+  /* Compatibilité ascendante : les sauvegardes antérieures à ce correctif stockaient le
+     texte complet du titre (déjà résolu en français) plutôt qu'une clé — si la valeur
+     ne correspond à aucune clé connue, on l'affiche telle quelle plutôt que de casser
+     l'affichage. */
+  if(LEGACY_TITLE_FR[key] === undefined) return key;
+  return tf(key, LEGACY_TITLE_FR[key]);
+}
+function legacyTitle(rider){
+  return legacyTitleText(legacyTitleKey(rider));
 }
 
 /* ============================================================
@@ -3399,10 +3487,12 @@ function globalRiderRating(stats){
 
 function globalStatsPanelHTML(){
   const rating = globalRiderRating(STATE.rider.stats);
+  const openLabel = tf('expand','▼ Déplier');
+  const closeLabel = tf('collapse','▲ Replier');
   return `<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="const b=document.getElementById('statsPanelBody'), a=document.getElementById('statsPanelArrow'); const open = b.style.display!=='none'; b.style.display = open?'none':'block'; a.textContent = open?'▼ Déplier':'▲ Replier';">
-      <h3 style="margin:0;">📊 Statistiques — Note globale : ${rating}/100</h3>
-      <span class="small" id="statsPanelArrow">▼ Déplier</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="const b=document.getElementById('statsPanelBody'), a=document.getElementById('statsPanelArrow'); const open = b.style.display!=='none'; b.style.display = open?'none':'block'; a.textContent = open?'${openLabel}':'${closeLabel}';">
+      <h3 style="margin:0;">📊 ${tf('statsGlobalRating','Statistiques — Note globale')} : ${rating}/100</h3>
+      <span class="small" id="statsPanelArrow">${openLabel}</span>
     </div>
     <div id="statsPanelBody" style="display:none;margin-top:8px;">
       ${statBarsHTML(STATE.rider.stats)}
@@ -3418,29 +3508,29 @@ function riderHeaderHTML(){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
       <div>
         <h2><span class="flag">${c.flag}</span>${r.name}</h2>
-        <p class="small">${STYLES.find(s=>s.id===r.styleId).name} · ${r.age} ans · Saison ${r.season}${r.isNationalChampion?' · 🏅 Champion national':''}</p>
+        <p class="small">${STYLES.find(s=>s.id===r.styleId).name} · ${r.age} ${tf('yo','ans')} · ${tf('season','Saison')} ${r.season}${r.isNationalChampion?` · 🏅 ${tf('nationalChampionBadge','Champion national')}`:''}</p>
       </div>
       <div style="text-align:right;">
-        <span class="pill">🎽 ${team.tier}</span>
+        <span class="pill">🎽 ${teamTierLabel(team.tier)}</span>
         <p class="small mono" style="margin:4px 0 0;">💰 ${Math.round(r.money).toLocaleString('fr-FR')} €</p>
       </div>
     </div>
-    <p class="small">${riderRole(r)} — ${team.name} · 📋 contrat : ${r.contractYearsLeft} saison${r.contractYearsLeft>1?'s':''} restante${r.contractYearsLeft>1?'s':''}</p>
-    <p class="small">🌍 <strong>${r.worldRank}${r.worldRank===1?'er':'e'}</strong> mondial · 📣 Notoriété : <strong>${Math.round(r.fame)}</strong>/100</p>
-    ${r.sponsor ? `<p class="small">${r.sponsor.icon} Sponsor : ${r.sponsor.name}</p>` : ''}
-    ${r.teammate ? `<p class="small">🤝 Coéquipier : ${r.teammate.name} (${TEAMMATE_ARCHETYPE_LABELS[r.teammate.archetype]})${r.isMentor?' · 🧑‍🏫 Tu es son mentor':''}</p>` : ''}
+    <p class="small">${riderRole(r)} — ${team.name} · 📋 ${tf('contractWord','contrat')} : ${r.contractYearsLeft} ${tf(r.contractYearsLeft>1?'seasonsLeftBareP':'seasonsLeftBare','saison'+(r.contractYearsLeft>1?'s':'')+' restante'+(r.contractYearsLeft>1?'s':''))}</p>
+    <p class="small">🌍 <strong>${r.worldRank}${r.worldRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('worldwide','mondial')} · 📣 ${tf('fameWord','Notoriété')} : <strong>${Math.round(r.fame)}</strong>/100</p>
+    ${r.sponsor ? `<p class="small">${r.sponsor.icon} ${tf('sponsorWord','Sponsor')} : ${r.sponsor.name}</p>` : ''}
+    ${r.teammate ? `<p class="small">🤝 ${tf('teammateWord','Coéquipier')} : ${r.teammate.name} (${TEAMMATE_ARCHETYPE_LABELS[r.teammate.archetype]})${r.isMentor?` · 🧑‍🏫 ${tf('youAreMentor','Tu es son mentor')}`:''}</p>` : ''}
     <div class="grid2">
       <div class="stat-row">
-        <div class="stat-label"><span>⭐ Réputation</span><span>${Math.round(r.reputation)}</span></div>
+        <div class="stat-label"><span>⭐ ${tf('reputationWord','Réputation')}</span><span>${Math.round(r.reputation)}</span></div>
         <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.reputation))}%"></div></div>
       </div>
       <div class="stat-row">
-        <div class="stat-label"><span>🤝 Confiance équipe</span><span>${Math.round(r.teamConfidence)}</span></div>
+        <div class="stat-label"><span>🤝 ${tf('teamConfidenceWord','Confiance équipe')}</span><span>${Math.round(r.teamConfidence)}</span></div>
         <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.teamConfidence))}%;background:linear-gradient(90deg,var(--blue),var(--green));"></div></div>
       </div>
     </div>
     <div class="stat-row">
-      <div class="stat-label"><span>🔥 Fatigue</span><span>${Math.round(r.fatigue)}</span></div>
+      <div class="stat-label"><span>🔥 ${tf('fatigueWord','Fatigue')}</span><span>${Math.round(r.fatigue)}</span></div>
       <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.fatigue))}%;background:linear-gradient(90deg,var(--green),var(--red));"></div></div>
     </div>
   </div>` + globalStatsPanelHTML();
@@ -3598,7 +3688,7 @@ function renderHallOfFame(){
             <span class="pill">${c.wins} 🏆</span>
           </div>
           <p class="small">${STYLES.find(s=>s.id===c.styleId).name} · ${c.seasons} ${tf('seasonsBareLower','saisons')} · ${tf('retiredAtLower','retraite à')} ${c.retireAge} ${tf('yo','ans')} · ${c.finalTeam}</p>
-          <p class="result-tier tier-podium">${c.title}</p>
+          <p class="result-tier tier-podium">${legacyTitleText(c.title)}</p>
         </div>`;
       }).join('')
     }
@@ -3658,7 +3748,7 @@ function renderTrophiesScreen(){
 function rivalsCardHTML(){
   if(!STATE.rivals || STATE.rivals.length===0) return '';
   return `<div class="card">
-    <h3>🥊 Rivaux de carrière</h3>
+    <h3>🥊 ${tf('careerRivals','Rivaux de carrière')}</h3>
     ${STATE.rivals.map(rv=>{
       const rec = STATE.rivalRecords[rv.name] || {wins:0, losses:0};
       const country = COUNTRIES.find(c=>c.code===rv.countryCode);
@@ -3667,7 +3757,7 @@ function rivalsCardHTML(){
           <strong>${country?country.flag:''} ${rv.name}</strong>
           <p class="small" style="margin:2px 0 0;">${STYLES.find(s=>s.id===rv.styleId).name}</p>
         </div>
-        <span class="pill mono">${rec.wins}V - ${rec.losses}D</span>
+        <span class="pill mono">${rec.wins}${tf('winAbbr','V')} - ${rec.losses}${tf('lossAbbr','D')}</span>
       </div>`;
     }).join('')}
   </div>`;
@@ -3936,13 +4026,15 @@ function personalEventPool(rider, includeSeasonStartOnly, rivalRecords){
 /* Applique la traduction anglaise d'un évènement personnel si dispo, sinon repli
    silencieux sur le français (même principe que pickVariant pour les courses). */
 function localizeEvent(ev){
-  if(SETTINGS.lang !== 'en') return ev;
-  return {
-    ...ev,
-    title: ev.titleEN || ev.title,
-    desc: ev.descEN || ev.desc,
-    choices: ev.choices.map(c => ({...c, label: c.labelEN || c.label})),
-  };
+  const out = {icon: ev.icon, payoff: ev.payoff};
+  Object.defineProperty(out, 'title', {enumerable:true, get(){ return (SETTINGS.lang==='en' && ev.titleEN) ? ev.titleEN : ev.title; }});
+  Object.defineProperty(out, 'desc', {enumerable:true, get(){ return (SETTINGS.lang==='en' && ev.descEN) ? ev.descEN : ev.desc; }});
+  out.choices = ev.choices.map(c => {
+    const choice = {effect: c.effect, bond: c.bond};
+    Object.defineProperty(choice, 'label', {enumerable:true, get(){ return (SETTINGS.lang==='en' && c.labelEN) ? c.labelEN : c.label; }});
+    return choice;
+  });
+  return out;
 }
 
 function maybeShowPersonalEvent(){
@@ -4001,11 +4093,11 @@ function applyPersonalEvent(i){
       if(delta!==0) changes.push(`${STAT_ICONS[k]} ${STAT_LABELS[k]} ${delta>=0?'+':''}${delta}`);
     });
   }
-  if(eff.fatigue){ r.fatigue = clamp(r.fatigue + eff.fatigue, 0, 130); changes.push(`🔥 Fatigue ${eff.fatigue>=0?'+':''}${eff.fatigue}`); }
-  if(eff.reputation){ r.reputation = clamp(r.reputation + eff.reputation, 0, 100); changes.push(`⭐ Réputation ${eff.reputation>=0?'+':''}${eff.reputation}`); }
+  if(eff.fatigue){ r.fatigue = clamp(r.fatigue + eff.fatigue, 0, 130); changes.push(`🔥 ${tf('fatigueWord','Fatigue')} ${eff.fatigue>=0?'+':''}${eff.fatigue}`); }
+  if(eff.reputation){ r.reputation = clamp(r.reputation + eff.reputation, 0, 100); changes.push(`⭐ ${tf('reputationWord','Réputation')} ${eff.reputation>=0?'+':''}${eff.reputation}`); }
   if(choice.bond && r.teammate){
     r.teammate.bond = clamp(r.teammate.bond + choice.bond, 0, 100);
-    changes.push(`🤝 Complicité avec ${r.teammate.name} ${choice.bond>=0?'+':''}${choice.bond}`);
+    changes.push(`🤝 ${tf('bondWith','Complicité avec')} ${r.teammate.name} ${choice.bond>=0?'+':''}${choice.bond}`);
   }
   STATE.pendingPersonalEventResult = {title: ev.title, choiceLabel: choice.label, changes};
   STATE.pendingPersonalEvent = null;
@@ -4018,9 +4110,9 @@ function renderPersonalEventResult(){
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card">
-      <h2>✅ Conséquences</h2>
+      <h2>✅ ${tf('consequences','Conséquences')}</h2>
       <p class="small" style="font-style:italic;">${res.choiceLabel}</p>
-      ${res.changes.length ? res.changes.map(c=>`<p class="small" style="margin:5px 0;font-weight:700;">${c}</p>`).join('') : '<p class="small">Pas de conséquence mesurable cette fois.</p>'}
+      ${res.changes.length ? res.changes.map(c=>`<p class="small" style="margin:5px 0;font-weight:700;">${c}</p>`).join('') : `<p class="small">${tf('noMeasurableConsequence','Pas de conséquence mesurable cette fois.')}</p>`}
     </div>
     <button class="btn" onclick="proceedAfterPersonalEvent()">${tf('continue','Continuer')}</button>
   `);
@@ -4416,12 +4508,12 @@ function chooseOption(i){
 /* La Confrérie de la Poisse — clin d'œil fictif à l'autodérision sportive à la
    française, sans lien avec une marque ou une entité réelle. */
 const CONFRERIE_POISSE_EVENTS = [
-  {icon:'🏅', title:"Prix de la défaite la plus stylée", desc:"La Confrérie de la Poisse te décerne son trophée du mois pour ta contre-performance, déjà commentée avec un enthousiasme suspect sur les réseaux.",
-    choiceLabel:"En rire avec eux, autodérision assumée", effect:{mental:2}},
-  {icon:'📸', title:"Le ralenti qui tourne en boucle", desc:"Ta chute ou ton abandon devient l'extrait le plus partagé de la semaine chez La Confrérie de la Poisse, musique dramatique en fond sonore.",
-    choiceLabel:"Répondre avec humour plutôt que de s'en offusquer", effect:{mental:1}},
-  {icon:'🎖️', title:"Intronisation surprise", desc:"La Confrérie de la Poisse t'invite officiellement à rejoindre son panthéon informel des défaites les plus héroïques du peloton.",
-    choiceLabel:"Accepter avec fierté, une pointe d'autodérision", effect:{mental:3}},
+  {icon:'🏅', title:"Prix de la défaite la plus stylée", titleEN:"Award for the most stylish defeat", desc:"La Confrérie de la Poisse te décerne son trophée du mois pour ta contre-performance, déjà commentée avec un enthousiasme suspect sur les réseaux.", descEN:"The Brotherhood of Bad Luck awards you its trophy of the month for your poor performance, already discussed online with suspicious enthusiasm.",
+    choiceLabel:"En rire avec eux, autodérision assumée", choiceLabelEN:"Laugh along with them, embracing the self-deprecation", effect:{mental:2}},
+  {icon:'📸', title:"Le ralenti qui tourne en boucle", titleEN:"The slow-motion replay on loop", desc:"Ta chute ou ton abandon devient l'extrait le plus partagé de la semaine chez La Confrérie de la Poisse, musique dramatique en fond sonore.", descEN:"Your crash or abandon becomes the most shared clip of the week at the Brotherhood of Bad Luck, dramatic music included.",
+    choiceLabel:"Répondre avec humour plutôt que de s'en offusquer", choiceLabelEN:"Respond with humour rather than taking offence", effect:{mental:1}},
+  {icon:'🎖️', title:"Intronisation surprise", titleEN:"A surprise induction", desc:"La Confrérie de la Poisse t'invite officiellement à rejoindre son panthéon informel des défaites les plus héroïques du peloton.", descEN:"The Brotherhood of Bad Luck officially invites you to join its informal hall of fame of the peloton's most heroic defeats.",
+    choiceLabel:"Accepter avec fierté, une pointe d'autodérision", choiceLabelEN:"Accept with pride, and a touch of self-deprecation", effect:{mental:3}},
 ];
 
 /* Traduit le résultat d'un seul évènement en un résumé narratif étalé sur les jours
@@ -4429,15 +4521,26 @@ const CONFRERIE_POISSE_EVENTS = [
    donner un peu de chair à un "Paris-Nice" de 8 jours qui, mécaniquement, ne repose que
    sur une seule résolution. Purement narratif : aucune incidence sur les stats, l'argent
    ou les trophées, qui restent basés sur le résultat global déjà calculé par ailleurs. */
-const STAGE_TYPE_LABELS = {
+const STAGE_TYPE_LABELS_FR = {
   montagne: 'étape de montagne', sprint: 'étape de sprint', clm: 'contre-la-montre',
   classiques: 'étape vallonnée', resistance: 'étape de plat', mental: 'étape nerveuse',
   recuperation: 'étape de transition',
 };
+const STAGE_TYPE_LABELS_EN = {
+  montagne: 'mountain stage', sprint: 'sprint stage', clm: 'time trial',
+  classiques: 'rolling stage', resistance: 'flat stage', mental: 'nervy stage',
+  recuperation: 'transition stage',
+};
+const STAGE_TYPE_LABELS = new Proxy(STAGE_TYPE_LABELS_FR, {
+  get(target, prop){
+    if(SETTINGS.lang==='en' && STAGE_TYPE_LABELS_EN[prop]!==undefined) return STAGE_TYPE_LABELS_EN[prop];
+    return target[prop];
+  }
+});
 function synthesizeStageSummary(race, focus, tier){
   if(!race.days || race.days <= 1) return null;
   const styles = (focus||[]).map(f=>STAGE_TYPE_LABELS[f]).filter(Boolean);
-  if(!styles.length) styles.push('étape roulante');
+  if(!styles.length) styles.push(tf('rollingStageDefault','étape roulante'));
   const pickStyle = ()=> styles[Math.floor(Math.random()*styles.length)];
   const usedDays = new Set();
   const pickDay = (maxDay)=>{
@@ -4516,7 +4619,10 @@ function finalizeRace(){
   const nearMiss = STATE.runRaceAccum.some(e=>e.tier==='podium' && e.perf>=86);
   const knownEnough = STATE.rider.reputation >= 15;
   if(knownEnough && (bestTier==='abandon' || nearMiss) && Math.random() < 0.35){
-    poisseEvent = CONFRERIE_POISSE_EVENTS[Math.floor(Math.random()*CONFRERIE_POISSE_EVENTS.length)];
+    const picked = CONFRERIE_POISSE_EVENTS[Math.floor(Math.random()*CONFRERIE_POISSE_EVENTS.length)];
+    poisseEvent = (SETTINGS.lang==='en') ? {
+      icon: picked.icon, title: picked.titleEN, desc: picked.descEN, choiceLabel: picked.choiceLabelEN, effect: picked.effect,
+    } : picked;
     const k = 'mental';
     STATE.rider.stats[k] = clamp(STATE.rider.stats[k] + poisseEvent.effect.mental, 10, 99);
   }
@@ -4585,7 +4691,7 @@ function finalizeRace(){
     STATE.rider.isNationalChampion = true;
     STATE.rider.nationalTitles = (STATE.rider.nationalTitles||0) + 1;
     unlockTrophy('champion-national');
-    addJournalEntry(STATE.rider, `🏅 Champion national — victoire lors du championnat national.`);
+    addJournalEntry(STATE.rider, `🏅 ${tf('nationalChampionEntry','Champion national — victoire lors du championnat national.')}`);
   }
   if(race.olympic){
     /* La médaille doit correspondre à ce que le joueur voit réellement affiché (le tier),
@@ -4594,22 +4700,22 @@ function finalizeRace(){
     if(bestTier==='victoire'){
       STATE.rider.olympicGold = (STATE.rider.olympicGold||0) + 1;
       unlockTrophy('or-olympique');
-      addJournalEntry(STATE.rider, `🥇 Champion olympique — sacre aux Jeux Panhelléniques.`);
+      addJournalEntry(STATE.rider, `🥇 ${tf('olympicChampionEntry','Champion olympique — sacre aux Jeux Panhelléniques.')}`);
     } else if(bestTier==='podium'){
       const perf = (STATE.runRaceAccum[0] && STATE.runRaceAccum[0].perf) || 0;
       if(perf>=80){
         STATE.rider.olympicSilver = (STATE.rider.olympicSilver||0) + 1;
         unlockTrophy('argent-olympique');
-        addJournalEntry(STATE.rider, `🥈 Médaille d'argent aux Jeux Panhelléniques.`);
+        addJournalEntry(STATE.rider, `🥈 ${tf('olympicSilverEntry',"Médaille d'argent aux Jeux Panhelléniques.")}`);
       } else {
         STATE.rider.olympicBronze = (STATE.rider.olympicBronze||0) + 1;
         unlockTrophy('bronze-olympique');
-        addJournalEntry(STATE.rider, `🥉 Médaille de bronze aux Jeux Panhelléniques.`);
+        addJournalEntry(STATE.rider, `🥉 ${tf('olympicBronzeEntry','Médaille de bronze aux Jeux Panhelléniques.')}`);
       }
     }
   }
   if(bestTier==='victoire' && race.prestige>=3){
-    addJournalEntry(STATE.rider, `🏆 Victoire sur ${race.name}.`);
+    addJournalEntry(STATE.rider, `🏆 ${tf('victoryOnEntry','Victoire sur')} ${race.name}.`);
   }
   STATE.rider.palmares.push({season:STATE.rider.season, raceName:race.name, raceId:race.id, type:race.type, tier:bestTier});
   checkRaceAchievements(race, bestTier);
@@ -4681,7 +4787,7 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
   if(injury){
     if(injury.severity==='legere'){
       injuryBanner = `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;">
-        <p><strong>🩹 ${injury.causeLabel} — ${tf('minorInjury','blessure légère')}.</strong></p>
+        <p><strong>🩹 ${causeLabelFor(injury.cause)} — ${tf('minorInjury','blessure légère')}.</strong></p>
         <p class="small" style="font-style:italic;">${injuryReason(injury.cause)}</p>
         <p class="small">${tf('canRestartNext','Le coureur peut repartir dès la prochaine course du calendrier.')}</p>
       </div>`;
@@ -4689,16 +4795,16 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
       const missCount = 1 + Math.floor(Math.random()*3);
       STATE.injuryAbsenceRemaining = missCount;
       injuryBanner = `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;">
-        <p><strong>🚑 ${injury.causeLabel} — ${tf('seriousInjury','blessure plus sérieuse')}.</strong></p>
+        <p><strong>🚑 ${causeLabelFor(injury.cause)} — ${tf('seriousInjury','blessure plus sérieuse')}.</strong></p>
         <p class="small" style="font-style:italic;">${injuryReason(injury.cause)}</p>
         <p class="small">${tf('convalescenceNote','Convalescence : absence prévue sur les')} ${missCount} ${tf(missCount>1?'nextRacesP':'nextRace','prochaine'+(missCount>1?'s':'')+' course'+(missCount>1?'s':'')+' du calendrier.')}</p>
       </div>`;
     } else {
       injuryBanner = `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;">
-        <p><strong>⛑️💔 ${injury.causeLabel} ${tf('severe','grave')}.</strong> ${tf('careerEndsHere',"Les examens médicaux sont sans appel : la carrière s'arrête ici.")}</p>
+        <p><strong>⛑️💔 ${causeLabelFor(injury.cause)} ${tf('severe','grave')}.</strong> ${tf('careerEndsHere',"Les examens médicaux sont sans appel : la carrière s'arrête ici.")}</p>
       </div>`;
-      STATE.injuryEndNote = `${injury.causeLabel} grave lors de "${race.name}" — fin de carrière prématurée.`;
-      addJournalEntry(STATE.rider, `🚑 ${injury.causeLabel} grave lors de "${race.name}" — fin de carrière prématurée.`);
+      STATE.injuryEndNote = {cause: injury.cause, raceName: race.name};
+      addJournalEntry(STATE.rider, `🚑 ${causeLabelFor(injury.cause)} ${tf('severe','grave')} ${tf('duringRace','lors de')} "${race.name}" — ${tf('careerEndsPrematurely',"fin de carrière prématurée.")}`);
       continueAttr = `onclick="goCareerEnd('injury')"`;
       continueLabel = tf('viewCareerRecap','Voir le bilan de carrière');
     }
@@ -4873,10 +4979,12 @@ function finishSeason(){
     }
     if(met===true){
       rider.reputation = clamp(rider.reputation+4, 0, 100);
-      STATE.objectiveNote = {ok:true, text:`Objectif "${objDef.label}" tenu — l'équipe apprécie.`};
+      const objLabel = (SETTINGS.lang==='en' && objDef.labelEN) ? objDef.labelEN : objDef.label;
+      STATE.objectiveNote = {ok:true, text:`${tf('objectiveWord','Objectif')} "${objLabel}" ${tf('objectiveMetText',"tenu — l'équipe apprécie.")}`};
     } else if(met===false){
       rider.reputation = clamp(rider.reputation-3, 0, 100);
-      STATE.objectiveNote = {ok:false, text:`Objectif "${objDef.label}" pas rempli cette saison.`};
+      const objLabel = (SETTINGS.lang==='en' && objDef.labelEN) ? objDef.labelEN : objDef.label;
+      STATE.objectiveNote = {ok:false, text:`${tf('objectiveWord','Objectif')} "${objLabel}" ${tf('objectiveMissedText','pas rempli cette saison.')}`};
     }
   }
   STATE.seasonObjective = null;
@@ -4889,9 +4997,11 @@ function finishSeason(){
     if(success){
       if(c.reward.money) rider.money += c.reward.money;
       if(c.reward.reputation) rider.reputation = clamp(rider.reputation + c.reward.reputation, 0, 100);
-      STATE.challengeNote = {ok:true, text:`Défi "${c.label}" relevé avec succès !`};
+      const chLabel = (SETTINGS.lang==='en' && c.labelEN) ? c.labelEN : c.label;
+      STATE.challengeNote = {ok:true, text:`${tf('challengeWord','Défi')} "${chLabel}" ${tf('challengeMetText','relevé avec succès !')}`};
     } else {
-      STATE.challengeNote = {ok:false, text:`Défi "${c.label}" pas atteint cette fois.`};
+      const chLabel = (SETTINGS.lang==='en' && c.labelEN) ? c.labelEN : c.label;
+      STATE.challengeNote = {ok:false, text:`${tf('challengeWord','Défi')} "${chLabel}" ${tf('challengeMissedText','pas atteint cette fois.')}`};
     }
   }
   STATE.sideChallenge = null;
@@ -5017,7 +5127,7 @@ function renderContractScreen(){
       return `<div class="card team-card" onclick="chooseTeam('${t.id}')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <h2>🎽 ${t.name}</h2>
-          <span class="pill">${t.tier}</span>
+          <span class="pill">${teamTierLabel(t.tier)}</span>
         </div>
         <p class="small">${t.id===current.id?tf('renewalCurrent','Prolongation avec ton équipe actuelle'):tf('newEmployer','Nouvel employeur')} · ${tf('contractOf','contrat de')} ${duration} ${tf(duration>1?'seasonsBareP':'seasonsBare','saison'+(duration>1?'s':''))}. ${t.specialty?`${tf('specialty','Spécialité')} : ${STAT_ICONS[t.specialty]} ${STAT_LABELS[t.specialty]}.`:tf('generalistTeam','Équipe généraliste.')}</p>
       </div>`;
@@ -5052,7 +5162,7 @@ function goCareerEnd(reason){
   STATE.rider.retired = true;
   STATE.rider.retireReason = reason || 'age';
   if(STATE.rider.isMentor && STATE.rider.teammate){
-    addJournalEntry(STATE.rider, `🧑‍🏫 Dernière saison en tant que mentor de ${STATE.rider.teammate.name} — la transmission s'achève, le relais est passé.`);
+    addJournalEntry(STATE.rider, `🧑‍🏫 ${tf('mentorFarewellPrefix','Dernière saison en tant que mentor de')} ${STATE.rider.teammate.name} — ${tf('mentorFarewellSuffix',"la transmission s'achève, le relais est passé.")}`);
   }
   checkCareerAchievements(STATE.rider);
   recordCareer(STATE.rider);
@@ -5066,8 +5176,9 @@ function renderCareerEnd(){
   const wins = r.palmares.filter(p=>p.tier==='victoire');
   const podiums = r.palmares.filter(p=>p.tier==='podium');
   const top = topCareers(5);
-  const injuryNote = STATE.injuryEndNote;
+  const injuryNoteData = STATE.injuryEndNote;
   STATE.injuryEndNote = null;
+  const injuryNote = injuryNoteData ? `${causeLabelFor(injuryNoteData.cause)} ${tf('severe','grave')} ${tf('duringRace','lors de')} "${injuryNoteData.raceName}" — ${tf('careerEndsPrematurely',"fin de carrière prématurée.")}` : null;
   setHTML(`
     <h1>🎬 ${tf('careerEnd','Fin de carrière')}</h1>
     ${trophyBannerHTML()}
@@ -5098,7 +5209,7 @@ function renderCareerEnd(){
     ${rivalsCardHTML()}
     <div class="card">
       <h3>🏆 ${tf('top5Careers','Top 5 des carrières de la partie')}</h3>
-      ${top.map((c,i)=>`<div class="race-item"><div><strong>#${i+1} ${c.name}</strong><p class="small" style="margin:2px 0 0;">${c.title}</p></div><span class="pill">${c.wins} 🏆</span></div>`).join('')}
+      ${top.map((c,i)=>`<div class="race-item"><div><strong>#${i+1} ${c.name}</strong><p class="small" style="margin:2px 0 0;">${legacyTitleText(c.title)}</p></div><span class="pill">${c.wins} 🏆</span></div>`).join('')}
     </div>
     <button class="btn" onclick="openShareCard()">${tf('shareCareer','📤 Partager ma carrière')}</button>
     <button class="btn ghost" onclick="renderCareerJournal()">${tf('careerJournal','📖 Journal de carrière')}</button>
@@ -5259,7 +5370,7 @@ function nativeShareCard(){
     if(!blob) return;
     const file = new File([blob], 'ma-carriere-le-coup-de-pedale.png', {type:'image/png'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
-      navigator.share({files:[file], title:'Le coup de pédale', text:'Ma carrière de coureur cycliste — lecoupdepedale.com'}).catch(()=>{});
+      navigator.share({files:[file], title:'Le coup de pédale', text:tf('shareNativeText','Ma carrière de coureur cycliste — lecoupdepedale.com')}).catch(()=>{});
     }
   }, 'image/png');
 }
@@ -5273,24 +5384,24 @@ function careerHighlights(r){
 
   if(wins.length){
     const first = wins[0];
-    highlights.push(`🎉 Saison ${first.season} — première victoire professionnelle, sur ${first.raceName}. Un moment qu'on n'oublie jamais.`);
+    highlights.push(`🎉 ${tf('season','Saison')} ${first.season} — ${tf('firstProWin','première victoire professionnelle, sur')} ${first.raceName}. ${tf('neverForget',"Un moment qu'on n'oublie jamais.")}`);
     const bigWins = wins.filter(w=>w.type==='monument' || w.type==='grandtour');
     if(bigWins.length){
       const bw = bigWins[bigWins.length-1];
-      if(bw !== first) highlights.push(`🏆 Saison ${bw.season} — victoire sur ${bw.raceName}, l'un des sommets de la carrière.`);
+      if(bw !== first) highlights.push(`🏆 ${tf('season','Saison')} ${bw.season} — ${tf('winOn','victoire sur')} ${bw.raceName}, ${tf('careerPeak',"l'un des sommets de la carrière.")}`);
     }
   } else {
-    highlights.push(`Une carrière sans victoire marquante, mais ${r.palmares.length} course${r.palmares.length>1?'s':''} disputée${r.palmares.length>1?'s':''} avec constance.`);
+    highlights.push(`${tf('noNotableWin','Une carrière sans victoire marquante, mais')} ${r.palmares.length} ${tf(r.palmares.length>1?'racesRunP':'racesRun','course'+(r.palmares.length>1?'s':'')+' disputée'+(r.palmares.length>1?'s':''))} ${tf('withConsistency','avec constance.')}`);
   }
 
   const podiums = r.palmares.filter(p=>p.tier==='podium');
   if(podiums.length){
-    highlights.push(`🥈 ${podiums.length} podium${podiums.length>1?'s':''} décroché${podiums.length>1?'s':''} au fil de la carrière, en plus des victoires.`);
+    highlights.push(`🥈 ${podiums.length} ${tf(podiums.length>1?'podiumsWonP':'podiumWon','podium'+(podiums.length>1?'s':'')+' décroché'+(podiums.length>1?'s':''))} ${tf('throughoutCareer','au fil de la carrière, en plus des victoires.')}`);
   }
 
-  if(r.nationalTitles) highlights.push(`🏅 ${r.nationalTitles} titre${r.nationalTitles>1?'s':''} de champion national décroché${r.nationalTitles>1?'s':''} en cours de carrière.`);
-  if(r.olympicGold) highlights.push(`🥇 Champion olympique — un accomplissement rarissime, gravé pour toujours dans la carrière.`);
-  else if(r.olympicSilver || r.olympicBronze) highlights.push(`🎽 Une médaille olympique décrochée en cours de carrière — un souvenir impérissable.`);
+  if(r.nationalTitles) highlights.push(`🏅 ${r.nationalTitles} ${tf(r.nationalTitles>1?'nationalTitleWonP':'nationalTitleWon','titre'+(r.nationalTitles>1?'s':'')+' de champion national décroché'+(r.nationalTitles>1?'s':''))} ${tf('duringCareer','en cours de carrière.')}`);
+  if(r.olympicGold) highlights.push(`🥇 ${tf('olympicChampion','Champion olympique')} — ${tf('rareAchievement','un accomplissement rarissime, gravé pour toujours dans la carrière.')}`);
+  else if(r.olympicSilver || r.olympicBronze) highlights.push(`🎽 ${tf('olympicMedalWon','Une médaille olympique décrochée en cours de carrière — un souvenir impérissable.')}`);
 
   if(STATE.rivals && STATE.rivalRecords){
     let best = null;
@@ -5298,10 +5409,10 @@ function careerHighlights(r){
       const rec = STATE.rivalRecords[rv.name] || {wins:0, losses:0};
       if(rec.wins>=3 && (!best || (rec.wins-rec.losses) > (best.rec.wins-best.rec.losses))) best = {name:rv.name, rec};
     });
-    if(best) highlights.push(`⚔️ Une rivalité marquante avec ${best.name} — ${best.rec.wins} victoire${best.rec.wins>1?'s':''} contre lui au fil des saisons.`);
+    if(best) highlights.push(`⚔️ ${tf('notableRivalry','Une rivalité marquante avec')} ${best.name} — ${best.rec.wins} ${tf(best.rec.wins>1?'winsAgainstP':'winAgainst','victoire'+(best.rec.wins>1?'s':''))} ${tf('againstHim','contre lui au fil des saisons.')}`);
   }
 
-  if(r.season-1 >= 10) highlights.push(`⏳ Une longévité rare : ${r.season-1} saisons professionnelles menées jusqu'au bout.`);
+  if(r.season-1 >= 10) highlights.push(`⏳ ${tf('rareLongevity','Une longévité rare')} : ${r.season-1} ${tf('proSeasonsCompleted',"saisons professionnelles menées jusqu'au bout.")}`);
 
   return highlights;
 }
