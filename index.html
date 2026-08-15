@@ -862,14 +862,24 @@ function checkTeamVictory(race, bestTier){
 const TEAMS = [
   {id:'velo-passion', name:'Vélo Passion Formation', tier:'Continentale', minRep:0, specialty:null},
   {id:'nord-espoir', name:"Nord Cyclisme Espoir", tier:'Continentale', minRep:0, specialty:'classiques'},
+  {id:'forge-cyclisme', name:'Forge Cyclisme', tier:'Continentale', minRep:0, specialty:'resistance'},
+  {id:'littoral-dev', name:'Littoral Racing Development', tier:'Continentale', minRep:0, specialty:'sprint'},
   {id:'rhone-competition', name:'Rhône Compétition', tier:'ProTeam', minRep:18, specialty:'montagne'},
   {id:'etoile-sud', name:'Étoile du Sud Cyclisme', tier:'ProTeam', minRep:18, specialty:'sprint'},
   {id:'atlas-continental', name:'Atlas Continental Racing', tier:'ProTeam', minRep:24, specialty:null},
+  {id:'cime-verte', name:'Cime Verte Racing', tier:'ProTeam', minRep:20, specialty:'montagne'},
+  {id:'voltage-cycling', name:'Voltage Cycling Team', tier:'ProTeam', minRep:22, specialty:'clm'},
+  {id:'panthere-pro', name:'Panthère Continentale Pro', tier:'ProTeam', minRep:18, specialty:'classiques'},
   {id:'alpine-racing', name:'Alpine Racing Team', tier:'WorldTour', minRep:42, specialty:'montagne'},
   {id:'meridian-pro', name:'Meridian Pro Cycling', tier:'WorldTour', minRep:42, specialty:'clm'},
   {id:'horizon-wt', name:'Horizon Développement WT', tier:'WorldTour', minRep:48, specialty:'classiques'},
+  {id:'zenith-racing', name:'Zenith Racing', tier:'WorldTour', minRep:44, specialty:null},
+  {id:'falcon-elite', name:'Falcon Elite Cycling', tier:'WorldTour', minRep:45, specialty:'sprint'},
+  {id:'granite-wt', name:'Granite WorldTeam', tier:'WorldTour', minRep:50, specialty:'resistance'},
   {id:'stellar-project', name:'Stellar Cycling Project', tier:'Équipe de légende', minRep:72, specialty:null},
   {id:'aurum-racing', name:'Aurum Racing', tier:'Équipe de légende', minRep:80, specialty:'sprint'},
+  {id:'titan-legacy', name:'Titan Legacy Cycling', tier:'Équipe de légende', minRep:75, specialty:'montagne'},
+  {id:'eclipse-dynasty', name:'Eclipse Racing Dynasty', tier:'Équipe de légende', minRep:78, specialty:'clm'},
 ];
 
 /* ---------- ÉVÈNEMENTS PERSONNELS ---------- */
@@ -2476,14 +2486,11 @@ function injuryReason(cause){
 
 /* Classement final indicatif, purement narratif (n'a aucune incidence sur le jeu) —
    juste pour donner une idée concrète de la place occupée dans le peloton ce jour-là. */
-function estimatePlacement(tier, perf){
-  if(tier==='victoire') return tf('placement1st','1er');
-  if(tier==='abandon') return tf('placementDNF','Non classé (abandon)');
-  if(tier==='forfait') return tf('placementDNS','Non partant');
-  /* La position exacte dans le palier dépend désormais de la performance réelle (haut vs
-     bas de la fourchette du tier), avec un peu de bruit — plutôt qu'un tirage uniforme
-     complètement indépendant qui pouvait donner "4e" à une perf tout juste au-dessus du
-     seuil, aussi facilement qu'à une perf proche du palier supérieur. */
+/* Position numérique brute dans une course, dérivée du tier et de la perf réelle —
+   séparée de l'affichage pour pouvoir aussi servir de base au classement mondial. */
+function placementNumber(tier, perf){
+  if(tier==='victoire') return 1;
+  if(tier==='abandon' || tier==='forfait') return null;
   const ranges = {
     podium: {min:72, max:87, posMin:2, posMax:3},
     top10: {min:55, max:71, posMin:4, posMax:10},
@@ -2491,13 +2498,20 @@ function estimatePlacement(tier, perf){
     jourssans: {min:0, max:31, posMin:60, posMax:150},
   };
   const r = ranges[tier];
-  if(!r) return '';
+  if(!r) return null;
   const p = clamp(perf==null ? (r.min+r.max)/2 : perf, r.min, r.max);
-  const frac = (p - r.min) / ((r.max - r.min) || 1); // 0 = bas du palier, 1 = haut du palier
+  const frac = (p - r.min) / ((r.max - r.min) || 1);
   const pos = Math.round(r.posMax - frac*(r.posMax-r.posMin));
-  const noise = Math.floor(Math.random()*3) - 1; // petite variation, -1/0/+1
-  const finalPos = clamp(pos+noise, r.posMin, r.posMax);
-  return finalPos+'e';
+  const noise = Math.floor(Math.random()*3) - 1;
+  return clamp(pos+noise, r.posMin, r.posMax);
+}
+
+function estimatePlacement(tier, perf){
+  if(tier==='abandon') return tf('placementDNF','Non classé (abandon)');
+  if(tier==='forfait') return tf('placementDNS','Non partant');
+  const pos = placementNumber(tier, perf);
+  if(pos===1) return tf('placement1st','1er');
+  return pos+'e';
 }
 
 const RISK_LABEL_FR = {sur:'Sûr', equilibre:'Équilibré', audacieux:'Audacieux', loufoque:'Loufoque'};
@@ -2967,9 +2981,15 @@ function endSeasonAging(rider, trainingFocus){
 
 /* ---------- MARCHÉ DES TRANSFERTS ---------- */
 
+/* Fidèle à la réalité : on ne saute jamais un palier d'équipe d'un coup, même avec une
+   réputation qui le permettrait largement. Continentale -> ProTeam -> WorldTour ->
+   Équipe de légende, un cran à la fois — chaque transfert ne peut viser qu'au maximum
+   le palier juste au-dessus de l'équipe actuelle. */
+const TEAM_TIER_ORDER = {'Continentale':0, 'ProTeam':1, 'WorldTour':2, 'Équipe de légende':3};
 function offersForRider(rider){
-  const eligible = TEAMS.filter(t=> t.minRep <= rider.reputation + 10);
   const current = currentTeam(rider);
+  const maxTierIdx = TEAM_TIER_ORDER[current.tier] + 1;
+  const eligible = TEAMS.filter(t=> t.minRep <= rider.reputation + 10 && TEAM_TIER_ORDER[t.tier] <= maxTierIdx);
   const renewed = rider.teamConfidence >= 28 && eligible.includes(current);
   let offers = renewed ? [current] : [];
   const others = shuffleArr(eligible.filter(t=>t.id!==current.id)).sort((a,b)=>b.minRep-a.minRep);
@@ -4528,12 +4548,33 @@ const WACKY_CHOICE_LABELS = new Proxy(WACKY_CHOICE_LABELS_FR, {
    résultats récents, pour aider à décider si c'est le bon moment de jouer audacieux. */
 /* ---------- CLASSEMENT MONDIAL SIMULÉ ----------
    Un repère concret et gratifiant, complémentaire à la réputation (plus abstraite) —
-   évolue course après course face à un peloton simulé, façon classement UCI. */
-function updateWorldRank(rider, bestTier, racePrestige){
+   évolue course après course face à un peloton simulé, façon classement UCI. Fidèle au
+   vrai système de points UCI : seules les places jusqu'à environ la 29e rapportent
+   quelque chose, de façon dégressive (1er = gain maximal, 29e = quasi rien, 30e et
+   au-delà = aucune amélioration possible) — et l'ampleur du gain dépend du prestige de
+   la course, comme les vrais barèmes de points UCI qui varient énormément entre un
+   grand tour et une petite classique. */
+function updateWorldRank(rider, bestTier, racePrestige, perf){
   if(typeof rider.worldRank !== 'number') rider.worldRank = 450;
-  const tierMove = {victoire:-40, podium:-15, top10:-6, peloton:0, jourssans:2, abandon:4, forfait:0}[bestTier] || 0;
-  const prestigeMult = 1 + (racePrestige-1)*0.3;
-  rider.worldRank = clamp(Math.round(rider.worldRank + tierMove*prestigeMult), 1, 900);
+  if(bestTier==='forfait') return;
+  const prestigeMult = 1 + (racePrestige-1)*0.35;
+  if(bestTier==='abandon'){
+    rider.worldRank = clamp(Math.round(rider.worldRank + 5*prestigeMult), 1, 900);
+    return;
+  }
+  const pos = placementNumber(bestTier, perf);
+  if(pos!==null && pos <= 29){
+    const improvementFactor = (30 - pos) / 30; // 1er ≈ 0.97, 29e ≈ 0.03, 30e = 0
+    const maxSwing = 38;
+    const delta = Math.round(maxSwing * improvementFactor * prestigeMult);
+    rider.worldRank = clamp(rider.worldRank - delta, 1, 900);
+  } else if(pos!==null && pos >= 60){
+    /* Au-delà de la 30e place, plus aucune amélioration possible — mais un très mauvais
+       résultat peut quand même coûter un peu de terrain, comme une contre-performance
+       qui n'échappe pas aux observateurs. */
+    rider.worldRank = clamp(Math.round(rider.worldRank + 2*prestigeMult), 1, 900);
+  }
+  // Entre la 30e et la 59e place : zone neutre, aucun mouvement dans un sens ou l'autre.
 }
 
 function riderFormStatus(rider){
@@ -4760,7 +4801,10 @@ function finalizeRace(){
       else if(avgJersey>=32) jTier='peloton';
       else jTier='jourssans';
       jerseyResult = {type:STATE.raceRole, tier:jTier, weeksCount:matching.length, weeks:matchingWeeks};
-      bestTier = jTier;
+      /* Le résultat de la classification annexe reste distinct du classement général —
+         viser le maillot à pois ne doit ni gonfler ni pénaliser le classement final au
+         général (ni la réputation/prime qui en découlent), qui reflète toujours la
+         performance sur l'ensemble des semaines. */
     } else {
       jerseyResult = {type:STATE.raceRole, tier:null, weeksCount:0, weeks:[]};
     }
@@ -4777,7 +4821,7 @@ function finalizeRace(){
   let confDelta = confidenceDeltaFor(bestTier);
   if(STATE.domestiqueBonus){ confDelta += 5; STATE.domestiqueBonus = false; }
   STATE.rider.reputation = clamp(STATE.rider.reputation + repGain, 0, 100);
-  updateWorldRank(STATE.rider, bestTier, race.prestige);
+  updateWorldRank(STATE.rider, bestTier, race.prestige, bestPerf);
 
   /* Paiement différé d'une déclaration confiante en interview : si le résultat de
      cette course-ci n'est pas au moins un podium, la confiance affichée la dernière
