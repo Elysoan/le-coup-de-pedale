@@ -477,6 +477,17 @@ const I18N = {
     legacyModestDomestique:'A modest domestique, loyal to the peloton',
     rollingStageDefault:'rolling stage',
     shareNativeText:'My professional cycling career — lecoupdepedale.com',
+    signatureRaceTitle:'Signature race', optional:'optional',
+    signatureRaceDesc:"Pick a classic or monument that means the most to you — you'll always race it with a little extra fire.",
+    noneChoice:'None',
+    signatureRaceNote:"Your signature race — the one you look forward to all season!",
+    progressVsLastSeason:'Progress since last season', worldRankProgress:'ranking spots', overallRatingProgress:'overall rating',
+    careerCapActive:'Ongoing career milestone', deadlineBy:'to reach by the end of season',
+    careerCapTitle:'Career milestone', careerCapDesc:'Set yourself an ambitious multi-season goal — rewarded with a real reputation bonus if reached in time.',
+    noCareerCap:'No milestone for now',
+    careerCapAchievedSuffix:'career milestone reached! (+8 reputation)',
+    careerCapMissedSuffix:'career milestone missed, the deadline has passed.',
+    careerCapMet:'🚩 ', careerCapMissed:'🚩 ',
     duringRace:'in', careerEndsPrematurely:'career cut short prematurely.',
     fallWord:'Crash', overexertionWord:'Overexertion', bodyDoneRest:'Body exhausted, medical staff orders rest',
     thisCareer:'this career', deleteCareerTitle:'Delete this career?',
@@ -2714,7 +2725,7 @@ function weatherCrashMult(weatherId){
   return weatherId==='pluie' ? 1.5 : 1;
 }
 
-function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour, isHomeRace){
+function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour, isHomeRace, isSignatureRace){
   const statAvg = statFocusAverage(rider, event.focus);
   const forme = clamp(100 - rider.fatigue*0.75 + (Math.random()*16-8), 5, 100);
   /* Les stats pèsent plus lourd qu'avant (0.62 contre 0.55), la part de forme du jour et
@@ -2727,6 +2738,11 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
      fouet mental, un classique du cyclisme (cf. l'avantage constaté des coureurs locaux
      sur les classiques de leur pays). Effet modeste, jamais décisif à lui seul. */
   if(isHomeRace) base += 3;
+
+  /* Course de cœur : celle choisie librement en début de carrière comme objectif
+     personnel. Un supplément d'envie modeste, comparable à la ferveur du public à
+     domicile — un attachement affectif qui peut se cumuler avec la ferveur locale. */
+  if(isSignatureRace) base += 3;
 
   /* Sur les courses prestigieuses (monuments, grands tours...), un coureur très jeune
      n'a statistiquement presque jamais course la victoire dans la réalité (le plus jeune
@@ -2751,10 +2767,10 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
   }
 
   let perf, spread;
-  if(choice.risk==='sur'){ perf = base*0.92; spread = 7; }
-  else if(choice.risk==='audacieux'){ perf = base*1.08; spread = 25; }
-  else if(choice.risk==='loufoque'){ perf = 35 + statAvg*0.25; spread = 42; }
-  else { perf = base; spread = 15; }
+  if(choice.risk==='sur'){ perf = base*0.92; spread = 5; }
+  else if(choice.risk==='audacieux'){ perf = base*1.08; spread = 18; }
+  else if(choice.risk==='loufoque'){ perf = 35 + statAvg*0.25; spread = 32; }
+  else { perf = base; spread = 11; }
 
   /* La variance se resserre modérément sur les courses les plus prestigieuses (le résultat
      y reflète davantage le niveau réel), sans jamais l'écraser complètement — une partie
@@ -3226,6 +3242,8 @@ function backfillRiderFields(rider){
   if(typeof rider.sponsor === 'undefined') rider.sponsor = null;
   if(typeof rider.pendingConfidentBet !== 'boolean') rider.pendingConfidentBet = false;
   if(typeof rider.teammate === 'undefined') rider.teammate = generateTeammate();
+  if(typeof rider.signatureRaceId === 'undefined') rider.signatureRaceId = null;
+  if(typeof rider.careerCap === 'undefined') rider.careerCap = null;
   if(!Array.isArray(rider.journal)) rider.journal = [];
   if(typeof rider.isMentor !== 'boolean') rider.isMentor = false;
   if(typeof rider.mentorOfferDeclined !== 'boolean') rider.mentorOfferDeclined = false;
@@ -3662,6 +3680,14 @@ function renderCreationScreen(keepScroll){
         </div>
       `).join('')}
     </div>
+    ${cr.style ? `<div class="card">
+      <h3>❤️ ${tf('signatureRaceTitle','Course de cœur')} <span class="small">(${tf('optional','optionnel')})</span></h3>
+      <p class="small">${tf('signatureRaceDesc',"Choisis une classique ou un monument qui te tient particulièrement à cœur — tu y bénéficieras toujours d'un léger supplément d'envie.")}</p>
+      <select onchange="updateSignatureRace(this.value)">
+        <option value="">${tf('noneChoice','Aucune')}</option>
+        ${RACES_DATA().filter(r=>r.type==='classique'||r.type==='monument').map(r=>`<option value="${r.id}" ${r.id===cr.signatureRaceId?'selected':''}>${r.flag?r.flag+' ':''}${r.name}</option>`).join('')}
+      </select>
+    </div>` : ''}
     ${nameBlock}
     <button class="btn" ${cr.style?'':'disabled'} onclick="confirmCreation()">${tf('startCareer','🚀 Débuter la carrière')}</button>
     <button class="btn ghost" onclick="renderMainMenu()">${tf('backToMenu','← Retour au menu principal')}</button>
@@ -3670,6 +3696,11 @@ function renderCreationScreen(keepScroll){
       <button class="footer-link" onclick="renderSettingsScreen()">${tf('accessibility','♿ Accessibilité')}</button>
     </div>
   `, keepScroll);
+}
+
+function updateSignatureRace(id){
+  window._creation.signatureRaceId = id || null;
+  renderCreationScreen(true);
 }
 
 function updateCountry(code){
@@ -3725,6 +3756,7 @@ function confirmCreation(){
   if(!cr.style) return;
   const name = cr.name || generateRiderName(cr.country);
   const rider = newRider(name, cr.country, cr.style);
+  rider.signatureRaceId = cr.signatureRaceId || null;
   const rivals = generateRivals(rider);
   const rivalRecords = {};
   rivals.forEach(rv=>{ rivalRecords[rv.name] = {wins:0, losses:0}; });
@@ -3978,11 +4010,29 @@ const STAGE_PAIRS = {montagne:'sprint', sprint:'montagne', clm:'classiques', cla
    Regroupe en un seul écran ce qui prenait auparavant 4-5 écrans successifs (priorité,
    stage, objectif, sponsor, défi) — tous les choix se font d'un coup, validés ensemble
    par un unique bouton, plutôt qu'une série d'écrans à traverser un par un. */
+/* ---------- CAP DE CARRIÈRE PLURIANNUEL ----------
+   Un objectif ambitieux fixé sur 2-3 saisons, distinct de l'objectif annuel — donne une
+   direction de plus long terme à la carrière, avec une vraie récompense à la clé. */
+const CAREER_CAP_TYPES = [
+  {id:'grandtour', icon:'🏆', label:"Gagner un grand tour", labelEN:"Win a grand tour", years:3},
+  {id:'monument', icon:'🥇', label:"Gagner un monument", labelEN:"Win a monument", years:3},
+  {id:'top20', icon:'🌍', label:"Entrer dans le top 20 mondial", labelEN:"Break into the world top 20", years:2},
+  {id:'reputation70', icon:'⭐', label:"Atteindre 70 de réputation", labelEN:"Reach 70 reputation", years:2},
+];
+
+function checkCareerCapCondition(rider, type){
+  if(type==='grandtour') return rider.palmares.some(p=>p.type==='grandtour' && p.tier==='victoire');
+  if(type==='monument') return rider.palmares.some(p=>p.type==='monument' && p.tier==='victoire');
+  if(type==='top20') return rider.worldRank <= 20;
+  if(type==='reputation70') return rider.reputation >= 70;
+  return false;
+}
+
 function renderSeasonSetupScreen(keepScroll){
   if(STATE) STATE._screen='seasonsetup';
   const r = STATE.rider;
   if(!STATE.pendingSetup){
-    STATE.pendingSetup = {focus:null, stage:'aucun', objective:'aucun', sponsorIdx:'skip', challengeAccept:true};
+    STATE.pendingSetup = {focus:null, stage:'aucun', objective:'aucun', sponsorIdx:'skip', challengeAccept:true, careerCapChoice:null};
   }
   const setup = STATE.pendingSetup;
   const hasSponsor = !!r.sponsor;
@@ -4043,6 +4093,17 @@ function renderSeasonSetupScreen(keepScroll){
       </div>
       <div class="row-item ${!setup.challengeAccept?'active':''}" onclick="setSeasonSetup('challengeAccept',false)"><span>${tf('ignoreChallenge','Ignorer ce défi')}</span></div>
     </div>
+    ${r.careerCap ? `<div class="card" style="border:1.5px solid var(--yellow);background:var(--yellow-light,#FFF8E1);">
+      <h3>🚩 ${tf('careerCapActive','Cap de carrière en cours')}</h3>
+      <p class="small">${CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).icon} ${(lang==='en' && CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).labelEN) ? CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).labelEN : CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).label} — ${tf('deadlineBy','à atteindre avant la fin de la saison')} ${r.careerCap.deadlineSeason}</p>
+    </div>` : `<div class="card">
+      <h3>🚩 ${tf('careerCapTitle','Cap de carrière')} <span class="small">(${tf('optional','optionnel')})</span></h3>
+      <p class="small" style="margin-top:0;">${tf('careerCapDesc',"Fixe-toi un objectif ambitieux sur plusieurs saisons — récompensé par un vrai bonus de réputation s'il est atteint à temps.")}</p>
+      ${CAREER_CAP_TYPES.map(c=>`<div class="row-item ${setup.careerCapChoice===c.id?'active':''}" onclick="setSeasonSetup('careerCapChoice','${c.id}')">
+        <div><strong>${c.icon} ${(lang==='en' && c.labelEN) ? c.labelEN : c.label}</strong><p class="small" style="margin:2px 0 0;">${c.years} ${tf('seasonsBareLower','saisons')}</p></div>
+      </div>`).join('')}
+      <div class="row-item ${!setup.careerCapChoice?'active':''}" onclick="setSeasonSetup('careerCapChoice',null)"><span>${tf('noCareerCap',"Pas de cap pour l'instant")}</span></div>
+    </div>`}
     ${rivalsCardHTML()}
     <button class="btn" ${setup.focus?'':'disabled'} onclick="confirmSeasonSetup()">✅ ${tf('validateStartSeason','Valider et débuter la saison')}</button>
   `, keepScroll);
@@ -4078,6 +4139,11 @@ function confirmSeasonSetup(){
 
   STATE.sideChallengeActive = !!setup.challengeAccept;
   if(!setup.challengeAccept) STATE.sideChallenge = null;
+
+  if(!r.careerCap && setup.careerCapChoice){
+    const capDef = CAREER_CAP_TYPES.find(c=>c.id===setup.careerCapChoice);
+    r.careerCap = {type:capDef.id, deadlineSeason: r.season + capDef.years - 1};
+  }
 
   STATE.pendingSetup = null;
 
@@ -4365,7 +4431,7 @@ function confirmCalendar(){
   STATE.runQueue = STATE.selectedRaceIds.map(id=>all.find(r=>r.id===id)).sort((a,b)=>a.month-b.month);
   STATE.seasonTotalDays = selectedDaysTotal();
   STATE.cumulativeDaysRaced = 0;
-  STATE.seasonSummary = {repStart: STATE.rider.reputation, results:[]};
+  STATE.seasonSummary = {repStart: STATE.rider.reputation, rankStart: STATE.rider.worldRank, ratingStart: globalRiderRating(STATE.rider.stats), results:[]};
   STATE.runRaceIdx = 0;
   beginRace();
 }
@@ -4554,6 +4620,22 @@ const WACKY_CHOICE_LABELS = new Proxy(WACKY_CHOICE_LABELS_FR, {
    au-delà = aucune amélioration possible) — et l'ampleur du gain dépend du prestige de
    la course, comme les vrais barèmes de points UCI qui varient énormément entre un
    grand tour et une petite classique. */
+/* Un numéro 1 mondial sans la moindre victoire marquante n'existe pas dans la réalité —
+   même une accumulation de podiums/top10 sur des dizaines de courses ne suffit jamais à
+   elle seule à atteindre le sommet. Ce plancher empêche le classement de descendre
+   au-delà d'un certain seuil tant qu'aucune victoire suffisamment prestigieuse n'a été
+   décrochée, quel que soit le nombre de bons résultats accumulés par ailleurs. */
+function worldRankFloor(rider){
+  const wins = (rider.palmares || []).filter(p=>p.tier==='victoire');
+  if(wins.length===0) return 15;
+  const bestPrestige = Math.max(...wins.map(w=>w.prestige || 1));
+  if(bestPrestige>=5) return 1;
+  if(bestPrestige===4) return 2;
+  if(bestPrestige===3) return 4;
+  if(bestPrestige===2) return 7;
+  return 10; // uniquement des victoires sur de petites courses (prestige 1)
+}
+
 function updateWorldRank(rider, bestTier, racePrestige, perf){
   if(typeof rider.worldRank !== 'number') rider.worldRank = 450;
   if(bestTier==='forfait') return;
@@ -4564,10 +4646,15 @@ function updateWorldRank(rider, bestTier, racePrestige, perf){
   }
   const pos = placementNumber(bestTier, perf);
   if(pos!==null && pos <= 29){
-    const improvementFactor = (30 - pos) / 30; // 1er ≈ 0.97, 29e ≈ 0.03, 30e = 0
+    /* La victoire compte à part : un gain plein, jamais partagé avec les places
+       suivantes. Du 2e au 29e, la progression est dégressive mais plafonnée à un peu
+       plus de la moitié du gain d'une victoire — fidèle aux vrais barèmes UCI, où le
+       vainqueur touche largement plus que le 2e ou 3e (pas un simple partage linéaire). */
+    const improvementFactor = pos===1 ? 1.0 : 0.55 * (30 - pos) / 29;
     const maxSwing = 38;
     const delta = Math.round(maxSwing * improvementFactor * prestigeMult);
     rider.worldRank = clamp(rider.worldRank - delta, 1, 900);
+    rider.worldRank = Math.max(rider.worldRank, worldRankFloor(rider));
   } else if(pos!==null && pos >= 60){
     /* Au-delà de la 30e place, plus aucune amélioration possible — mais un très mauvais
        résultat peut quand même coûter un peu de terrain, comme une contre-performance
@@ -4610,6 +4697,7 @@ function renderCurrentEvent(){
   const weather = WEATHER_TYPES.find(w=>w.id===event._weather);
   const form = riderFormStatus(STATE.rider);
   const isHomeRace = race.flag && race.flag === COUNTRIES.find(c=>c.code===STATE.rider.countryCode)?.flag;
+  const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
   const riskIcon = {sur:'🛡️', equilibre:'⚖️', audacieux:'🎲', loufoque:'🤪'};
   setHTML(`
     ${riderHeaderHTML()}
@@ -4621,6 +4709,7 @@ function renderCurrentEvent(){
       <p class="small">🗓️ ${MONTHS[race.month]} · ${tf('eventCounter','Évènement')} ${STATE.runEventIdx+1}/${race.events.length} · ${tf('raceCounter','Course')} ${STATE.runRaceIdx+1}/${STATE.runQueue.length} ${tf('ofSeason','de la saison')}</p>
       <p class="small">${weather.icon} ${weather.label} · ${form.icon} ${form.label}</p>
       ${isHomeRace ? `<p class="small" style="color:var(--green-dark);font-weight:700;">📣 ${tf('homeCrowdNote','Le public te porte — tu cours à domicile !')}</p>` : ''}
+      ${isSignatureRace ? `<p class="small" style="color:var(--pink);font-weight:700;">❤️ ${tf('signatureRaceNote','Ta course de cœur — celle que tu attends toute la saison !')}</p>` : ''}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
       <h3>${event.title}</h3>
       <p>${event.desc}</p>
@@ -4644,7 +4733,8 @@ function chooseOption(i){
   }
 
   const isHomeRace = race.flag && race.flag === COUNTRIES.find(c=>c.code===STATE.rider.countryCode)?.flag;
-  const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace);
+  const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
+  const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace, isSignatureRace);
   applyFatigue(STATE.rider, race, choice, weatherId);
   STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained});
   STATE.runEventIdx++;
@@ -4821,6 +4911,7 @@ function finalizeRace(){
   let confDelta = confidenceDeltaFor(bestTier);
   if(STATE.domestiqueBonus){ confDelta += 5; STATE.domestiqueBonus = false; }
   STATE.rider.reputation = clamp(STATE.rider.reputation + repGain, 0, 100);
+  STATE.rider.palmares.push({season:STATE.rider.season, raceName:race.name, raceId:race.id, type:race.type, tier:bestTier, prestige:race.prestige});
   updateWorldRank(STATE.rider, bestTier, race.prestige, bestPerf);
 
   /* Paiement différé d'une déclaration confiante en interview : si le résultat de
@@ -4869,7 +4960,6 @@ function finalizeRace(){
   if(bestTier==='victoire' && race.prestige>=3){
     addJournalEntry(STATE.rider, `🏆 ${tf('victoryOnEntry','Victoire sur')} ${race.name}.`);
   }
-  STATE.rider.palmares.push({season:STATE.rider.season, raceName:race.name, raceId:race.id, type:race.type, tier:bestTier});
   checkRaceAchievements(race, bestTier);
   if(jerseyResult && jerseyResult.tier==='victoire'){
     if(jerseyResult.type==='grimpeur') unlockTrophy('maillot-pois');
@@ -5158,6 +5248,8 @@ function finishSeason(){
   const completedSeason = rider.season;
   const results = STATE.seasonSummary.results;
   const repStart = STATE.seasonSummary.repStart;
+  const rankStart = STATE.seasonSummary.rankStart;
+  const ratingStart = STATE.seasonSummary.ratingStart;
   endSeasonAging(rider, STATE.trainingFocus);
   rider.season = completedSeason + 1;
   rider.contractYearsLeft = Math.max(0, rider.contractYearsLeft - 1);
@@ -5242,19 +5334,37 @@ function finishSeason(){
   if(STATE.rivals){
     STATE.rivals.forEach(rv=>{ rv.strength = clamp(rv.strength + (Math.random()*3-0.5), 20, 95); });
   }
+
+  STATE.careerCapNote = null;
+  if(rider.careerCap){
+    const capDef = CAREER_CAP_TYPES.find(c=>c.id===rider.careerCap.type);
+    const capLabel = (SETTINGS.lang==='en' && capDef.labelEN) ? capDef.labelEN : capDef.label;
+    if(checkCareerCapCondition(rider, rider.careerCap.type)){
+      rider.reputation = clamp(rider.reputation + 8, 0, 100);
+      STATE.careerCapNote = {ok:true, text:`${capLabel} — ${tf('careerCapAchievedSuffix','cap de carrière atteint ! (+8 réputation)')}`};
+      rider.careerCap = null;
+    } else if(completedSeason >= rider.careerCap.deadlineSeason){
+      STATE.careerCapNote = {ok:false, text:`${capLabel} — ${tf('careerCapMissedSuffix','cap de carrière manqué, la date limite est dépassée.')}`};
+      rider.careerCap = null;
+    }
+    // Sinon, le cap reste actif silencieusement — pas encore de date limite atteinte.
+  }
+
   checkSeasonAchievements(results);
-  STATE.seasonRecapData = {seasonNum: completedSeason, results, repStart};
+  STATE.seasonRecapData = {seasonNum: completedSeason, results, repStart, rankStart, ratingStart};
   renderSeasonRecap();
 }
 
 function renderSeasonRecap(){
   if(STATE) STATE._screen='seasonrecap';
-  const {seasonNum, results, repStart} = STATE.seasonRecapData;
+  const {seasonNum, results, repStart, rankStart, ratingStart} = STATE.seasonRecapData;
   const r = STATE.rider;
   const team = currentTeam(r);
   const wins = results.filter(x=>x.bestTier==='victoire').length;
   const podiums = results.filter(x=>x.bestTier==='podium').length;
   const repChange = Math.round(r.reputation - repStart);
+  const rankChange = (typeof rankStart==='number') ? (rankStart - r.worldRank) : null; // positif = progression
+  const ratingChange = (typeof ratingStart==='number') ? (globalRiderRating(r.stats) - ratingStart) : null;
   const seasonsPlayed = r.season - 1;
   const forcedByAge = r.age >= 41;
   const forcedBySeasons = seasonsPlayed >= 15;
@@ -5277,12 +5387,18 @@ function renderSeasonRecap(){
     <p style="margin:0;"><strong>${chNote.ok?tf('challengeMet','🎲 Défi réussi — '):tf('challengeMissed','🎲 Défi manqué — ')}</strong>${chNote.text}</p>
   </div>` : '';
   STATE.challengeNote = null;
+  const capNote = STATE.careerCapNote;
+  const capNoteHTML = capNote ? `<div class="card" style="border:1.5px solid ${capNote.ok?'var(--green)':'var(--line)'};background:${capNote.ok?'var(--green-light)':'var(--surface-alt)'};">
+    <p style="margin:0;"><strong>${capNote.ok?tf('careerCapMet','🚩 '):tf('careerCapMissed','🚩 ')}</strong>${capNote.text}</p>
+  </div>` : '';
+  STATE.careerCapNote = null;
   setHTML(`
     <h1>📊 ${tf('recap','Bilan')} — ${tf('season','Saison')} ${seasonNum}</h1>
     ${riderHeaderHTML()}
     ${trophyBannerHTML()}
     ${objNoteHTML}
     ${chNoteHTML}
+    ${capNoteHTML}
     ${sponsorNoteHTML}
     <div class="card">
       <h3>${tf('seasonResults','Résultats de la saison')}</h3>
@@ -5290,6 +5406,14 @@ function renderSeasonRecap(){
       ${results.map(x=>`<div class="race-item"><div><strong>${x.raceName}</strong></div>
         <span class="${tierClass(x.bestTier)} mono small">${TIER_LABEL[x.bestTier]}</span></div>`).join('')}
     </div>
+    ${(rankChange!==null || ratingChange!==null) ? `<div class="card">
+      <h3>📈 ${tf('progressVsLastSeason','Évolution par rapport à la saison précédente')}</h3>
+      <div class="grid3">
+        <div class="center"><p style="margin:0;font-weight:800;font-size:1.3rem;color:${repChange>0?'var(--green-dark)':repChange<0?'var(--red)':'var(--text-soft)'};">${repChange>=0?'+':''}${repChange}</p><p class="small" style="margin:0;">${tf('reputationWord','Réputation')}</p></div>
+        <div class="center"><p style="margin:0;font-weight:800;font-size:1.3rem;color:${rankChange>0?'var(--green-dark)':rankChange<0?'var(--red)':'var(--text-soft)'};">${rankChange>=0?'+':''}${rankChange}</p><p class="small" style="margin:0;">${tf('worldRankProgress','places au classement')}</p></div>
+        <div class="center"><p style="margin:0;font-weight:800;font-size:1.3rem;color:${ratingChange>0?'var(--green-dark)':ratingChange<0?'var(--red)':'var(--text-soft)'};">${ratingChange>=0?'+':''}${Math.round(ratingChange)}</p><p class="small" style="margin:0;">${tf('overallRatingProgress','note globale')}</p></div>
+      </div>
+    </div>` : ''}
     <div class="card">
       <h3>${tf('newStats','Nouvelles statistiques')}</h3>
       ${statBarsHTML(r.stats)}
