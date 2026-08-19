@@ -5438,18 +5438,16 @@ function renderCurrentEvent(){
           const weekTotal = race.sampleWeeks || (race._baseEventCount||race.events.length);
           return ` · ${tf('weekCounter','Semaine')} ${weekNum}/${weekTotal}`;
         }
-        // Pour les semitours avec plusieurs events : afficher le jour
-        // Les events bonus partagent le même jour que le 1er event normal (index bonusCount)
-        const bonusCount = race.events.filter(e=>e._isBonus).length;
-        const baseCount = race._baseEventCount || race.events.length;
-        if(baseCount > 1 || bonusCount > 0){
-          // Jour = position parmi les events non-bonus + 1
-          // Les bonus sont en tête → même jour que le 1er event normal
-          const eventsBefore = race.events.slice(0, STATE.runEventIdx+1);
-          const nonBonusBefore = eventsBefore.filter(e=>!e._isBonus).length;
-          const dayNum = event._isBonus ? 1 : nonBonusBefore;
-          const dayTotal = baseCount;
-          return dayTotal > 1 ? ` · ${tf('dayCounter','Jour')} ${dayNum}/${dayTotal}` : '';
+        // Pour les courses multi-jours (semitours) : afficher le jour
+        // On répartit les events sur les jours réels de la course (race.days)
+        const totalDays = race.days || 1;
+        if(totalDays > 1){
+          const totalEvents = race.events.length;
+          // Position actuelle dans les events (0-indexé)
+          const evIdx = STATE.runEventIdx;
+          // Jour estimé : répartition linéaire des events sur les jours
+          const dayNum = Math.max(1, Math.round((evIdx + 0.5) / totalEvents * totalDays));
+          return ` · ${tf('dayCounter','Jour')} ${dayNum}/${totalDays}`;
         }
         return '';
       })()} · ${tf('raceCounter','Course')} ${STATE.runRaceIdx+1} ${tf('ofSeason','de la saison')}</p>
