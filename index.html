@@ -435,7 +435,7 @@ const I18N = {
     bestSprinter:'best sprinter', aimForWhiteJersey:'Aim for the white jersey (best young rider)',
     rideForTeam:'Ride for the team (domestique)',
     formGreat:'In great shape', formOk:'Legs feel okay', formHeavy:'Heavy legs', formExhausted:'Exhausted',
-    eventCounter:'Event', weekCounter:'Week', racePhase:'Race phase', raceCounter:'Race', ofSeason:'of the season',
+    eventCounter:'Event', weekCounter:'Week', racePhase:'Race phase', raceCounter:'Race', ofSeason:'of the season', dayCounter:'Day',
     domestiqueRoleTitle:'Domestique role', domestiqueRoleDesc:"Ride entirely for the designated leader, without playing your own card",
     placement1st:'1st', placementDNF:'Not classified (DNF)', placementDNS:'Did not start',
     minorInjury:'minor injury', canRestartNext:'The rider can start again from the next race on the calendar.',
@@ -579,7 +579,7 @@ const I18N = {
     howToPlayTitle:'How to play', theConcept:'The basics',
     theConceptDesc:"You play as a professional road cyclist, season after season. Choose your calendar, race, manage your fatigue, and grow your career for up to 12 seasons or until age 41.",
     calendarBudget:'The calendar and day budget',
-    calendarBudgetDesc:"Each season, your team imposes 3 races and you choose the rest yourself, up to 10 total. Each race lasts a number of days (a classic = 1 day, a grand tour = 21 days): you have",
+    calendarBudgetDesc:"Each season, your team imposes 3 races and you choose the rest yourself. Each race lasts a number of days (a classic = 1 day, a grand tour = 21 days): you have",
     max65days:'65 days max', perSeasonEtc:"per season. Beyond 45 cumulative days, fatigue builds up noticeably faster for the rest of the season — aim for balance rather than filling the calendar.",
     raceChoices:'Choices during races',
     raceChoicesDesc1:'On every race, an event offers you several approaches',
@@ -1699,7 +1699,7 @@ function RACE_DEFS(){ return [
           {title:"Les strade bianche de Toscane", titleEN:"The strade bianche of Tuscany", desc:"Les chemins blancs et poussiéreux de Toscane transforment la course en épreuve quasi tout-terrain.", descEN:"The dusty white roads of Tuscany turn the race into something close to an off-road event."},
           {title:"L'ultime secteur blanc avant l'arrivée", titleEN:"The last white-road sector before the finish", desc:"Le dernier chemin de terre avant l'arrivée sur la place centrale de Sienne.", descEN:"The last dirt road before the finish on Siena's main square."},
           {title:"Secteur de gravier toscan", titleEN:"Tuscan gravel sector", desc:"La poussière blanche colle aux jambes et au visage, un décor unique dans le calendrier.", descEN:"White dust clings to legs and faces — a setting unlike anything else on the calendar."},
-          {title:"Montée finale pavée vers la place centrale", titleEN:"Cobbled final climb to the main square", desc:"Une arrivée pentue et pavée en plein cœur d'une ville historique toscane.", descEN:"A steep, cobbled finish in the heart of a historic Tuscan city."},
+          {title:"Montée finale sur les chemins blancs", titleEN:"Final climb on the white roads", desc:"Les derniers kilomètres sur la poussière blanche d'une cité médiévale toscane, une lutte contre la pente et le gravier.", descEN:"The final kilometres on white gravel dust through a Tuscan medieval hilltop city — a fight against the slope and the loose surface."},
         ]}
     ]},
   {id:'e3-saxo', name:'Le Prélude Flandrien', type:'classique', month:3, prestige:2, fatCost:8, days:1,flag:'🇧🇪',
@@ -2928,13 +2928,19 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
    nettement plus cher physiquement que gérer sagement son effort (sûr). */
 const RISK_FATIGUE_MULT = {sur:0.75, equilibre:1, audacieux:1.65, loufoque:1};
 function applyFatigue(rider, race, choice, weatherId){
+  // recuperation réduit l'accumulation de base
   const reduc = 1 - (rider.stats.recuperation/280);
+  // resistance amortit l'impact de la difficulté (un coureur résistant encaisse mieux les courses longues et dures)
+  const resistanceFactor = 1 - clamp((rider.stats.resistance - 50) / 150, -0.2, 0.35);
   const daysSoFar = STATE.cumulativeDaysRaced || 0;
   const overloadWear = daysSoFar > 45 ? 1 + (daysSoFar-45)*0.018 : 1;
-  const intensity = 1 + Math.min(race.days, 21)/21 * 0.35;
+  // intensité selon durée de la course
+  const intensity = 1 + Math.min(race.days, 21)/21 * 0.45;
+  // prestige = difficulté réelle de la course (peloton plus fort, course plus sélective)
+  const prestigeFactor = 1 + (race.prestige - 1) * 0.12;
   const riskMult = choice ? (RISK_FATIGUE_MULT[choice.risk] || 1) : 1;
   const weatherMult = weatherId ? weatherFatigueMult(weatherId) : 1;
-  const cost = race.fatCost * reduc * overloadWear * intensity * riskMult * weatherMult;
+  const cost = race.fatCost * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * riskMult * weatherMult;
   rider.fatigue = clamp(rider.fatigue + cost, 0, 130);
 }
 
@@ -2950,7 +2956,10 @@ function applyInterRaceRecovery(rider, prevRace, nextRace){
   const daysSoFar = STATE.cumulativeDaysRaced || 0;
   const seasonFactor = clamp(1 - daysSoFar*0.007, 0.3, 1);
   const prevRaceDepth = 1 - Math.min(prevRace.days, 21)/21 * 0.35;
-  const recovery = gap * (3 + rider.stats.recuperation/18) * seasonFactor * prevRaceDepth;
+  // Non-linéaire forte : 1 mois ≈ 18 pts, 2 mois ≈ 40 pts, 3 mois ≈ 58 pts, 4 mois ≈ 72 pts
+  // gap^1.4 amplifie fortement les longues pauses vs les courtes
+  const gapFactor = gap > 0 ? Math.pow(gap, 1.4) : 0;
+  const recovery = gapFactor * (12 + rider.stats.recuperation/10) * seasonFactor * prevRaceDepth;
   rider.fatigue = clamp(rider.fatigue - recovery, 0, 130);
   const seasonFloor = Math.min(42, daysSoFar * 1.1);
   rider.fatigue = Math.max(rider.fatigue, seasonFloor);
@@ -3735,17 +3744,21 @@ function riderHeaderHTML(){
     </div>
     <p class="small">${riderRole(r)}${r.role ? ` · ${(RIDER_ROLES.find(x=>x.id===r.role)||{icon:'',name:'',nameEN:''}).icon} ${SETTINGS.lang==='en'?(RIDER_ROLES.find(x=>x.id===r.role)||{nameEN:''}).nameEN:(RIDER_ROLES.find(x=>x.id===r.role)||{name:''}).name}` : ''} — ${team.name} · 📋 ${tf('contractWord','contrat')} : ${r.contractYearsLeft} ${tf(r.contractYearsLeft>1?'seasonsLeftBareP':'seasonsLeftBare','saison'+(r.contractYearsLeft>1?'s':'')+' restante'+(r.contractYearsLeft>1?'s':''))}</p>
     <p class="small">🌍 <strong>${r.worldRank}${r.worldRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('worldwide','mondial')}${(()=>{
-      // Rang par style
-      const sameStyle = CAREER_HISTORY.filter(c=>c.styleId===r.styleId);
-      const styleRank = sameStyle.filter(c=>c.finalReputation > r.reputation).length + 1;
-      // Rang par nationalité  
-      const sameCountry = CAREER_HISTORY.filter(c=>c.countryCode===r.countryCode);
-      const countryRank = sameCountry.filter(c=>c.finalReputation > r.reputation).length + 1;
+      // Rang par style et national calculé depuis le worldRank
+      // (5 styles à répartition égale, pays avec poids réalistes)
+      const COUNTRY_WEIGHT = {FR:1.6,BE:1.4,IT:1.5,NL:1.3,ES:1.4,DE:1.0,AU:1.0,GB:1.0,
+        CO:0.9,DK:1.0,CH:0.7,SI:0.5,US:0.7,NO:0.8,LU:0.4,PT:0.7,PL:0.6,IE:0.5,ER:0.4,RW:0.4};
+      const TOTAL_WEIGHT = Object.values(COUNTRY_WEIGHT).reduce((a,b)=>a+b,0);
+      const wk = COUNTRY_WEIGHT[r.countryCode] || 0.7;
+      const countryShare = wk / TOTAL_WEIGHT;
+      const styleShare = 1/5; // 5 styles équilibrés
+      const styleRank = Math.max(1, Math.round(r.worldRank * styleShare));
+      const countryRank = Math.max(1, Math.round(r.worldRank * countryShare));
       const styleLabel = STYLES.find(s=>s.id===r.styleId);
       const countryObj = COUNTRIES.find(x=>x.code===r.countryCode);
       let extra = '';
-      if(sameStyle.length>0) extra += ` · ${styleLabel?styleLabel.icon||'':''} <strong>${styleRank}${styleRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('amongStyle','chez les')} ${styleLabel?styleLabel.name.toLowerCase():''}s`;
-      if(sameCountry.length>0) extra += ` · ${countryObj?countryObj.flag:''} <strong>${countryRank}${countryRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('ofCountry','de')} ${countryObj?countryObj.name:''}`;
+      extra += ` · ${styleLabel?styleLabel.icon||'':''} <strong>${styleRank}${styleRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('amongStyle','chez les')} ${styleLabel?styleLabel.name.toLowerCase():''}s`;
+      extra += ` · ${countryObj?countryObj.flag:''} <strong>${countryRank}${countryRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('ofCountry','de')} ${countryObj?countryObj.name:''}`;
       return extra;
     })()}</p>
     ${r.sponsor ? `<p class="small">${r.sponsor.icon} ${tf('sponsorWord','Sponsor')} : ${r.sponsor.name}</p>` : ''}
@@ -3992,14 +4005,46 @@ function renderChallenge(){
 function startChallenge(){
   const ch = window._pendingChallenge;
   if(!ch) return renderMainMenu();
+
   // Trouver un slot vide
-  const slotIdx = SLOTS.findIndex(s=>!s);
-  if(slotIdx === -1){
-    alert(tf('noFreeSlot',"Aucun emplacement libre. Libère une carrière pour lancer un défi."));
-    return;
+  const freeSlotIdx = SLOTS.findIndex(s=>!s);
+  if(freeSlotIdx !== -1){
+    // Slot libre dispo → on l'utilise directement
+    _launchChallengeInSlot(freeSlotIdx);
+  } else {
+    // Tous les slots occupés → demander lequel écraser
+    renderChallengeSlotPicker();
   }
+}
+
+function renderChallengeSlotPicker(){
+  const ch = window._pendingChallenge;
+  if(!ch) return renderMainMenu();
+  setHTML(`
+    <div class="card" style="border:2px solid var(--orange);">
+      <strong>🎯 ${tf('challengeMode','Mode défi')}</strong>
+      <p class="small" style="margin:4px 0 0;">${tf('chooseSlotToOverwrite','Tous les emplacements sont occupés. Quelle carrière souhaites-tu remplacer ?')}</p>
+    </div>
+    ${SLOTS.map((slot, idx) => {
+      if(!slot) return '';
+      const r = slot.state && slot.state.rider;
+      const label = r ? `${r.flag||''} ${r.name} — ${tf('seasonLabel','Saison')} ${r.season}` : tf('unknownCareer','Carrière inconnue');
+      return `<div class="race-item" onclick="_launchChallengeInSlot(${idx})" style="cursor:pointer;">
+        <div>
+          <strong>${tf('slot','Emplacement')} ${idx+1}</strong>
+          <p class="small" style="margin:2px 0 0;">${label}</p>
+        </div>
+        <span style="color:var(--red);font-weight:700;">⚠️ ${tf('overwrite','Écraser')}</span>
+      </div>`;
+    }).join('')}
+    <button class="btn ghost" onclick="renderChallenge()">${tf('back','← Retour')}</button>
+  `);
+}
+
+function _launchChallengeInSlot(slotIdx){
+  const ch = window._pendingChallenge;
+  if(!ch) return renderMainMenu();
   CURRENT_SLOT = slotIdx;
-  // Générer un nom avec la fonction existante
   const riderName = generateRiderName(ch.country.code);
   window._creation = {
     name: riderName,
@@ -4009,7 +4054,6 @@ function startChallenge(){
     challengeObj: ch.obj,
     challengeTeamId: ch.team.id,
   };
-  // Lancer directement sans passer par l'écran de création
   confirmCreation();
 }
 
@@ -4952,6 +4996,137 @@ const BONUS_PHASE_POOL = [
   },
 ];
 
+/* ---------- EVENTS RIVAL EN COURSE ----------
+   Déclenchés quand un rival est présent dans la course.
+   Injectés comme phase bonus supplémentaire si un rival figure dans race.raceIds.
+   Format identique aux bonus phases : focus, title, desc, choices. */
+const RIVAL_RACE_EVENTS = [
+  {
+    focus: ['mental','classiques'],
+    variants: [
+      {title:"Dans la roue du rival", titleEN:"On the rival's wheel",
+       desc:"Dans le final, {name} se retrouve juste devant toi. Tu peux rester dans sa roue et profiter de son travail, ou tenter de le surprendre.",
+       descEN:"{name} is right ahead of you in the finale. You can sit on their wheel and benefit from their pace, or try to surprise them."},
+      {title:"Le regard du rival", titleEN:"The rival's glance",
+       desc:"{name} t'a repéré dans le groupe de tête. Un bref regard s'échange — les deux équipes savent que la course va se jouer entre vous.",
+       descEN:"{name} has spotted you in the lead group. A brief glance is exchanged — both teams know the race will be decided between you."},
+    ],
+    choices: [
+      {label:"Rester dans sa roue, sprinter au bon moment", labelEN:"Stay on their wheel, sprint at the right moment", risk:'equilibre', tilt:['sprint','mental']},
+      {label:"Attaquer en premier, le prendre de vitesse", labelEN:"Attack first, catch them off guard", risk:'audacieux', tilt:['classiques','mental']},
+      {label:"Couvrir ses mouvements, laisser l'équipe travailler", labelEN:"Cover their moves, let the team work", risk:'sur', tilt:['resistance']},
+    ]
+  },
+  {
+    focus: ['montagne','mental'],
+    variants: [
+      {title:"Duel au sommet", titleEN:"Summit duel",
+       desc:"{name} accélère dans la montée finale. C'est le moment de vérité : sa grimpe contre la tienne.",
+       descEN:"{name} accelerates on the final climb. This is the moment of truth: their climbing against yours."},
+      {title:"La contre-attaque du rival", titleEN:"The rival's counterattack",
+       desc:"Tu croyais avoir lâché {name}, mais il revient dans ta roue à 2 km du sommet. Il n'est pas encore éliminé.",
+       descEN:"You thought you'd dropped {name}, but they come back to your wheel 2km from the summit. They're not done yet."},
+    ],
+    choices: [
+      {label:"Accélérer pour le craquer définitivement", labelEN:"Accelerate to crack them once and for all", risk:'audacieux', tilt:['montagne','mental']},
+      {label:"Maintenir ton rythme et gérer la distance", labelEN:"Hold your pace and manage the gap", risk:'equilibre', tilt:['montagne','resistance']},
+      {label:"Feindre la faiblesse pour mieux repartir", labelEN:"Feign weakness to recover and strike later", risk:'sur', tilt:['mental']},
+    ]
+  },
+  {
+    focus: ['classiques','resistance'],
+    variants: [
+      {title:"Manœuvre d'équipe contre le rival", titleEN:"Team tactics against the rival",
+       desc:"Ton équipe a repéré que {name} est seul en tête. C'est le moment de rouler pour te mettre en position idéale.",
+       descEN:"Your team has spotted {name} alone at the front. Time to ride and put you in the perfect position."},
+      {title:"Le piège du rival", titleEN:"The rival's trap",
+       desc:"{name} envoie son équipier en échappée — une provocation pour t'obliger à dépenser de l'énergie sur ses termes.",
+       descEN:"{name} sends a teammate in the break — a provocation to force you to spend energy on their terms."},
+    ],
+    choices: [
+      {label:"Laisser partir l'équipier, contrôler depuis le peloton", labelEN:"Let the teammate go, control from the peloton", risk:'sur', tilt:['resistance','mental']},
+      {label:"Envoyer un équipier à ta place pour répondre", labelEN:"Send your own teammate to respond", risk:'equilibre', tilt:['resistance']},
+      {label:"Partir toi-même, montrer que tu ne te laisses pas manipuler", labelEN:"Go yourself, show you won't be manipulated", risk:'audacieux', tilt:['classiques','mental']},
+    ]
+  },
+  {
+    focus: ['sprint','mental'],
+    variants: [
+      {title:"Le sprint face au rival", titleEN:"The sprint against the rival",
+       desc:"La ligne arrive. {name} est à ta hauteur, les mâchoires serrées. Tout va se jouer dans les 200 derniers mètres.",
+       descEN:"The line is coming. {name} is right beside you, jaw set. Everything will be decided in the final 200 metres."},
+      {title:"La relance explosive du rival", titleEN:"The rival's explosive surge",
+       desc:"{name} se lève sur les pédales à 300m. Tu dois répondre maintenant ou le laisser filer.",
+       descEN:"{name} jumps out of the saddle at 300m. You have to respond now or let them go."},
+    ],
+    choices: [
+      {label:"Partir en même temps, s'appuyer sur ta pointe de vitesse", labelEN:"Go at the same time, rely on your top speed", risk:'audacieux', tilt:['sprint']},
+      {label:"Partir 50m après lui, profiter de son élan", labelEN:"Go 50m after them, use their momentum", risk:'equilibre', tilt:['sprint','mental']},
+      {label:"Attendre le dernier moment pour déborder", labelEN:"Wait for the last moment to come around", risk:'audacieux', tilt:['sprint','mental']},
+    ]
+  },
+  {
+    focus: ['resistance','mental'],
+    variants: [
+      {title:"Une course de harcèlement", titleEN:"A race of attrition",
+       desc:"{name} et toi vous vous rendez coup pour coup depuis le départ. C'est une guerre d'usure — qui craquera en premier ?",
+       descEN:"{name} and you have been trading blows since the start. It's a war of attrition — who will crack first?"},
+      {title:"L'accélération surprise du rival", titleEN:"The rival's surprise acceleration",
+       desc:"{name} place une attaque dans un faux-plat montant, là où personne ne l'attendait. Le peloton est surpris.",
+       descEN:"{name} attacks on a false flat climb, where nobody expected it. The peloton is caught off guard."},
+    ],
+    choices: [
+      {label:"Répondre immédiatement, ne pas laisser d'écart", labelEN:"Respond immediately, don't let a gap open", risk:'audacieux', tilt:['resistance','mental']},
+      {label:"Gérer depuis le peloton, reprendre plus tard", labelEN:"Manage from the peloton, chase back later", risk:'equilibre', tilt:['resistance']},
+      {label:"Laisser partir, économiser pour le final", labelEN:"Let them go, save energy for the finale", risk:'sur', tilt:['mental']},
+    ]
+  },
+];
+
+function rollRivalRaceEvent(race, rivals){
+  // Vérifier si un rival est présent dans cette course
+  const presentRivals = (rivals||[]).filter(rv => (rv.raceIds||[]).includes(race.id));
+  if(presentRivals.length === 0) return null;
+  const rival = presentRivals[Math.floor(Math.random() * presentRivals.length)];
+
+  // Choisir un event rival adapté au type de course
+  const typeToFocus = {
+    grandtour: ['montagne','resistance'],
+    monument: ['classiques','mental'],
+    classique: ['classiques','sprint'],
+    semitour: ['resistance','montagne'],
+    crit: ['sprint'],
+    champ: ['mental','resistance'],
+  };
+  const preferred = typeToFocus[race.type] || [];
+  const sorted = RIVAL_RACE_EVENTS.slice().sort((a,b) => {
+    const aMatch = a.focus.some(f => preferred.includes(f)) ? -1 : 1;
+    const bMatch = b.focus.some(f => preferred.includes(f)) ? -1 : 1;
+    return aMatch - bMatch + (Math.random()-0.5)*0.5;
+  });
+  const def = sorted[0];
+  const v = def.variants[Math.floor(Math.random() * def.variants.length)];
+  const name = rival.name;
+
+  const event = {focus: def.focus, _isBonus: true, _isRivalEvent: true};
+  Object.defineProperty(event, 'title', {enumerable:true, get(){
+    const t = (SETTINGS.lang==='en' && v.titleEN) ? v.titleEN : v.title;
+    return t.replace(/\{name\}/g, name);
+  }});
+  Object.defineProperty(event, 'desc', {enumerable:true, get(){
+    const d = (SETTINGS.lang==='en' && v.descEN) ? v.descEN : v.desc;
+    return d.replace(/\{name\}/g, name);
+  }});
+  event.choices = def.choices.map(c => {
+    const choice = {risk: c.risk, tilt: c.tilt||[]};
+    Object.defineProperty(choice, 'label', {enumerable:true, get(){
+      return (SETTINGS.lang==='en' && c.labelEN) ? c.labelEN : c.label;
+    }});
+    return choice;
+  });
+  return event;
+}
+
 function rollBonusPhases(race){
   /* Nombre de phases bonus selon prestige :
      1 → 0-1 | 2-3 → 1-2 | 4-5 → 2-3
@@ -5020,6 +5195,21 @@ function beginRace(){
     if(bonusPhases.length > 0){
       race.events = bonusPhases.concat(race.events);
     }
+    // Injecter un event rival si un rival est présent dans cette course (une seule fois, en milieu de course)
+    const rivalEvent = rollRivalRaceEvent(race, STATE.rivals);
+    if(rivalEvent){
+      const insertAt = Math.floor(race.events.length / 2); // milieu de course
+      race.events.splice(insertAt, 0, rivalEvent);
+    }
+
+    // Pré-assigner la météo : les phases bonus du même jour que le 1er event normal
+    // reçoivent la même météo pour éviter les incohérences ("pluie" puis "canicule" le même jour)
+    const firstDayWeather = rollWeather(race.month, race.flag==='🇦🇺').id;
+    const bonusCount = race.events.filter(e => e._isBonus).length;
+    for(let i = 0; i <= bonusCount; i++){
+      if(race.events[i]) race.events[i]._weather = firstDayWeather;
+    }
+    // Les events suivants (jours différents) auront leur propre météo tirée à la volée
   }
 
   if(STATE.injuryAbsenceRemaining > 0){
@@ -5241,10 +5431,32 @@ function renderCurrentEvent(){
         <h2>${race.flag?race.flag+' ':''}${race.name}</h2>
         ${badgeHTML(race.type)}
       </div>
-      <p class="small">🗓️ ${MONTHS[race.month]}${race.type==='grandtour' ? (() => { if(event._isBonus) return ` · ${tf('racePhase','Phase de course')}`; const weekNum = race.events.slice(0, STATE.runEventIdx+1).filter(e=>!e._isBonus).length; const weekTotal = race.sampleWeeks || (race._baseEventCount||race.events.length); return ` · ${tf('weekCounter','Semaine')} ${weekNum}/${weekTotal}`; })() : ''} · ${tf('raceCounter','Course')} ${STATE.runRaceIdx+1} ${tf('ofSeason','de la saison')}</p>
+      <p class="small">🗓️ ${MONTHS[race.month]}${(() => {
+        if(race.type==='grandtour'){
+          if(event._isBonus) return ` · ${tf('racePhase','Phase de course')}`;
+          const weekNum = race.events.slice(0, STATE.runEventIdx+1).filter(e=>!e._isBonus).length;
+          const weekTotal = race.sampleWeeks || (race._baseEventCount||race.events.length);
+          return ` · ${tf('weekCounter','Semaine')} ${weekNum}/${weekTotal}`;
+        }
+        // Pour les semitours avec plusieurs events : afficher le jour
+        // Les events bonus partagent le même jour que le 1er event normal (index bonusCount)
+        const bonusCount = race.events.filter(e=>e._isBonus).length;
+        const baseCount = race._baseEventCount || race.events.length;
+        if(baseCount > 1 || bonusCount > 0){
+          // Jour = position parmi les events non-bonus + 1
+          // Les bonus sont en tête → même jour que le 1er event normal
+          const eventsBefore = race.events.slice(0, STATE.runEventIdx+1);
+          const nonBonusBefore = eventsBefore.filter(e=>!e._isBonus).length;
+          const dayNum = event._isBonus ? 1 : nonBonusBefore;
+          const dayTotal = baseCount;
+          return dayTotal > 1 ? ` · ${tf('dayCounter','Jour')} ${dayNum}/${dayTotal}` : '';
+        }
+        return '';
+      })()} · ${tf('raceCounter','Course')} ${STATE.runRaceIdx+1} ${tf('ofSeason','de la saison')}</p>
       <p class="small">${weather.icon} ${weather.label} · ${form.icon} ${form.label}</p>
       ${isHomeRace ? `<p class="small" style="color:var(--green-dark);font-weight:700;">📣 ${tf('homeCrowdNote','Le public te porte — tu cours à domicile !')}</p>` : ''}
       ${isSignatureRace ? `<p class="small" style="color:var(--pink);font-weight:700;">❤️ ${tf('signatureRaceNote','Ta course de cœur — celle que tu attends toute la saison !')}</p>` : ''}
+      ${event._isRivalEvent ? `<p class="small" style="color:var(--blue);font-weight:700;">🥊 ${tf('rivalPresentNote','Duel en cours !')}</p>` : ''}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
       <h3>${event.title}</h3>
       <p>${event.desc}</p>
@@ -5826,7 +6038,6 @@ function renderNextRaceChoiceScreen(){
     if(race.month < currentMonth) return false;       // déjà passé (strictement avant)
     if(race.month >= windowMaxMonth) return false;    // pas de course >= mois de l'imposée
     if(daysEngaged + race.days > 65) return false;
-    if(STATE.runQueue.length >= 10) return false;
     if(race.type === 'grandtour' && gtCount >= 2) return false;
     return true;
   }).sort((a, b) => a.month - b.month);
