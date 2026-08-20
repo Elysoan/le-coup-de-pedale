@@ -5722,17 +5722,10 @@ function finalizeRace(){
    est comparé au meilleur score du coureur sur cette course pour alimenter la rivalité. */
 function checkRivalAppearance(race, bestTier){
   STATE.pendingRivalNote = null;
-  if(!STATE.rivals || STATE.rivals.length===0 || race.prestige < 3) return;
-  if(race.id==='champnat') return; // un rival est toujours d'une autre nationalité, absurde sur un championnat national
-  // Rivaux inscrits sur cette course (via raceIds) → présence garantie
+  if(!STATE.rivals || STATE.rivals.length===0) return;
   const assignedRivals = STATE.rivals.filter(rv=>(rv.raceIds||[]).includes(race.id));
-  let rival;
-  if(assignedRivals.length > 0){
-    rival = assignedRivals[Math.floor(Math.random()*assignedRivals.length)];
-  } else {
-    if(Math.random() >= 0.4) return;
-    rival = STATE.rivals[Math.floor(Math.random()*STATE.rivals.length)];
-  }
+  if(assignedRivals.length === 0) return;
+  const rival = assignedRivals[Math.floor(Math.random()*assignedRivals.length)];
   const rivalPerf = clamp(rival.strength + (Math.random()*30-15) + race.prestige*2, 0, 100);
   const playerPerf = Math.max(...STATE.runRaceAccum.map(e=>e.perf||0));
   const won = playerPerf >= rivalPerf;
