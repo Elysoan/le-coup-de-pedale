@@ -6278,7 +6278,7 @@ function chooseOption(i){
   const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
   const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace, isSignatureRace, race.type);
   applyFatigue(STATE.rider, race, choice, weatherId);
-  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained});
+  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained, _isBonus:event._isBonus||false});
   STATE.runEventIdx++;
   /* Sur une course à plusieurs semaines (grand tour), abandonner une semaine met fin à
      toute la course : impossible de repartir la semaine suivante, comme dans la réalité. */
@@ -6361,8 +6361,12 @@ function finalizeRace(){
     /* Plusieurs semaines : la médiane (pas la moyenne) détermine le classement général —
        une seule semaine exceptionnelle ne doit pas suffire à faire basculer tout le
        classement dans le palier supérieur si les autres semaines sont médiocres. Un grand
-       tour se gagne sur la régularité, pas sur un coup d'éclat isolé. */
-    const perfs = STATE.runRaceAccum.map(e=>e.perf).sort((a,b)=>a-b);
+       tour se gagne sur la régularité, pas sur un coup d'éclat isolé.
+       Les events bonus (rivaux, phases intermédiaires) sont exclus : seules les semaines
+       réelles comptent pour le résultat final. */
+    const realAccum = STATE.runRaceAccum.filter(e=>!e._isBonus);
+    const accumForMedian = realAccum.length > 0 ? realAccum : STATE.runRaceAccum;
+    const perfs = accumForMedian.map(e=>e.perf).sort((a,b)=>a-b);
     const mid = Math.floor(perfs.length/2);
     const medianPerf = perfs.length%2 ? perfs[mid] : (perfs[mid-1]+perfs[mid])/2;
     bestPerf = medianPerf;
