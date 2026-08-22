@@ -3139,7 +3139,8 @@ function applyFatigue(rider, race, choice, weatherId){
   if(_wm.globalFatigueBoost) worldFatMult *= _wm.globalFatigueBoost;
   if(_wm.julyFatigue && race.month === 7) worldFatMult *= _wm.julyFatigue;
   if(_wm.springFatigue && race.month >= 3 && race.month <= 4 && (race.type === 'monument' || race.type === 'classique')) worldFatMult *= _wm.springFatigue;
-  const cost = race.fatCost * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult;
+  const eventCount = (race.events && race.events.length > 0) ? race.events.length : 1;
+  const cost = race.fatCost * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult / eventCount;
   rider.fatigue = clamp(rider.fatigue + cost, 0, 100);
 }
 
