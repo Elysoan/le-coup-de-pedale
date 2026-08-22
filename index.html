@@ -429,7 +429,39 @@ const I18N = {
     fatigueWarning:' — beyond 45 days, fatigue builds up noticeably faster all season',
     imposedByTeam:'imposed by the team', imposedByTeamP:'imposed by the team', imposedByTeamPill:'Imposed by the team',
     linkedToFocus:'linked to your training focus', chooseRestYourself:'choose the rest yourself, up to 10 total.',
-    daysAbbr:'d', exceeds65:'Exceeds 65 d', startSeason:'Start the season', race:'race', racesP:'races',
+    daysAbbr:'d', exceeds65:'Exceeds 65 d', minDays40:'Minimum 40 race days required.', startSeason:'Start the season', race:'race', racesP:'races', grandToursAbbr:'Grand Tours', fatigueWarning:'Beyond 45 days, fatigue builds up noticeably faster all season.',
+    profileConfirmTitle:'Your profile is taking shape', profileConfirmSame:'Your results confirm your profile as a', profileConfirmSameDesc:'Keep going in that direction.',
+    profileConfirmDiff:'Your performances suggest a profile closer to', profileConfirmDiff2:'rather than',
+    profileSwitchDesc:'Switching to this profile will adjust your playstyle — matching races will favour you more.',
+    adoptProfile:'Adopt the profile', keepProfile:'Keep my profile', styleMatchTip:'Matches your profile',
+    pivotOfferTitle:'An unexpected offer', pivotOfferDesc:'A higher-division team has sent you a discreet message.',
+    pivotOfferAccept:'Accept the offer (betrayal, +opportunity)', pivotOfferDecline:'Decline — stay loyal to the team',
+    pivotOfferAcceptLog:'You left your team mid-contract for a higher-division opportunity. Many people were upset.',
+    pivotOfferDeclineLog:'You turned down a mid-contract offer. Your loyalty did not go unnoticed in the peloton.',
+    pivotScandalTitle:'Storm clouds over the team', pivotScandalDesc:'Doping rumours are circulating around your team.',
+    pivotScandalSolidaire:'Stand by the team', pivotScandalDistance:'Publicly distance yourself',
+    pivotScandalSolidaireLog:'You defended your team publicly. Internal trust is high, but your image took a hit.',
+    pivotScandalDistanceLog:'You publicly distanced yourself from the team. Your image is intact, but the internal atmosphere is cold.',
+    pivotRivalTitle:'Betrayal in the peloton', pivotRivalDesc:'Your former teammate has just signed for a rival team.',
+    pivotRivalIgnore:'Ignore it — let the racing do the talking', pivotRivalConfront:'Respond publicly — set up a showdown',
+    pivotRivalIgnoreLog:'You did not respond to the provocation. The peloton appreciated your class.',
+    pivotRivalConfrontLog:'You accepted the confrontation. A burning rivalry has been ignited — the public loves it.',
+    pivotRivalName:'Your former teammate',
+    pivotRetireTitle:'A way out', pivotRetireDesc:'A sporting director has offered you a team director position.',
+    pivotRetireAccept:'Accept — finish as a mentor figure', pivotRetireDecline:'Decline — keep racing',
+    pivotRetireAcceptLog:'You accepted the transition. The peloton now sees you as a guiding figure.',
+    pivotRetireDeclineLog:'You refused to hang up your wheels. There are still battles to fight.',
+    stagnationNote:'Quiet season — your level is being questioned in the peloton.',
+    trajectoryTitle:'What career do you want to build?',
+    trajectoryDesc:"You have 4 seasons of hindsight. It's time to choose the thread of your career — a permanent decision that will shape your objectives and opportunities.",
+    traj_specialiste:'The Specialist', traj_specialiste_desc:'You focus on a few key races. +12% performance on your specialist races. If you race more than 8 events in a season, fatigue builds faster.',
+    traj_globetrotter:'The Globe-trotter', traj_globetrotter_desc:"You race everywhere, you're visible everywhere. +1 reputation on every race outside your specialty. You start each season with +8 residual fatigue, but higher-tier teams come calling sooner.",
+    traj_leader:'The Leader', traj_leader_desc:"+5% performance on team-imposed races — you deliver when it counts. In return, every poor performance on a high-prestige race costs 1 extra reputation point.",
+    trajectory_specialiste:'Specialist', trajectory_globetrotter:'Globe-trotter', trajectory_leader:'Leader',
+    trajectoryChosen:'Career path chosen',
+    worldEventsTitle:'Peloton news', worldEventsSubtitle:"Before building your calendar, here's what's shaking up the cycling world this season.",
+    buildCalendar:'Build my calendar',
+    worldEventCancelled:'Race cancelled this season',
     whatRole:'What role in this race?', roleChoiceDesc:'Play for the general classification, aim for a secondary jersey, or ride for the team?',
     playGC:'Play the general classification (leader)', aimFor:'Aim for the', bestClimber:'best climber',
     bestSprinter:'best sprinter', aimForWhiteJersey:'Aim for the white jersey (best young rider)',
@@ -725,8 +757,12 @@ function rerenderCurrentScreenForLang(){
   else if(screen==='convalescence') renderConvalescenceScreen(STATE.runQueue[STATE.runRaceIdx]);
   else if(screen==='calendar') renderCalendarScreen();
   else if(screen==='rolechoice') renderRoleChoice(STATE.runQueue[STATE.runRaceIdx]);
-  else if(screen==='nextracebchoice') renderNextRaceChoiceScreen();
+  else if(screen==='nextracebchoice') beginRaceOrFinish();
   else if(screen==='currentevent') renderCurrentEvent();
+  else if(screen==='styleconfirm') renderStyleConfirmEvent(detectRiderProfile(STATE.rider)||STATE.rider.styleId);
+  else if(screen==='trajectorychoice') renderTrajectoryChoice();
+  else if(screen==='worldevents') renderWorldEventsScreen();
+  else if(screen==='pivotevent' && STATE._pendingPivot) renderPivotEvent(STATE._pendingPivot);
   else if(screen==='seasonrecap' && STATE.seasonRecapData) renderSeasonRecap();
   else if(screen==='contractscreen') renderContractScreen();
   else if(screen==='personalevent' && STATE.pendingPersonalEvent) renderPersonalEvent();
@@ -995,7 +1031,7 @@ const PERSONAL_EVENTS = [
   {icon:'💸', title:"Rumeurs autour du sponsor principal", titleEN:"Rumours around the title sponsor", desc:"Des bruits circulent sur la solidité financière du sponsor titre — une inquiétude récurrente dans le peloton professionnel, où plusieurs équipes ont déjà disparu faute de budget.", descEN:"Talk is circulating about the financial health of the title sponsor — a recurring worry in the professional peloton, where several teams have already folded for lack of budget.",
     choices:[
       {label:"Rassurer publiquement le groupe", labelEN:"Reassure the group publicly", effect:{stats:{mental:3}, reputation:1}},
-      {label:"Ne rien dire et rester concentré sur le sport", labelEN:"Say nothing and stay focused on the sport", effect:{stats:{mental:1}}},
+      {label:"Ne rien dire et rester concentré sur le sport", labelEN:"Say nothing and stay focused on the sport", effect:{stats:{mental:1}, reputation:-1}},
     ]},
   {icon:'🎙️', title:"Une interview qui dérape", titleEN:"An interview that goes off the rails", desc:"Un journaliste pousse la question sur une polémique du peloton pendant une interview d'avant-course.", descEN:"A journalist pushes a question about a peloton controversy during a pre-race interview.",
     choices:[
@@ -1005,7 +1041,7 @@ const PERSONAL_EVENTS = [
   {icon:'🧪', title:"Contrôle antidopage inopiné au petit matin", titleEN:"Surprise doping control early in the morning", desc:"Un contrôle hors compétition, tôt le matin — une routine bien connue du métier, encadrée par le système de localisation des coureurs professionnels.", descEN:"An out-of-competition test, early in the morning — a well-known routine in the sport, part of the location tracking system for professional riders.",
     choices:[
       {label:"Prendre ça avec philosophie, ça fait partie du métier", labelEN:"Take it with philosophy, it's part of the job", effect:{stats:{mental:2}}},
-      {label:"S'agacer de la contrainte matinale", labelEN:"Get irritated by the early-morning intrusion", effect:{stats:{mental:-2}}},
+      {label:"S'agacer de la contrainte matinale", labelEN:"Get irritated by the early-morning intrusion", effect:{stats:{mental:-2}, reputation:-1}},
     ]},
   {icon:'👥', title:"Tension avec un coéquipier ambitieux", titleEN:"Tension with an ambitious teammate", desc:"Un coéquipier revendique lui aussi le statut de leader pour la saison — une dynamique classique dans les équipes qui alignent plusieurs coureurs de talent.", descEN:"A teammate also claims leadership status for the season — a classic dynamic in teams that field several talented riders.",
     choices:[
@@ -1243,6 +1279,18 @@ const RIVAL_EVENTS = [
     choices:[
       {label:"Jouer le jeu médiatique autour de ce duel", labelEN:"Play along with the media narrative around this duel", effect:{reputation:2}},
       {label:"Rester en retrait, préférer parler par les jambes", labelEN:"Stay in the background, prefer to let your legs speak", effect:{stats:{mental:1}}},
+    ]},
+  {icon:'🏆', title:"Une victoire contestée par un rival", titleEN:"A contested victory", desc:"Un adversaire remet publiquement en question ta victoire lors de la dernière course, évoquant une irrégularité de parcours. Les médias s'emparent de l'affaire.", descEN:"A rival publicly questions your last victory, citing a course irregularity. The media pick up the story.",
+    choices:[
+      {label:"Garder le silence, laisser les commissaires trancher", labelEN:"Stay silent, let the stewards decide", effect:{stats:{mental:-1}}},
+      {label:"Répondre vivement pour défendre ta victoire", labelEN:"Respond sharply to defend your win", effect:{reputation:-2, stats:{mental:2}}},
+      {label:"Proposer un geste sportif envers le rival", labelEN:"Offer a sporting gesture to the rival", effect:{reputation:2, stats:{mental:1}}},
+    ]},
+  {icon:'📱', title:"Une sortie malheureuse sur les réseaux", titleEN:"An ill-judged social media post", desc:"Un post publié dans un moment d'agacement crée une polémique inattendue dans le peloton. Certains sponsors appellent ton agent.", descEN:"A post published in a moment of irritation creates unexpected controversy in the peloton. Some sponsors are calling your agent.",
+    choices:[
+      {label:"Supprimer le post et présenter des excuses publiques", labelEN:"Delete the post and issue a public apology", effect:{reputation:-1, stats:{mental:-1}}},
+      {label:"Assumer et défendre ta position jusqu'au bout", labelEN:"Own it and defend your position to the end", effect:{reputation:-4, stats:{mental:3}}},
+      {label:"Mettre le compte en pause et laisser passer l'orage", labelEN:"Put the account on pause and let the storm pass", effect:{stats:{mental:-2}}},
     ]},
 ];
 const RIVAL_PAYOFF_EVENT = {payoff:true, icon:'🏆', title:"Un face-à-face historique", titleEN:"A historic rivalry", desc:"Après tant d'accrochages, ce duel avec {name} est devenu l'un des fils rouges de ta carrière — les suiveurs du peloton en parlent comme d'une vraie histoire.", descEN:"After so many clashes, this duel with {name} has become one of the recurring threads of your career — peloton followers talk about it as a real story.",
@@ -1601,22 +1649,55 @@ const STYLE_ICON_BG = {grimpeur:'#FFEBDD', sprinteur:'#FFF2DC', rouleur:'#E4EFFE
 const STYLE_ICON_IMG = {grimpeur:ICON_GRIMPEUR_B64, sprinteur:ICON_SPRINTEUR_B64, rouleur:ICON_ROULEUR_B64, puncheur:ICON_PUNCHEUR_B64, polyvalent:ICON_POLYVALENT_B64};
 
 const STYLES = [
-  {id:'grimpeur', name:'Grimpeur', desc:"Né pour les cols. Fait la différence dans les hautes montagnes, mais souffre sur le plat et le pavé.",
-    bonus:{montagne:26, resistance:8, sprint:-12, classiques:-6}},
-  {id:'sprinteur', name:'Sprinteur', desc:"Un pur finisseur. Redoutable au sprint massif, mais largué dès que la route grimpe.",
-    bonus:{sprint:26, recuperation:8, montagne:-16, classiques:-6}},
-  {id:'rouleur', name:'Rouleur / Contre-la-montriste', desc:"Un moteur régulier. Excelle contre le chrono et pour rouler fort et longtemps.",
-    bonus:{clm:26, resistance:10, sprint:-10}},
-  {id:'puncheur', name:'Puncheur', desc:"Explosif sur les côtes courtes et les arrivées nerveuses. Un profil complet mais sans extrême.",
-    bonus:{classiques:16, montagne:10, mental:10, sprint:-6}},
-  {id:'polyvalent', name:'Polyvalent', desc:"Un généraliste sans grande faiblesse ni grand point fort. S'adapte à tous les terrains.",
-    bonus:{montagne:6, sprint:6, clm:6, classiques:6, resistance:6, recuperation:6, mental:4}},
+  {id:'grimpeur', name:'Grimpeur', icon:'🏔️', nameEN:'Climber',
+    desc:"Né pour les cols. Fait la différence dans les hautes montagnes, mais souffre sur le plat et le pavé.",
+    descEN:"Born for the mountains. Makes the difference on high climbs, but suffers on the flat and cobbles.",
+    bonus:{montagne:26, resistance:8, sprint:-12, classiques:-6},
+    raceTypes:['grandtour','semitour'], raceFocus:['montagne']},
+  {id:'sprinteur', name:'Sprinteur', icon:'⚡', nameEN:'Sprinter',
+    desc:"Un pur finisseur. Redoutable au sprint massif, mais largué dès que la route grimpe.",
+    descEN:"A pure finisher. Devastating in a mass sprint, but dropped as soon as the road goes up.",
+    bonus:{sprint:26, recuperation:8, montagne:-16, classiques:-6},
+    raceTypes:['crit','classique'], raceFocus:['sprint']},
+  {id:'rouleur', name:'Rouleur', icon:'🕐', nameEN:'Rouleur',
+    desc:"Un moteur régulier. Excelle contre le chrono et pour rouler fort et longtemps.",
+    descEN:"A steady engine. Excels against the clock and at riding hard for long periods.",
+    bonus:{clm:26, resistance:10, sprint:-10},
+    raceTypes:['semitour','grandtour'], raceFocus:['clm','resistance']},
+  {id:'puncheur', name:'Puncheur', icon:'💥', nameEN:'Puncheur',
+    desc:"Explosif sur les côtes courtes et les arrivées nerveuses. Un profil complet mais sans extrême.",
+    descEN:"Explosive on short climbs and nervous finishes. A well-rounded profile without extremes.",
+    bonus:{classiques:16, montagne:10, mental:10, sprint:-6},
+    raceTypes:['monument','classique'], raceFocus:['classiques','montagne']},
+  {id:'polyvalent', name:'Polyvalent', icon:'🎯', nameEN:'All-rounder',
+    desc:"Un généraliste sans grande faiblesse ni grand point fort. S'adapte à tous les terrains.",
+    descEN:"A generalist with no big weakness or standout quality. Adapts to all terrain.",
+    bonus:{montagne:6, sprint:6, clm:6, classiques:6, resistance:6, recuperation:6, mental:4},
+    raceTypes:['grandtour','monument','semitour','classique','crit'], raceFocus:[]},
 ];
 STYLES.forEach(s=>{
-  const frName = s.name, frDesc = s.desc;
-  Object.defineProperty(s, 'name', {get(){ const v = t('style_'+s.id); return v!==null ? v : frName; }});
+  const frName = s.name, frDesc = s.desc, frNameEN = s.nameEN;
+  Object.defineProperty(s, 'name', {get(){ const v = t('style_'+s.id); return v!==null ? v : (SETTINGS.lang==='en' ? frNameEN : frName); }});
   Object.defineProperty(s, 'desc', {get(){ const v = t('style_'+s.id+'_desc'); return v!==null ? v : frDesc; }});
 });
+
+/* Retourne true si la course est dans le domaine de prédilection du style du coureur.
+   Utilisé pour le bonus de perf et le badge ⭐ dans le calendrier. */
+function raceMatchesStyle(race, styleId){
+  const style = STYLES.find(s=>s.id===styleId);
+  if(!style) return false;
+  if(style.id==='polyvalent') return false; // le polyvalent n'a pas de bonus ciblé
+  // Match sur le type de course
+  const typeMatch = style.raceTypes.includes(race.type);
+  // Le sprinteur et le puncheur matchent sur le type seul (leurs stat clés — sprint/classiques —
+  // ne sont pas dans le focus des events mais c'est bien leur terrain de prédilection)
+  if(style.id === 'sprinteur' || style.id === 'puncheur') return typeMatch;
+  // Pour les autres profils : match sur type ET sur au moins une stat focus présente dans les events
+  const focusStats = new Set();
+  if(race.events) race.events.forEach(e=>{ if(e.focus) e.focus.forEach(f=>focusStats.add(f)); });
+  const focusMatch = style.raceFocus.length === 0 || style.raceFocus.some(f=>focusStats.has(f));
+  return typeMatch && focusMatch;
+}
 
 /* type: grandtour | monument | semitour | champ | crit
    prestige: 1-5 (poids réputation)
@@ -1702,7 +1783,20 @@ function RACE_DEFS(){ return [
           {title:"Montée finale sur les chemins blancs", titleEN:"Final climb on the white roads", desc:"Les derniers kilomètres sur la poussière blanche d'une cité médiévale toscane, une lutte contre la pente et le gravier.", descEN:"The final kilometres on white gravel dust through a Tuscan medieval hilltop city — a fight against the slope and the loose surface."},
         ]}
     ]},
-  {id:'e3-saxo', name:'Le Prélude Flandrien', type:'classique', month:3, prestige:2, fatCost:8, days:1,flag:'🇧🇪',
+  {id:'gp-littoral', name:'Grand Prix du Littoral', type:'classique', month:3, prestige:2, fatCost:6, days:1, flag:'🇳🇱',
+    eventDefs:[
+      {focus:['sprint','resistance'], choices:[
+          {label:"Rester bien calé dans le peloton jusqu'au dernier kilomètre", labelEN:"Stay tucked in the peloton until the final kilometre", risk:'sur', tilt:['recuperation']},
+          {label:"Se lancer dans le sprint à 250 mètres", labelEN:"Launch the sprint from 250 metres", risk:'equilibre', tilt:['sprint']},
+          {label:"Partir de loin, seul contre tous", labelEN:"Go from distance, alone against the pack", risk:'audacieux', tilt:['sprint','mental']},
+        ], variants:[
+          {title:"Un sprint massif sur le front de mer", titleEN:"A bunch sprint on the seafront", desc:"Le peloton n'a jamais explosé — les sprinteurs se disputent la victoire dans un final rectiligne au bord de la mer du Nord.", descEN:"The peloton never broke apart — sprinters battle it out on a straight seafront finish on the North Sea coast."},
+          {title:"Vent de face dans le dernier kilomètre", titleEN:"Headwind in the final kilometre", desc:"Un sprint difficile, contre le vent, où la puissance pure fait la différence.", descEN:"A tough sprint into a headwind, where raw power makes the difference."},
+          {title:"Bordures dans la dernière ligne droite", titleEN:"Echelons in the final straight", desc:"Le vent de travers a redistribué les cartes, mais les meilleurs sprinteurs sont toujours là.", descEN:"The crosswind reshuffled the deck, but the best sprinters are still there."},
+          {title:"Sprint serré entre deux équipes de pointe", titleEN:"A tight sprint between two top teams", desc:"Deux trains de sprinteurs se disputent le meilleur couloir dans le dernier virage.", descEN:"Two sprint trains battle for the best line through the final bend."},
+        ]}
+    ]},
+    {id:'e3-saxo', name:'Le Prélude Flandrien', type:'classique', month:3, prestige:2, fatCost:8, days:1,flag:'🇧🇪',
     eventDefs:[
       {focus:['classiques','mental'], choices:[
           {label:"Rester couvert dans le peloton flandrien", labelEN:"Stay sheltered in the Flemish peloton", risk:'sur', tilt:['recuperation']},
@@ -2019,15 +2113,15 @@ function RACE_DEFS(){ return [
     ]},
   {id:'bretagne-classic', name:'La Bretonne', type:'classique', month:8, prestige:2, fatCost:8, days:1,flag:'🇫🇷',
     eventDefs:[
-      {focus:['classiques','mental'], choices:[
+      {focus:['sprint','classiques'], choices:[
           {label:"Rester au chaud avant le mur breton", labelEN:"Stay sheltered before the Breton wall", risk:'sur', tilt:['recuperation']},
-          {label:"Se positionner avant les derniers passages", labelEN:"Get into position before the final passes", risk:'equilibre', tilt:['classiques']},
-          {label:"Attaquer dans le mur breton", labelEN:"Attack on the Breton wall", risk:'audacieux', tilt:['classiques','mental']},
+          {label:"Se placer pour le sprint après le mur", labelEN:"Get into position for the sprint after the wall", risk:'equilibre', tilt:['sprint']},
+          {label:"Attaquer dans le mur breton pour distancer les sprinteurs", labelEN:"Attack on the Breton wall to drop the sprinters", risk:'audacieux', tilt:['classiques','mental']},
         ], variants:[
-          {title:"Le mur breton, à plusieurs reprises", titleEN:"The Breton wall, tackled several times", desc:"Les pentes bretonnes reviennent inlassablement tout au long de la course.", descEN:"The Breton slopes return tirelessly throughout the race."},
-          {title:"Une côte typiquement bretonne", titleEN:"A typically Breton climb", desc:"Un final vallonné typiquement breton, disputé sous le vent de l'Atlantique.", descEN:"A typically Breton rolling finale, contested in the Atlantic wind."},
-          {title:"Circuit vallonné autour de la côte bretonne", titleEN:"Rolling circuit along the Breton coast", desc:"Un décor spectaculaire pour une classique exigeante.", descEN:"A spectacular backdrop for a demanding classic."},
-          {title:"Étape balayée par le vent atlantique", titleEN:"Stage swept by the Atlantic wind", desc:"Le vent breton peut faire exploser le peloton en quelques kilomètres.", descEN:"The Breton wind can shatter the peloton within a few kilometres."},
+          {title:"Le mur breton, dernier filtre avant le sprint", titleEN:"The Breton wall, final filter before the sprint", desc:"Le mur écréme le peloton — puis les rescapés s'affrontent dans un sprint côtier sous le vent atlantique.", descEN:"The wall thins out the peloton — then the survivors clash in a coastal sprint in the Atlantic wind."},
+          {title:"Circuit côtier, sprint massif au bout", titleEN:"Coastal circuit, bunch sprint at the end", desc:"Un final plat le long de la côte qui tourne au sprint, malgré le vent de face.", descEN:"A flat finale along the coast that turns into a sprint, despite the headwind."},
+          {title:"Vent atlantique et sprint final", titleEN:"Atlantic wind and final sprint", desc:"Le peloton est resté groupé malgré les rafales — c'est au sprint que tout se joue.", descEN:"The peloton stayed together despite the gusts — it all comes down to the sprint."},
+          {title:"Étape balayée par le vent atlantique", titleEN:"Stage swept by the Atlantic wind", desc:"Le vent breton peut faire exploser le peloton, mais souvent les sprinteurs survivent et s'imposent.", descEN:"The Breton wind can shatter the peloton, but often the sprinters survive and take the win."},
         ]}
     ]},
   {id:'vuelta', name:'Vuelta a Iberia', type:'grandtour', month:9, prestige:5, fatCost:12, days:21,flag:'🇪🇸', sampleWeeks:3,
@@ -2280,7 +2374,20 @@ function RACE_DEFS(){ return [
           {title:"Un final au cœur d'un village viticole en fête", titleEN:"A finale in the heart of a festive wine village", desc:"Les habitants sortent en nombre, entre dégustation et attroupement au bord de la route.", descEN:"Locals turn out in force, between wine tasting and crowds lining the road."},
         ]}
     ]},
-  {id:'scandinave', name:'La Classique Scandinave', type:'classique', month:8, prestige:1, fatCost:8, days:1, flag:'🇩🇰',
+  {id:'gp-escaut', name:'Grand Prix de l\'Escaut', type:'classique', month:7, prestige:3, fatCost:7, days:1, flag:'🇧🇪',
+    eventDefs:[
+      {focus:['sprint','classiques'], choices:[
+          {label:"Se fondre dans le train de sprinte de son équipe", labelEN:"Slot into the team sprint train", risk:'sur', tilt:['recuperation']},
+          {label:"Déclencher le sprint à 300 mètres en remontant les bordures", labelEN:"Trigger the sprint from 300 metres, moving through the echelons", risk:'equilibre', tilt:['sprint']},
+          {label:"Partir seul dans le dernier kilomètre pour surprendre les équipes", labelEN:"Go solo in the final kilometre to catch the teams off guard", risk:'audacieux', tilt:['sprint','mental']},
+        ], variants:[
+          {title:"Le sprint roi sur les bords de l'Escaut", titleEN:"The king of sprints on the banks of the Scheldt", desc:"Une classique belge d'été réputée pour ses arrivées massives. Les meilleurs sprinteurs du monde sont au départ.", descEN:"A Belgian summer classic famous for its bunch sprint finishes. The world's best sprinters are all here."},
+          {title:"Final sur les quais, sprint à grande vitesse", titleEN:"Quayside finale, high-speed sprint", desc:"Un final rectiligne sur les quais de l'Escaut — vitesse et puissance, rien d'autre.", descEN:"A straight quayside finale on the Scheldt — speed and power, nothing else."},
+          {title:"Peloton compact, suspense jusqu'au bout", titleEN:"Compact peloton, suspense right to the end", desc:"Pas d'échappée, pas de sélection — un sprint massif comme on les aime.", descEN:"No breakaway, no selection — a bunch sprint as good as they get."},
+          {title:"Quelques rescapés devant, le peloton derrière", titleEN:"A handful of survivors ahead, the peloton behind", desc:"Une petite bordure a fait le tri à 10km — les sprinteurs qui ont passé se disputent maintenant la victoire.", descEN:"A small echelon sorted things out 10km out — the sprinters who survived are now racing for the win."},
+        ]}
+    ]},
+    {id:'scandinave', name:'La Classique Scandinave', type:'classique', month:8, prestige:1, fatCost:8, days:1, flag:'🇩🇰',
     eventDefs:[
       {focus:['sprint','resistance'], choices:[
           {label:"Se protéger du vent dans le peloton", labelEN:"Shelter from the wind in the peloton", risk:'sur', tilt:['recuperation']},
@@ -2308,14 +2415,14 @@ function RACE_DEFS(){ return [
     ]},
   {id:'koln', name:'Rund um Köln', type:'classique', month:8, prestige:2, fatCost:5, days:1, flag:'🇩🇪',
     eventDefs:[
-      {focus:['classiques','resistance'], choices:[
+      {focus:['sprint','classiques'], choices:[
           {label:"Rester au chaud dans le peloton jusqu'au final", labelEN:"Stay sheltered in the peloton until the finale", risk:'sur', tilt:['resistance']},
-          {label:"Anticiper l'attaque dans la dernière côte pavée", labelEN:"Anticipate the attack on the last cobbled climb", risk:'equilibre', tilt:['classiques']},
+          {label:"Se placer pour le sprint en côte dans le final", labelEN:"Get into position for the uphill sprint in the finale", risk:'equilibre', tilt:['sprint','classiques']},
           {label:"Placer une offensive à 20km de l'arrivée", labelEN:"Launch an attack 20km from the finish", risk:'audacieux', tilt:['classiques','mental']},
         ], variants:[
-          {title:"Sur les hauteurs de la Rhénanie", titleEN:"Over the hills of the Rhineland", desc:"Un circuit vallonné autour de la ville, ponctué de courtes côtes pavées qui usent les organismes.", descEN:"A rolling circuit around the city, punctuated by short cobbled climbs that wear riders down."},
-          {title:"La montée décisive du jour", titleEN:"The day's decisive climb", desc:"La difficulté principale du jour, franchie plusieurs fois avant le final.", descEN:"The main difficulty of the day, tackled several times before the finale."},
-          {title:"Un final nerveux dans les faubourgs", titleEN:"A nervy finale in the suburbs", desc:"Les organisations s'affûtent à l'approche de la dernière ascension.", descEN:"Teams sharpen their tactics as the final climb approaches."},
+          {title:"Sur les hauteurs de la Rhénanie", titleEN:"Over the hills of the Rhineland", desc:"Un circuit vallonné autour de la ville, ponctué de courtes côtes pavées. Les survivants se disputent le sprint final.", descEN:"A rolling circuit around the city, with short cobbled climbs. The survivors sprint it out at the finish."},
+          {title:"La montée sélective avant le sprint", titleEN:"The selective climb before the sprint", desc:"La dernière côte trie le peloton — les sprinteurs qui ont su passer reviennent ensuite pour le sprint.", descEN:"The final climb thins the peloton — the sprinters who survive come back to contest the sprint."},
+          {title:"Un circuit rhénan décidé au sprint réduit", titleEN:"A Rhineland circuit decided in a reduced sprint", desc:"Quelques dizaines de coureurs franchissent les côtes ensemble et se retrouvent pour un final au sprint.", descEN:"A few dozen riders crest the climbs together and face off in a sprint finale."},
         ]},
     ]},
   {id:'california', name:'Le Tour de Californie', type:'semitour', month:4, prestige:2, fatCost:6, days:7, flag:'🇺🇸',
@@ -2333,14 +2440,15 @@ function RACE_DEFS(){ return [
     ]},
   {id:'manche', name:'Le Tour de la Manche', type:'classique', month:5, prestige:2, fatCost:5, days:1, flag:'🇬🇧',
     eventDefs:[
-      {focus:['classiques','resistance'], choices:[
+      {focus:['sprint','resistance'], choices:[
           {label:"Se protéger du vent au cœur du peloton", labelEN:"Shelter from the wind in the heart of the peloton", risk:'sur', tilt:['resistance']},
-          {label:"Anticiper la formation d'une bordure", labelEN:"Anticipate the formation of an echelon", risk:'equilibre', tilt:['classiques']},
-          {label:"Provoquer la bordure en prenant les devants", labelEN:"Force the echelon by taking the front", risk:'audacieux', tilt:['classiques','mental']},
+          {label:"Se placer pour le sprint dans la dernière ligne droite", labelEN:"Get into position for the sprint on the final straight", risk:'equilibre', tilt:['sprint']},
+          {label:"Provoquer la bordure en prenant les devants", labelEN:"Force the echelon by taking the front", risk:'audacieux', tilt:['sprint','mental']},
         ], variants:[
-          {title:"Sur les petites routes du sud de l'Angleterre", titleEN:"On the narrow roads of southern England", desc:"Un tracé étroit et exposé, où le vent de la Manche redistribue les cartes.", descEN:"A narrow, exposed route, where the Channel wind reshuffles the deck."},
-          {title:"Le long des falaises", titleEN:"Along the cliffs", desc:"Un final spectaculaire mais traître, balayé par les rafales.", descEN:"A spectacular but treacherous finale, swept by gusting winds."},
+          {title:"Sur les petites routes du sud de l'Angleterre", titleEN:"On the narrow roads of southern England", desc:"Un tracé plat et exposé, qui se conclut généralement par un sprint massif malgré le vent de la Manche.", descEN:"A flat, exposed route, usually decided in a bunch sprint despite the Channel wind."},
+          {title:"Sprint final le long des falaises", titleEN:"Sprint finish along the cliffs", desc:"Un final spectaculaire : des vents de travers pendant toute la course, puis un sprint sur les quais.", descEN:"A spectacular finale: crosswinds all race, then a sprint on the quayside."},
           {title:"Une échappée dans le vent de travers", titleEN:"A breakaway in the crosswind", desc:"La moindre inattention se paie cash sur ce genre de parcours.", descEN:"The slightest lapse in concentration costs dearly on this kind of route."},
+          {title:"Peloton compact malgré le vent, sprint massif au bout", titleEN:"Compact peloton despite the wind, bunch sprint at the end", desc:"Les équipes de sprinteurs ont parfaitement contrôlé la course. C'est au sprint que ça se décide.", descEN:"The sprinters' teams kept perfect control. It comes down to the sprint."},
         ]},
     ]},
   {id:'fjords', name:'Le Grand Prix des Fjords', type:'classique', month:9, prestige:2, fatCost:6, days:1, flag:'🇳🇴',
@@ -2672,6 +2780,8 @@ function newRider(name, countryCode, styleId){
     season: 1,
     money: 1500,
     palmares: [],
+    careerFlags: {},
+    trajectory: null,
     seasonLog: [],
     retired: false,
     isNationalChampion: false,
@@ -2837,7 +2947,7 @@ function weatherCrashMult(weatherId){
   return weatherId==='pluie' ? 1.5 : 1;
 }
 
-function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour, isHomeRace, isSignatureRace){
+function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour, isHomeRace, isSignatureRace, raceType){
   const statAvg = statFocusAverage(rider, event.focus);
   const forme = clamp(100 - rider.fatigue*0.75 + (Math.random()*16-8), 5, 100);
   /* Les stats pèsent plus lourd qu'avant (0.62 contre 0.55), la part de forme du jour et
@@ -2855,6 +2965,35 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
      personnel. Un supplément d'envie modeste, comparable à la ferveur du public à
      domicile — un attachement affectif qui peut se cumuler avec la ferveur locale. */
   if(isSignatureRace) base += 3;
+
+  /* Spécialité de signature : le style du coureur correspond au profil de la course —
+     grimpeur sur un grand tour de montagne, sprinteur sur une classique rapide, etc.
+     Bonus significatif mais pas écrasant : un spécialiste gagne plus souvent sur son
+     terrain sans rendre les autres courses sans intérêt. */
+  if(rider.styleId && raceType){
+    const _raceProxy = {type: raceType, events: [event]};
+    if(raceMatchesStyle(_raceProxy, rider.styleId)) base += 5;
+  }
+
+  /* Bonus de faim : coureur qui a refusé de raccrocher (pivot S9) — regain de motivation
+     sur les 2 saisons suivant le refus. */
+  if(rider.careerFlags && rider.careerFlags.hungerBonus){
+    if(rider.season <= rider.careerFlags.hungerBonus + 2) base += 6;
+  }
+
+  /* Trajectoire de carrière :
+     - Spécialiste : +12% sur les courses de sa spécialité (type + focus matching)
+     - Globetrotter : pas de bonus perf direct (compensé par l'accès aux équipes)
+     - Leader : +5% sur les courses imposées par l'équipe */
+  if(rider.trajectory === 'specialiste' && raceType){
+    const _raceProxyTraj = {type: raceType, events: [event]};
+    if(raceMatchesStyle(_raceProxyTraj, rider.styleId)) base *= 1.12;
+  }
+  if(rider.trajectory === 'leader' && STATE && STATE.imposedRaceIds && raceType){
+    // Identifier si la course en cours est une course imposée
+    const _currentRace = STATE.runQueue && STATE.runQueue[STATE.runRaceIdx];
+    if(_currentRace && STATE.imposedRaceIds.includes(_currentRace.id)) base *= 1.05;
+  }
 
   /* Sur les courses prestigieuses (monuments, grands tours...), un coureur très jeune
      n'a statistiquement presque jamais course la victoire dans la réalité (le plus jeune
@@ -2878,6 +3017,16 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
     }
   }
 
+  /* Malus d'inexpérience : un coureur de S1-S3 est encore en rodage — il ne sait pas
+     lire une course, se positionner, gérer la pression. Ce malus disparaît progressivement
+     sur 4 saisons et ne s'applique plus à partir de la S4.
+     S1 : -20, S2 : -12, S3 : -5, S4+ : 0 */
+  const season = rider.season || 1;
+  if(season === 1) base -= 10;
+  else if(season === 2) base -= 5;
+  else if(season === 3) base -= 2;
+  // S4+ : plus de malus — la progression naturelle des stats prend le relais.
+
   let perf, spread;
   if(choice.risk==='sur'){ perf = base*0.92; spread = 5; }
   else if(choice.risk==='audacieux'){ perf = base*1.08; spread = 18; }
@@ -2893,9 +3042,24 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
   perf += (Math.random()*2-1)*spread;
   perf = clamp(perf, 0, 118);
 
+  /* Les seuils victoire et podium varient selon le prestige de la course.
+     Gagner une petite course (prestige 1) est plus accessible qu'un monument (prestige 5),
+     ce qui permet à un débutant de décrocher une victoire sur une course facile dès la S1,
+     tout en gardant les Grands Tours et monuments hors de portée sans une vraie progression.
+     Victoire : P1=64, P2=70, P3=76, P4=82, P5=88
+     Podium   : P1=60, P2=64, P3=68, P4=70, P5=72 */
+  const _wm3 = (typeof STATE !== 'undefined' && STATE && STATE.seasonWorldMods) || {};
+  const _competUp = _wm3.competitionUp || 0;
+  /* Seuils de victoire par prestige. P1 à 67 (vs 70) pour que les jeunes puissent
+     gagner dès la S1-S2 sur petites courses ; P2 à 72 pour qu'un coureur mid-carrière
+     avec stats ~60 y accède raisonnablement. P5 (monuments, GT) inchangé à 88. */
+  const _vicTable = [0,67+_competUp,72+_competUp,77+_competUp,82+_competUp,88+_competUp];
+  const _podTable = [0,67,69,71,71,72];
+  const vicSeuil = (racePrestige && _vicTable[racePrestige]) ? _vicTable[racePrestige] : 88+_competUp;
+  const podSeuil = (racePrestige && _podTable[racePrestige]) ? _podTable[racePrestige] : 72;
   let tier;
-  if(perf>=88) tier='victoire';
-  else if(perf>=72) tier='podium';
+  if(perf>=vicSeuil) tier='victoire';
+  else if(perf>=podSeuil) tier='podium';
   else if(perf>=55) tier='top10';
   else if(perf>=32) tier='peloton';
   else tier='jourssans';
@@ -2903,10 +3067,17 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
   if(perf<20 && rider.fatigue>65 && Math.random()<0.22) tier='abandon';
 
   let trained = null;
-  if(rider.age<=27 && TIER_VALUE[tier]>=2 && Math.random()<0.35){
-    const k = event.focus[Math.floor(Math.random()*event.focus.length)];
-    rider.stats[k] = clamp(rider.stats[k] + (0.4+Math.random()*0.5), 15, 99);
-    trained = k;
+  /* Progression des stats en course : les jeunes progressent plus vite, mais
+     un coureur expérimenté continue d'affiner ses qualités jusqu'à 33 ans.
+     Tranche 28-33 : probabilité réduite (20% vs 35%) et gain plus faible (0.2-0.4). */
+  if(TIER_VALUE[tier]>=2){
+    const trainProba = rider.age<=27 ? 0.35 : rider.age<=33 ? 0.20 : 0;
+    if(Math.random() < trainProba){
+      const gainAmt = rider.age<=27 ? (0.4+Math.random()*0.5) : (0.2+Math.random()*0.2);
+      const k = event.focus[Math.floor(Math.random()*event.focus.length)];
+      rider.stats[k] = clamp(rider.stats[k] + gainAmt, 15, 99);
+      trained = k;
+    }
   }
 
   /* Un choix risqué (audacieux ou loufoque) qui tourne mal peut aussi coûter un peu de
@@ -2928,20 +3099,45 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
    nettement plus cher physiquement que gérer sagement son effort (sûr). */
 const RISK_FATIGUE_MULT = {sur:0.75, equilibre:1, audacieux:1.65, loufoque:1};
 function applyFatigue(rider, race, choice, weatherId){
-  // recuperation réduit l'accumulation de base
+  /* Récupération individuelle : réduit l'accumulation de base */
   const reduc = 1 - (rider.stats.recuperation/280);
-  // resistance amortit l'impact de la difficulté (un coureur résistant encaisse mieux les courses longues et dures)
+  /* Résistance : amortit l'impact de la difficulté sur les longues courses */
   const resistanceFactor = 1 - clamp((rider.stats.resistance - 50) / 150, -0.2, 0.35);
+  /* Surcharge calendaire : au-delà de 45 jours courus, chaque jour supplémentaire
+     fatigue davantage — l'organisme ne récupère plus aussi bien entre les efforts.
+     Plus agressif qu'avant : 0.025 par jour (vs 0.018) pour que 65 jours de course
+     soit vraiment éprouvant. */
   const daysSoFar = STATE.cumulativeDaysRaced || 0;
-  const overloadWear = daysSoFar > 45 ? 1 + (daysSoFar-45)*0.018 : 1;
-  // intensité selon durée de la course
-  const intensity = 1 + Math.min(race.days, 21)/21 * 0.45;
-  // prestige = difficulté réelle de la course (peloton plus fort, course plus sélective)
+  const overloadWear = daysSoFar > 45 ? 1 + (daysSoFar - 45) * 0.025 : 1;
+  /* Intensité selon durée : une étape de 21 jours coûte 45% de plus qu'une course d'un jour */
+  const intensity = 1 + Math.min(race.days, 21) / 21 * 0.45;
+  /* Prestige = peloton plus fort, course plus sélective, rythme plus élevé */
   const prestigeFactor = 1 + (race.prestige - 1) * 0.12;
+  /* Proximité calendaire : deux courses dans le même mois (gap ≤ 0) ou très rapprochées
+     (gap = 1 semaine en pratique) génèrent une fatigue supplémentaire car la récupération
+     est incomplète. Ce facteur est calculé depuis STATE pour la course précédente. */
+  const prevRace = STATE.runQueue && STATE.runRaceIdx > 0 ? STATE.runQueue[STATE.runRaceIdx - 1] : null;
+  let proximityMult = 1;
+  if(prevRace){
+    const gap = race.month - prevRace.month;
+    if(gap <= 0) proximityMult = 1.25;      // même mois : +25% de fatigue
+    else if(gap === 1) proximityMult = 1.10; // mois suivant : +10%
+  }
   const riskMult = choice ? (RISK_FATIGUE_MULT[choice.risk] || 1) : 1;
   const weatherMult = weatherId ? weatherFatigueMult(weatherId) : 1;
-  const cost = race.fatCost * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * riskMult * weatherMult;
-  rider.fatigue = clamp(rider.fatigue + cost, 0, 130);
+  /* Trajectoire Spécialiste : pénalité si trop de courses (>8 dans la saison).
+     Le spécialiste est taillé pour les grands rendez-vous, pas pour courir partout. */
+  const racesCount = STATE && STATE.runQueue ? STATE.runQueue.length : 0;
+  const specialistePenalty = (rider.trajectory === 'specialiste' && racesCount > 8) ? 1.15 : 1;
+  /* World events : modificateurs saisonniers de fatigue */
+  const _wm = (STATE && STATE.seasonWorldMods) || {};
+  let worldFatMult = 1;
+  if(_wm.globalFatigueReduction) worldFatMult *= _wm.globalFatigueReduction;
+  if(_wm.globalFatigueBoost) worldFatMult *= _wm.globalFatigueBoost;
+  if(_wm.julyFatigue && race.month === 7) worldFatMult *= _wm.julyFatigue;
+  if(_wm.springFatigue && race.month >= 3 && race.month <= 4 && (race.type === 'monument' || race.type === 'classique')) worldFatMult *= _wm.springFatigue;
+  const cost = race.fatCost * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult;
+  rider.fatigue = clamp(rider.fatigue + cost, 0, 100);
 }
 
 /* Récupération passive entre deux courses du calendrier, selon l'écart de mois et la
@@ -2954,21 +3150,30 @@ function applyInterRaceRecovery(rider, prevRace, nextRace){
   let gap = nextRace.month - prevRace.month;
   if(gap < 0) gap += 12;
   const daysSoFar = STATE.cumulativeDaysRaced || 0;
-  const seasonFactor = clamp(1 - daysSoFar*0.007, 0.3, 1);
-  const prevRaceDepth = 1 - Math.min(prevRace.days, 21)/21 * 0.35;
-  // Non-linéaire forte : 1 mois ≈ 18 pts, 2 mois ≈ 40 pts, 3 mois ≈ 58 pts, 4 mois ≈ 72 pts
-  // gap^1.4 amplifie fortement les longues pauses vs les courtes
+  /* seasonFactor : la récupération devient moins efficace en fin de saison.
+     Plus agressif qu'avant (0.009 vs 0.007) et plancher à 0.25 (vs 0.3). */
+  const seasonFactor = clamp(1 - daysSoFar * 0.009, 0.25, 1);
+  /* Après un grand tour ou un semi-tour long (>14j), la fatigue résiduelle
+     résiste davantage à la récupération — l'organisme a vraiment souffert. */
+  const prevRaceDepth = 1 - Math.min(prevRace.days, 21) / 21 * 0.40;
+  /* Gap non-linéaire : même mois = presque pas de récupération possible.
+     1 mois ≈ 14 pts, 2 mois ≈ 33 pts, 3 mois ≈ 55 pts (légèrement réduit vs avant). */
   const gapFactor = gap > 0 ? Math.pow(gap, 1.4) : 0;
-  const recovery = gapFactor * (12 + rider.stats.recuperation/10) * seasonFactor * prevRaceDepth;
-  rider.fatigue = clamp(rider.fatigue - recovery, 0, 130);
-  const seasonFloor = Math.min(42, daysSoFar * 1.1);
+  const recovery = gapFactor * (11 + rider.stats.recuperation / 11) * seasonFactor * prevRaceDepth;
+  rider.fatigue = clamp(rider.fatigue - recovery, 0, 100);
+  /* Plancher saisonnier : l'accumulation de fatigue de fond ne peut pas être
+     effacée — même avec deux mois de repos, un coureur à 60j de course garde
+     une fatigue résiduelle. */
+  const seasonFloor = Math.min(45, daysSoFar * 1.0);
   rider.fatigue = Math.max(rider.fatigue, seasonFloor);
 }
 
 /* Risque de chute pendant un évènement de course : plus élevé sur les choix audacieux,
    sur les monuments (pavé, descentes techniques), et amplifié par la fatigue. */
 function crashChanceFor(rider, race, choice, weatherId){
-  let base = choice.risk==='audacieux' ? 0.05 : choice.risk==='equilibre' ? 0.025 : choice.risk==='loufoque' ? 0.04 : 0.012;
+  const _wmCrash = (typeof STATE !== 'undefined' && STATE && STATE.seasonWorldMods) || {};
+  const _crashWorldMult = _wmCrash.crashMult || 1;
+  let base = (choice.risk==='audacieux' ? 0.05 : choice.risk==='equilibre' ? 0.025 : choice.risk==='loufoque' ? 0.04 : 0.012) * _crashWorldMult;
   if(race.type==='monument') base *= 1.8;
   if(weatherId) base *= weatherCrashMult(weatherId);
   const fatigueFactor = 1 + Math.max(0, rider.fatigue-40)/90;
@@ -3065,10 +3270,16 @@ function pickImposedRaces(rider, trainingFocus, pool){
 function repGainFor(race, bestTier, currentRep, rider){
   const rep = currentRep==null ? 50 : currentRep;
   if(bestTier === 'abandon') return -Math.round(race.prestige * 1.1);
+  if(bestTier === 'forfait') return -Math.round(race.prestige * 0.5); // forfait = moins grave qu'un abandon
   const tv = TIER_VALUE[bestTier]; // 0..4
   let raw = (tv - 1) * race.prestige * 0.9;
   if(raw > 0){
-    const headroom = clamp((100-rep)/100, 0.25, 1);
+    /* Headroom non-linéaire : les gains de réputation ralentissent fortement
+       à mesure qu'on approche de 100. En dessous de 40, plein gain.
+       Entre 40 et 80, décroissance progressive. Au-delà de 80, très faible.
+       Formule : headroom = ((100-rep)/100)^1.8, clampé entre 0.04 et 1.
+       Effets : rep=0→1.0, rep=40→0.56, rep=70→0.22, rep=85→0.10, rep=95→0.03 */
+    const headroom = clamp(Math.pow((100 - rep) / 100, 1.2), 0.10, 1);
     raw *= headroom;
     // Bonus si la victoire correspond au rôle (leader gagnant une course de son registre)
     if(rider && rider.role && bestTier === 'victoire'){
@@ -3076,6 +3287,40 @@ function repGainFor(race, bestTier, currentRep, rider){
       if(roleTypes.length > 0 && roleTypes.includes(race.type)){
         raw *= 1.25; // +25% de réputation sur une victoire dans son registre
       }
+    }
+  }
+  /* Trajectoire globetrotter : +1 rep sur les courses hors spécialité — il est connu
+     pour sa polyvalence et son palmarès éclectique. */
+  if(rider && rider.trajectory === 'globetrotter' && raceType){
+    const _raceProxyGlobe = {type: raceType};
+    if(!raceMatchesStyle(_raceProxyGlobe, rider.styleId) && raw > 0) raw += 1;
+  }
+  /* Trajectoire leader : malus supplémentaire sur les contre-perfs (peloton/jourssans)
+     sur les courses de prestige ≥ 3 — les attentes sont élevées. */
+  if(rider && rider.trajectory === 'leader' && (bestTier === 'peloton' || bestTier === 'jourssans')){
+    const race_prestige = (arguments[0] && arguments[0].prestige) || 0;
+    if(race_prestige >= 3) raw -= 1;
+  }
+  /* World events : bonus de réputation saisonniers */
+  if(raw !== 0){
+    const _wm2 = (typeof STATE !== 'undefined' && STATE && STATE.seasonWorldMods) || {};
+    const _race = arguments[0] || {};
+    if(bestTier === 'victoire'){
+      if(_wm2.gtRepBonus && _race.type === 'grandtour') raw += _wm2.gtRepBonus;
+      if(_wm2.homeGrandDepart && _race.type === 'grandtour') raw += 5;
+      if(_wm2.bigRaceRepBonus && (_race.type === 'grandtour' || _race.type === 'monument')) raw += _wm2.bigRaceRepBonus;
+      if(_wm2.sprintRepBonus && (_race.type === 'classique' || _race.type === 'crit')) raw += _wm2.sprintRepBonus;
+      if(_wm2.clmRepBonus && (_race.type === 'semitour')) raw += _wm2.clmRepBonus;
+      if(_wm2.newRaceRepBonus) raw += _wm2.newRaceRepBonus;
+      if(_wm2.teamSpotlight) raw += 2;
+    }
+    if(bestTier === 'top10' && _wm2.top10RepBonus) raw += _wm2.top10RepBonus;
+    if(_wm2.moneyBonus && typeof STATE !== 'undefined' && STATE && STATE.rider){
+      // Le bonus argent est géré dans la fonction de paiement, pas ici
+    }
+    if(_wm2.competitionUp && (bestTier === 'victoire' || bestTier === 'podium')){
+      // La compétition accrue est simulée via un seuil relevé dans resolveEvent
+      // pas via la réputation — rien à faire ici
     }
   }
   return Math.round(raw);
@@ -3117,8 +3362,13 @@ function endSeasonAging(rider, trainingFocus){
     rider.stats[k] = clamp(rider.stats[k]+delta, 8, 99);
   });
   // Repos hivernal : la part de fatigue non évacuée dépend de la récupération et de l'âge.
-  const restFactor = clamp(0.34 - rider.stats.recuperation/300 + Math.max(0, age-32)*0.01, 0.05, 0.4);
+  // restFactor : fraction de fatigue qui survit à l'hiver. Plancher relevé à 0.14 (vs 0.05)
+  // pour que l'accumulation saison après saison soit visible après 30 ans.
+  const restFactor = clamp(0.38 - rider.stats.recuperation/300 + Math.max(0, age-32)*0.012, 0.14, 0.48);
   rider.fatigue = Math.round(rider.fatigue * restFactor);
+  // Fatigue résiduelle minimale : un coureur de 32+ ans ne récupère jamais à zéro
+  const ageFloor = age >= 34 ? 12 : age >= 32 ? 8 : age >= 30 ? 4 : 0;
+  rider.fatigue = Math.max(rider.fatigue, ageFloor);
   // La confiance d'équipe se recentre légèrement vers la neutralité d'une saison à l'autre.
   rider.teamConfidence = Math.round(rider.teamConfidence + (55 - rider.teamConfidence)*0.15);
 }
@@ -3132,7 +3382,9 @@ function endSeasonAging(rider, trainingFocus){
 const TEAM_TIER_ORDER = {'Continentale':0, 'ProTeam':1, 'WorldTour':2, 'Équipe de légende':3};
 function offersForRider(rider){
   const current = currentTeam(rider);
-  const maxTierIdx = TEAM_TIER_ORDER[current.tier] + 1;
+  /* Globetrotter : sa visibilité internationale lui ouvre les portes plus vite */
+  const tierBonus = rider.trajectory === 'globetrotter' ? 2 : 1;
+  const maxTierIdx = TEAM_TIER_ORDER[current.tier] + tierBonus;
   const eligible = TEAMS.filter(t=> t.minRep <= rider.reputation + 10 && TEAM_TIER_ORDER[t.tier] <= maxTierIdx);
   const renewed = rider.teamConfidence >= 28 && eligible.includes(current);
   let offers = renewed ? [current] : [];
@@ -3397,6 +3649,9 @@ function backfillRiderFields(rider){
   if(typeof rider.mentorOfferDeclined !== 'boolean') rider.mentorOfferDeclined = false;
   if(typeof rider.worldRank !== 'number') rider.worldRank = 450;
   if(typeof rider.fame !== 'number') rider.fame = 20;
+  if(typeof rider.styleConfirmed !== 'boolean') rider.styleConfirmed = false;
+  if(!rider.careerFlags) rider.careerFlags = {};
+  if(typeof rider.trajectory === 'undefined') rider.trajectory = null;
 }
 
 /* Journal de carrière : quelques lignes chronologiques sur les vrais temps forts,
@@ -3426,8 +3681,12 @@ function resumeSlot(i){
   else if(screen==='interviewreaction') renderInterviewReactionScreen();
   else if(screen==='calendar') renderCalendarScreen();
   else if(screen==='rolechoice') renderRoleChoice(STATE.runQueue[STATE.runRaceIdx]);
-  else if(screen==='nextracebchoice') renderNextRaceChoiceScreen();
+  else if(screen==='nextracebchoice') beginRaceOrFinish();
   else if(screen==='currentevent') renderCurrentEvent();
+  else if(screen==='styleconfirm') renderStyleConfirmEvent(detectRiderProfile(STATE.rider)||STATE.rider.styleId);
+  else if(screen==='trajectorychoice') renderTrajectoryChoice();
+  else if(screen==='worldevents') renderWorldEventsScreen();
+  else if(screen==='pivotevent' && STATE._pendingPivot) renderPivotEvent(STATE._pendingPivot);
   else if(screen==='seasonrecap' && STATE.seasonRecapData) renderSeasonRecap();
   else if(screen==='contractscreen') renderContractScreen();
   else if(screen==='personalevent' && STATE.pendingPersonalEvent) renderPersonalEvent();
@@ -3735,7 +3994,7 @@ function riderHeaderHTML(){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
       <div>
         <h2><span class="flag">${c.flag}</span>${r.name}</h2>
-        <p class="small">${STYLES.find(s=>s.id===r.styleId).name} · ${r.age} ${tf('yo','ans')} · ${tf('season','Saison')} ${r.season}${r.isNationalChampion?` · 🏅 ${tf('nationalChampionBadge','Champion national')}`:''}</p>
+        <p class="small">${(()=>{ const _s=STYLES.find(s=>s.id===r.styleId); return _s?`${_s.icon} ${_s.name}`:''; })()}${r.trajectory?` · ${{'specialiste':'🎯','globetrotter':'🌍','leader':'👑'}[r.trajectory]||''} ${tf('trajectory_'+r.trajectory, r.trajectory)}`:''}  · ${r.age} ${tf('yo','ans')} · ${tf('season','Saison')} ${r.season}${r.isNationalChampion?` · 🏅 ${tf('nationalChampionBadge','Champion national')}`:''}</p>
       </div>
       <div style="text-align:right;">
         <span class="pill">🎽 ${teamTierLabel(team.tier)}</span>
@@ -4210,8 +4469,16 @@ function rivalsCardHTML(){
 }
 
 function startNewSeason(){
+  STATE._seasonEnding = false;
   STATE.trainingFocus = null;
   STATE.rider.isNationalChampion = false;
+  STATE.seasonWorldMods = {};
+  STATE.activeWorldEvents = [];
+  /* Globetrotter : arrive en début de saison avec une fatigue résiduelle — il tourne
+     trop, ne récupère jamais vraiment. Contrepartie : accès plus rapide aux équipes sup. */
+  if(STATE.rider.trajectory === 'globetrotter' && STATE.rider.season > 1){
+    STATE.rider.fatigue = clamp((STATE.rider.fatigue || 0) + 8, 0, 100);
+  }
   const r = STATE.rider;
   if(r.age>=33 && r.teammate && !r.isMentor && !r.mentorOfferDeclined){
     renderMentorOffer();
@@ -4355,53 +4622,63 @@ function isRoleRecommendedRace(race, rider){
 }
 
 const SEASON_OBJECTIVES = [
-  /* id, sévérité (1=mineur, 2=intermédiaire, 3=majeur) */
+  /* id, sévérité (1=mineur, 2=intermédiaire, 3=majeur)
+     minRep/maxRep : fourchette de réputation
+     minSeason : saison minimale pour apparaître (évite de proposer des objectifs irréalistes en S1-S2) */
+  {id:'survive', icon:'🎽', severity:1,
+    label:"Terminer toutes tes courses", labelEN:"Finish every race",
+    desc:"L'équipe attend simplement que tu ailles au bout — aucun abandon, aucun forfait.", descEN:"The team simply expects you to finish — no DNF, no DNS.",
+    minRep:0, maxRep:20, minSeason:1},
   {id:'top10', icon:'📋', severity:1,
     label:"Finir dans le top 10 d'une grande course", labelEN:"Finish top 10 in a major race",
     desc:"L'équipe attend au moins un bon classement sur une course de prestige ≥ 3.", descEN:"The team expects at least one solid result on a prestige ≥ 3 race.",
-    minRep:0, maxRep:35},
+    minRep:10, maxRep:40, minSeason:1},
   {id:'podium', icon:'🥉', severity:2,
     label:"Décrocher un podium", labelEN:"Reach a podium",
     desc:"Un top 3 sur n'importe quelle course de prestige ≥ 3.", descEN:"A top 3 on any prestige ≥ 3 race.",
-    minRep:20, maxRep:60},
+    minRep:30, maxRep:65, minSeason:3},
   {id:'etapes', icon:'📈', severity:2,
     label:"Te révéler sur les courses à étapes", labelEN:"Make your mark on stage races",
     desc:"Un podium ou mieux sur un grand tour ou semi-tour.", descEN:"A podium or better on a grand tour or stage race.",
-    minRep:25, maxRep:70},
+    minRep:35, maxRep:75, minSeason:3},
   {id:'victoire', icon:'🏆', severity:3,
     label:"Remporter une victoire", labelEN:"Win a race",
     desc:"L'équipe attend une victoire sur une course de prestige ≥ 3.", descEN:"The team expects a win on a prestige ≥ 3 race.",
-    minRep:35, maxRep:100},
+    minRep:45, maxRep:100, minSeason:4},
   {id:'monument', icon:'🏔️', severity:3,
     label:"Viser un monument ou un grand tour", labelEN:"Aim for a monument or grand tour",
     desc:"Une victoire sur une course de prestige maximum. Exigence absolue.", descEN:"A win on a maximum-prestige race. The highest bar.",
-    minRep:55, maxRep:100},
+    minRep:60, maxRep:100, minSeason:6},
   {id:'solide', icon:'🛡️', severity:1,
     label:"Saison solide, sans contre-performance", labelEN:"Solid season, no setbacks",
     desc:"Aucun abandon ou forfait. Régularité avant tout.", descEN:"No DNF or DNS. Consistency above all.",
-    minRep:0, maxRep:100},
+    minRep:0, maxRep:100, minSeason:1},
   {id:'aucun', icon:'🤷', severity:0,
     label:"Aucun objectif particulier", labelEN:"No particular objective",
     desc:"Ni bonus ni malus à la clé.", descEN:"No bonus or penalty either way.",
-    minRep:0, maxRep:100},
+    minRep:0, maxRep:100, minSeason:1},
 ];
 
 /* Retourne les objectifs pertinents pour ce coureur cette saison.
-   Filtre selon réputation et exclut ceux déjà atteints dans le palmarès récent. */
+   Filtre selon réputation, saison, et exclut ceux déjà accomplis récemment. */
 function availableObjectives(rider){
   const rep = rider.reputation;
+  const season = rider.season || 1;
   const recentSeasons = (rider.palmares||[]).filter(p=>p.season===rider.season-1||p.season===rider.season);
   const hadMonumentWin = recentSeasons.some(p=>p.prestige>=4 && p.tier==='victoire');
   const hadGTWin = recentSeasons.some(p=>p.type==='grandtour' && p.tier==='victoire');
   const hadPodium = recentSeasons.some(p=>p.prestige>=3 && (p.tier==='victoire'||p.tier==='podium'));
   const hadTop10 = recentSeasons.some(p=>p.prestige>=3 && (p.tier==='victoire'||p.tier==='podium'||p.tier==='top10'));
+  const hadNoAbandon = !recentSeasons.some(p=>p.tier==='abandon'||p.tier==='forfait');
 
   return SEASON_OBJECTIVES.filter(o=>{
     if(o.id==='aucun') return true;
     if(rep < o.minRep || rep > o.maxRep) return false;
-    // Ne pas proposer un objectif déjà accompli facilement
-    if(o.id==='top10' && hadTop10 && rep > 25) return false;
-    if(o.id==='podium' && hadPodium && rep > 45) return false;
+    if(season < (o.minSeason||1)) return false;
+    // Ne pas reproposer un objectif déjà accompli facilement
+    if(o.id==='survive' && hadNoAbandon && rep > 10) return false;
+    if(o.id==='top10' && hadTop10 && rep > 30) return false;
+    if(o.id==='podium' && hadPodium && rep > 50) return false;
     if(o.id==='monument' && (hadMonumentWin || hadGTWin)) return false;
     return true;
   });
@@ -4431,10 +4708,10 @@ const STAGE_PAIRS = {montagne:'sprint', sprint:'montagne', clm:'classiques', cla
    Un objectif ambitieux fixé sur 2-3 saisons, distinct de l'objectif annuel — donne une
    direction de plus long terme à la carrière, avec une vraie récompense à la clé. */
 const CAREER_CAP_TYPES = [
-  {id:'grandtour', icon:'🏆', label:"Gagner un grand tour", labelEN:"Win a grand tour", years:3},
-  {id:'monument', icon:'🥇', label:"Gagner un monument", labelEN:"Win a monument", years:3},
-  {id:'top20', icon:'🌍', label:"Entrer dans le top 20 mondial", labelEN:"Break into the world top 20", years:2},
-  {id:'reputation70', icon:'⭐', label:"Atteindre 70 de réputation", labelEN:"Reach 70 reputation", years:2},
+  {id:'grandtour', icon:'🏆', label:"Gagner un grand tour", labelEN:"Win a grand tour", years:4},
+  {id:'monument', icon:'🥇', label:"Gagner un monument", labelEN:"Win a monument", years:4},
+  {id:'top20', icon:'🌍', label:"Entrer dans le top 20 mondial", labelEN:"Break into the world top 20", years:4},
+  {id:'reputation70', icon:'⭐', label:"Atteindre 70 de réputation", labelEN:"Reach 70 reputation", years:3},
 ];
 
 function checkCareerCapCondition(rider, type){
@@ -4574,6 +4851,11 @@ function confirmSeasonSetup(){
   const imposed = pickImposedRaces(r, STATE.trainingFocus, STATE.seasonRacePool);
   STATE.imposedRaceIds = imposed;
   STATE.selectedRaceIds = imposed.slice();
+  /* Tirer et appliquer les world events APRÈS la constitution du pool (certains events
+     modifient le pool lui-même, ex. course_annulee) */
+  STATE._worldEventCancelledRace = null;
+  const worldEvs = rollWorldEvents();
+  applyWorldEvents(worldEvs);
   STATE.personalEventReturnTo = 'calendar';
   maybeShowPersonalEvent();
 }
@@ -4645,13 +4927,436 @@ function localizeEvent(ev){
   return out;
 }
 
+/* ======================================================================
+   ÉVÉNEMENTS DU MONDE CYCLISTE
+   1-2 events tirés au sort chaque début de saison (dès S2).
+   Ils modifient concrètement la saison en cours — effets visibles
+   à l'écran ET mécaniques réels.
+   ====================================================================== */
+
+const WORLD_EVENTS = [
+  {id:'canicule_juillet', icon:'🥵',
+   get title(){ return tf('we_canicule','Canicule historique en juillet'); },
+   get titleEN(){ return 'Historic July heatwave'; },
+   get desc(){ return tf('we_canicule_desc',"Les courses de juillet se disputent sous des températures record. La gestion de l'effort sera cruciale."); },
+   get descEN(){ return "July races are held in record temperatures. Managing your effort will be crucial."; },
+   get effect(){ return tf('we_canicule_effect','+20% de fatigue sur toutes les courses de juillet'); },
+   get effectEN(){ return '+20% fatigue on all July races'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.julyFatigue = 1.20; }},
+
+  {id:'hiver_precoce', icon:'🌨️',
+   get title(){ return tf('we_hiver','Hiver précoce sur les classiques'); },
+   get titleEN(){ return 'Early winter hits the classics'; },
+   get desc(){ return tf('we_hiver_desc','Des chutes de neige inattendues perturbent les classiques de printemps. Les pavés sont encore plus redoutables.'); },
+   get descEN(){ return 'Unexpected snowfall disrupts the spring classics. The cobbles are even more fearsome.'; },
+   get effect(){ return tf('we_hiver_effect','+15% de fatigue sur les monuments et classiques de mars-avril'); },
+   get effectEN(){ return '+15% fatigue on monuments and classics in March-April'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.springFatigue = 1.15; }},
+
+  {id:'routes_degradees', icon:'🚧',
+   get title(){ return tf('we_routes','Routes dégradées après les intempéries'); },
+   get titleEN(){ return 'Roads degraded after storms'; },
+   get desc(){ return tf('we_routes_desc','Les routes sont en mauvais état après un hiver difficile. Les risques de chute sont accrus sur toute la saison.'); },
+   get descEN(){ return 'Roads are in poor condition after a hard winter. Crash risk is increased throughout the season.'; },
+   get effect(){ return tf('we_routes_effect','+30% de risque de chute sur toutes les courses'); },
+   get effectEN(){ return '+30% crash risk on all races'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.crashMult = 1.30; }},
+
+  {id:'vent_favorable', icon:'💨',
+   get title(){ return tf('we_vent','Vents favorables cette saison'); },
+   get titleEN(){ return 'Favourable winds this season'; },
+   get desc(){ return tf('we_vent_desc','Les conditions météo sont exceptionnellement favorables. Les coureurs récupèrent mieux entre les efforts.'); },
+   get descEN(){ return 'Weather conditions are exceptionally favourable. Riders recover better between efforts.'; },
+   get effect(){ return tf('we_vent_effect','-10% de fatigue sur toutes les courses'); },
+   get effectEN(){ return '-10% fatigue on all races'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.globalFatigueReduction = 0.90; }},
+
+  {id:'altitude_record', icon:'🏔️',
+   get title(){ return tf('we_altitude','Les grands tours misent sur l\'altitude'); },
+   get titleEN(){ return "Grand tours go high this year"; },
+   get desc(){ return tf('we_altitude_desc','Les organisateurs ont concocté des profils exceptionnellement montagneux. Les grimpeurs sont attendus.'); },
+   get descEN(){ return "Grand tour organisers have created exceptionally mountainous routes. Climbers are in demand."; },
+   get effect(){ return tf('we_altitude_effect','+2 points de réputation sur les victoires en grand tour cette saison'); },
+   get effectEN(){ return '+2 reputation on grand tour wins this season'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.gtRepBonus = 2; }},
+
+  {id:'saison_sprinters', icon:'⚡',
+   get title(){ return tf('we_sprint','Saison taillée pour les sprinteurs'); },
+   get titleEN(){ return "A sprinters' season"; },
+   get desc(){ return tf('we_sprint_desc','Les grands tours ont privilégié les arrivées massives. Les équipes de sprinteurs dictent leur loi.'); },
+   get descEN(){ return "Grand tours have favoured bunch sprint finishes. Sprinters' teams are calling the shots."; },
+   get effect(){ return tf('we_sprint_effect','+2 points de réputation sur les victoires en classique ou critérium'); },
+   get effectEN(){ return '+2 reputation on wins in classic or criterium'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.sprintRepBonus = 2; }},
+
+  {id:'course_annulee', icon:'❌',
+   get title(){ return tf('we_annulee','Une grande classique annule son édition'); },
+   get titleEN(){ return 'A major classic cancels its edition'; },
+   get desc(){ return tf('we_annulee_desc','Un différend avec les organisateurs locaux force l\'annulation d\'une grande classique.'); },
+   get descEN(){ return "A dispute with local organisers forces the cancellation of a major classic."; },
+   get effect(){ return tf('we_annulee_effect','Une course classique de prestige 3-4 est retirée du calendrier'); },
+   get effectEN(){ return 'A prestige 3-4 classic is removed from the calendar'; },
+   apply(state){
+     const pool = state.seasonRacePool || [];
+     const classics = pool.filter(r=>r.type==='classique'&&r.prestige>=3&&!(state.imposedRaceIds||[]).includes(r.id));
+     if(classics.length){
+       const victim = classics[Math.floor(Math.random()*classics.length)];
+       state.seasonRacePool = pool.filter(r=>r.id!==victim.id);
+       state.selectedRaceIds = (state.selectedRaceIds||[]).filter(id=>id!==victim.id);
+       state._worldEventCancelledRace = victim.name;
+     }
+   }},
+
+  {id:'nouvelle_course', icon:'🆕',
+   get title(){ return tf('we_nouvelle','Une nouvelle épreuve au calendrier'); },
+   get titleEN(){ return 'A new race on the calendar'; },
+   get desc(){ return tf('we_nouvelle_desc','Une nouvelle épreuve fait son apparition avec un fort soutien des sponsors. L\'occasion de briller sur un terrain vierge.'); },
+   get descEN(){ return "A new race appears this season with strong sponsor backing. A chance to shine on virgin territory."; },
+   get effect(){ return tf('we_nouvelle_effect','+1 point de réputation sur les victoires cette saison'); },
+   get effectEN(){ return '+1 reputation on all wins this season'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.newRaceRepBonus = 1; }},
+
+  {id:'calendrier_charge', icon:'📅',
+   get title(){ return tf('we_charge','Calendrier exceptionnellement chargé'); },
+   get titleEN(){ return 'Exceptionally packed calendar'; },
+   get desc(){ return tf('we_charge_desc','Plusieurs épreuves se chevauchent cette saison. Les coureurs s\'épuisent plus vite.'); },
+   get descEN(){ return "Several events overlap this season. Riders tire faster."; },
+   get effect(){ return tf('we_charge_effect','+10% de fatigue sur toutes les courses de la saison'); },
+   get effectEN(){ return '+10% fatigue on all races this season'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.globalFatigueBoost = 1.10; }},
+
+  {id:'equipe_rivale_crise', icon:'💥',
+   get title(){ return tf('we_crise','Une équipe rivale en crise'); },
+   get titleEN(){ return 'A rival team in crisis'; },
+   get desc(){ return tf('we_crise_desc','Le sponsor principal d\'une grande équipe se retire. Leurs coureurs sont dispersés sur le marché.'); },
+   get descEN(){ return "A major team's main sponsor pulls out. Their riders scatter onto the transfer market."; },
+   get effect(){ return tf('we_crise_effect','Accès à des équipes de tier supérieur cette saison (+1 rang de recrutement)'); },
+   get effectEN(){ return 'Access to higher-tier teams this season (+1 recruitment rank)'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.recruitmentBonus = 1; }},
+
+  {id:'uci_points', icon:'📊',
+   get title(){ return tf('we_uci','Nouveau barème FMC'); },
+   get titleEN(){ return 'New FMC points scale'; },
+   get desc(){ return tf('we_uci_desc','La Fédération Mondiale du Cyclisme (FMC) modifie son barème. Les grands tours et monuments rapportent significativement plus de réputation.'); },
+   get descEN(){ return "The World Cycling Federation (FMC) revises its points scale. Grand tours and monuments earn significantly more reputation."; },
+   get effect(){ return tf('we_uci_effect','+3 réputation sur les victoires en GT et monument cette saison'); },
+   get effectEN(){ return '+3 reputation on GT and monument wins this season'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.bigRaceRepBonus = 3; }},
+
+  {id:'star_recrutee', icon:'⭐',
+   get title(){ return tf('we_star','Ton équipe recrute une star'); },
+   get titleEN(){ return 'Your team signs a star'; },
+   get desc(){ return tf('we_star_desc','Ton équipe a signé un coureur très médiatisé. Tes performances sont scrutées de plus près.'); },
+   get descEN(){ return "Your team has signed a high-profile rider. Your performances are scrutinised more closely."; },
+   get effect(){ return tf('we_star_effect','+2 rep sur les victoires, mais contre-perfs plus visibles'); },
+   get effectEN(){ return '+2 reputation on wins, but poor results are more visible'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.teamSpotlight = true; }},
+
+  {id:'generation_montante', icon:'🌱',
+   get title(){ return tf('we_generation','Une génération de jeunes talents explose'); },
+   get titleEN(){ return 'A generation of young talents erupts'; },
+   get desc(){ return tf('we_generation_desc','Une nouvelle vague de coureurs crève l\'écran. La concurrence est accrue sur toutes les courses.'); },
+   get descEN(){ return "A new wave of young riders bursts onto the scene. Competition is fiercer across the board."; },
+   get effect(){ return tf('we_generation_effect','Seuils de victoire légèrement relevés cette saison (concurrence accrue)'); },
+   get effectEN(){ return 'Victory thresholds slightly raised this season (stiffer competition)'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.competitionUp = 2; }},
+
+  {id:'dopage_scandale', icon:'💊',
+   get title(){ return tf('we_dopage','Vague de contrôles antidopage renforcés'); },
+   get titleEN(){ return 'Wave of strengthened doping controls'; },
+   get desc(){ return tf('we_dopage_desc','Suite à des révélations, les contrôles sont renforcés. L\'ambiance est pesante dans le peloton.'); },
+   get descEN(){ return "Following revelations, controls are tightened. The atmosphere in the peloton is tense."; },
+   get effect(){ return tf('we_dopage_effect','-1 point de mental en début de saison'); },
+   get effectEN(){ return '-1 mental point at the start of the season'; },
+   apply(state){ if(state.rider) state.rider.stats.mental = Math.max(8, (state.rider.stats.mental||50)-1); }},
+
+  {id:'grand_depart_pays', icon:'🎉',
+   get title(){ return tf('we_depart','Ton pays accueille un Grand Départ'); },
+   get titleEN(){ return 'Your country hosts a Grand Départ'; },
+   get desc(){ return tf('we_depart_desc','L\'un des grands tours démarre dans ton pays. La ferveur populaire est immense.'); },
+   get descEN(){ return "One of the grand tours starts in your country. Public enthusiasm is huge."; },
+   get effect(){ return tf('we_depart_effect','+5 pts de réputation si tu participes à ce grand tour'); },
+   get effectEN(){ return '+5 reputation if you participate in this grand tour'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.homeGrandDepart = true; }},
+
+  {id:'record_heure', icon:'⏱️',
+   get title(){ return tf('we_record','Un record de l\'heure fait parler'); },
+   get titleEN(){ return 'An Hour Record sparks debate'; },
+   get desc(){ return tf('we_record_desc','Une tentative médiatisée remet les rouleurs et les CLM sous les projecteurs cette saison.'); },
+   get descEN(){ return "A high-profile attempt puts rouleurs and time trials in the spotlight this season."; },
+   get effect(){ return tf('we_record_effect','+2 rep sur les victoires en semitour ou CLM cette saison'); },
+   get effectEN(){ return '+2 reputation on stage race or TT wins this season'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.clmRepBonus = 2; }},
+
+  {id:'hommage_legende', icon:'🕯️',
+   get title(){ return tf('we_hommage','Hommage à une légende du peloton'); },
+   get titleEN(){ return 'Tribute to a peloton legend'; },
+   get desc(){ return tf('we_hommage_desc','Le peloton rend hommage à une figure marquante. Courir avec coeur prend tout son sens.'); },
+   get descEN(){ return "The peloton pays tribute to a major figure. Racing with heart means everything."; },
+   get effect(){ return tf('we_hommage_effect','+1 pt de mental pour tous les coureurs ce début de saison'); },
+   get effectEN(){ return '+1 mental point at the start of the season'; },
+   apply(state){ if(state.rider) state.rider.stats.mental = Math.min(99, (state.rider.stats.mental||50)+1); }},
+
+  {id:'soutien_sponsor', icon:'💰',
+   get title(){ return tf('we_soutien','Engouement exceptionnel des sponsors'); },
+   get titleEN(){ return 'Exceptional sponsor enthusiasm'; },
+   get desc(){ return tf('we_soutien_desc','Une année très médiatisée attire de nouveaux partenaires. Les primes sont plus généreuses.'); },
+   get descEN(){ return "A particularly high-profile year attracts new partners. Prize money is more generous."; },
+   get effect(){ return tf('we_soutien_effect','+20% de revenus sur les primes de course cette saison'); },
+   get effectEN(){ return '+20% earnings on race prize money this season'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.moneyBonus = 1.20; }},
+
+  {id:'media_cyclo', icon:'📺',
+   get title(){ return tf('we_media','Explosion de la couverture médiatique'); },
+   get titleEN(){ return 'Explosion in media coverage'; },
+   get desc(){ return tf('we_media_desc','Le cyclisme est à la une. Chaque performance est analysée — les coureurs gagnent en visibilité.'); },
+   get descEN(){ return "Cycling is front-page news. Every performance is analysed — riders gain in visibility."; },
+   get effect(){ return tf('we_media_effect','+1 rep sur chaque top10 (la moindre performance est valorisée)'); },
+   get effectEN(){ return '+1 reputation on every top 10'; },
+   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.top10RepBonus = 1; }},
+];
+
+function rollWorldEvents(){
+  if(!STATE.rider || STATE.rider.season < 2) return [];
+  const count = Math.random() < 0.5 ? 1 : 2;
+  const pool = WORLD_EVENTS.slice();
+  const picked = [];
+  for(let i=0;i<count&&pool.length;i++){
+    const idx = Math.floor(Math.random()*pool.length);
+    picked.push(pool.splice(idx,1)[0]);
+  }
+  return picked;
+}
+
+function applyWorldEvents(events){
+  STATE.seasonWorldMods = {};
+  events.forEach(ev => { try{ ev.apply(STATE); }catch(e){} });
+  STATE.activeWorldEvents = events;
+}
+
+
+const PIVOT_EVENTS = [
+  /* S3 : Offre d'équipe en cours de contrat */
+  {id:'offer_prematured', triggerSeason:3,
+   title:tf('pivotOfferTitle',"Une offre inattendue"),
+   titleEN:"An unexpected offer",
+   icon:'📨',
+   desc:tf('pivotOfferDesc',"Une équipe de division supérieure t'a fait parvenir un message discret : ils t'observent depuis le début de saison et seraient prêts à te signer dès maintenant, avant la fin de ton contrat actuel. Partir maintenant serait une trahison vis-à-vis de ton équipe actuelle — mais l'opportunité est rare."),
+   descEN:"A higher-division team has sent you a discreet message: they've been watching you since the start of the season and would be willing to sign you now, before your current contract ends. Leaving now would be a betrayal of your current team — but the opportunity is rare.",
+   choices:[
+     {label:tf('pivotOfferAccept',"Accepter l'offre (trahison, +opportunité)"), labelEN:"Accept the offer (betrayal, +opportunity)",
+      effect:(r)=>{
+        r.careerFlags.betrayedTeam = r.season;
+        r.teamConfidence = Math.max(0, r.teamConfidence - 25);
+        r.reputation = Math.max(0, r.reputation - 8);
+        addJournalEntry(r, tf('pivotOfferAcceptLog',"Tu as quitté ton équipe en cours de contrat pour une opportunité en division supérieure. Ça a froissé beaucoup de monde."));
+      }},
+     {label:tf('pivotOfferDecline',"Refuser — rester fidèle à l'équipe"), labelEN:"Decline — stay loyal to the team",
+      effect:(r)=>{
+        r.careerFlags.loyaltyBonus = r.season;
+        r.teamConfidence = Math.min(100, r.teamConfidence + 15);
+        addJournalEntry(r, tf('pivotOfferDeclineLog',"Tu as décliné une offre en cours de contrat. Ta loyauté n'est pas passée inaperçue dans le peloton."));
+      }},
+   ]},
+
+  /* S5 : Scandale dans l'équipe */
+  {id:'team_scandal', triggerSeason:5,
+   title:tf('pivotScandalTitle',"Nuage sur l'équipe"),
+   titleEN:"Storm clouds over the team",
+   icon:'📰',
+   desc:tf('pivotScandalDesc',"Des rumeurs de dopage circulent autour de ton équipe. Un journaliste t'a contacté pour avoir ta réaction. Tu n'es impliqué en rien — mais ta réponse publique va définir ton image pour les prochaines saisons."),
+   descEN:"Doping rumours are circulating around your team. A journalist has contacted you for your reaction. You're not involved at all — but your public response will define your image for the next few seasons.",
+   choices:[
+     {label:tf('pivotScandalSolidaire',"Rester solidaire de l'équipe"), labelEN:"Stand by the team",
+      effect:(r)=>{
+        r.careerFlags.scandalSolidaire = r.season;
+        r.teamConfidence = Math.min(100, r.teamConfidence + 20);
+        r.reputation = Math.max(0, r.reputation - 5);
+        addJournalEntry(r, tf('pivotScandalSolidaireLog',"Tu as défendu ton équipe publiquement. La confiance interne est au beau fixe, mais ton image en a pris un coup."));
+      }},
+     {label:tf('pivotScandalDistance',"Prendre ses distances publiquement"), labelEN:"Publicly distance yourself",
+      effect:(r)=>{
+        r.careerFlags.scandalDistance = r.season;
+        r.teamConfidence = Math.max(0, r.teamConfidence - 15);
+        r.reputation = Math.min(100, r.reputation + 5);
+        addJournalEntry(r, tf('pivotScandalDistanceLog',"Tu t'es désolidarisé publiquement de l'équipe. Ton image est préservée, mais l'ambiance interne est froide."));
+      }},
+   ]},
+
+  /* S7 : Coéquipier devenu rival */
+  {id:'teammate_rival', triggerSeason:7,
+   title:tf('pivotRivalTitle',"Trahison dans le peloton"),
+   titleEN:"Betrayal in the peloton",
+   icon:'🥊',
+   desc:tf('pivotRivalDesc',"Ton ancien coéquipier vient de signer dans une équipe concurrente. Lors d'une conférence de presse, il s'est permis de sous-entendre que tu lui avais volé des victoires ces dernières saisons. Le peloton observe ta réaction."),
+   descEN:"Your former teammate has just signed for a rival team. At a press conference, he implied that you had stolen victories from him over the past few seasons. The peloton is watching your reaction.",
+   choices:[
+     {label:tf('pivotRivalIgnore',"Ignorer — laisser la course parler"), labelEN:"Ignore it — let the racing do the talking",
+      effect:(r)=>{
+        r.careerFlags.rivalIgnored = r.season;
+        r.reputation = Math.min(100, r.reputation + 3);
+        addJournalEntry(r, tf('pivotRivalIgnoreLog',"Tu n'as pas répondu aux provocations. Le peloton a apprécié ta classe."));
+      }},
+     {label:tf('pivotRivalConfront',"Répondre publiquement — fixer une confrontation"), labelEN:"Respond publicly — set up a showdown",
+      effect:(r)=>{
+        r.careerFlags.rivalConfront = r.season;
+        // Forcer l'apparition d'un rival narratif plus intense
+        if(STATE.rivals && STATE.rivals.length < 3){
+          STATE.rivals.push({
+            name: r.teammate ? r.teammate.name : tf('pivotRivalName','Ton ancien coéquipier'),
+            styleId: r.styleId,
+            intensity: 'intense',
+            raceIds: [],
+            createdSeason: r.season,
+          });
+        }
+        addJournalEntry(r, tf('pivotRivalConfrontLog',"Tu as accepté la confrontation. Une rivalité brûlante s'est allumée — le public adore ça."));
+      }},
+   ]},
+
+  /* S9 : Proposition de reconversion anticipée */
+  {id:'retirement_offer', triggerSeason:9,
+   title:tf('pivotRetireTitle',"Une porte de sortie"),
+   titleEN:"A way out",
+   icon:'🎙️',
+   desc:tf('pivotRetireDesc',"Un directeur sportif t'a proposé un poste de directeur d'équipe à partir de la saison prochaine. C'est une reconnaissance de ta carrière — mais tu pourrais encore courir 3-4 saisons. Choisir de rester, c'est chercher les victoires qui manquent encore à ton palmarès."),
+   descEN:"A sporting director has offered you a team director position starting next season. It's recognition of your career — but you could still race for 3-4 more seasons. Staying means chasing the wins still missing from your palmares.",
+   choices:[
+     {label:tf('pivotRetireAccept',"Accepter — finir sur un rôle de mentor"), labelEN:"Accept — finish as a mentor figure",
+      effect:(r)=>{
+        r.careerFlags.earlyRetirement = r.season;
+        r.isMentor = true;
+        r.reputation = Math.min(100, r.reputation + 8);
+        addJournalEntry(r, tf('pivotRetireAcceptLog',"Tu as accepté la transition. Le peloton te voit désormais comme une figure tutélaire."));
+      }},
+     {label:tf('pivotRetireDecline',"Refuser — continuer à courir"), labelEN:"Decline — keep racing",
+      effect:(r)=>{
+        r.careerFlags.refusedRetirement = r.season;
+        r.careerFlags.hungerBonus = r.season; // bonus de motivation pour 2 saisons
+        addJournalEntry(r, tf('pivotRetireDeclineLog',"Tu as refusé de raccrocher. Il te reste des batailles à mener."));
+      }},
+   ]},
+];
+
+function checkPivotTrigger(){
+  const r = STATE.rider;
+  if(!r.careerFlags) r.careerFlags = {};
+  const season = r.season;
+  const pivot = PIVOT_EVENTS.find(p =>
+    p.triggerSeason === season &&
+    !r.careerFlags['pivot_done_' + p.id]
+  );
+  return pivot || null;
+}
+
+function renderPivotEvent(pivot){
+  if(STATE) STATE._screen = 'pivotevent';
+  STATE._pendingPivot = pivot;
+  setHTML(`
+    ${riderHeaderHTML()}
+    <div class="card" style="border-left:4px solid var(--yellow);">
+      <h2>${pivot.icon} ${pivot.title}</h2>
+      <p>${pivot.desc}</p>
+    </div>
+    ${pivot.choices.map((c,i)=>`
+      <button class="btn ${i===0?'':'ghost'}" onclick="applyPivotChoice(${i})">${c.label}</button>
+    `).join('')}
+  `);
+}
+
+function applyPivotChoice(i){
+  const pivot = STATE._pendingPivot;
+  const r = STATE.rider;
+  r.careerFlags['pivot_done_' + pivot.id] = r.season;
+  pivot.choices[i].effect(r);
+  STATE._pendingPivot = null;
+  saveGame();
+  renderCalendarScreen();
+}
+
+/* ======================================================================
+   TRAJECTOIRE DE CARRIÈRE
+   Proposée une seule fois en S5 — définit l'identité du coureur pour
+   la seconde moitié de sa carrière.
+   ====================================================================== */
+
+function checkTrajectoryTrigger(){
+  const r = STATE.rider;
+  return r.season === 5 && !r.trajectory && !r.careerFlags._trajectoryDone;
+}
+
+function renderTrajectoryChoice(){
+  if(STATE) STATE._screen = 'trajectorychoice';
+  const r = STATE.rider;
+  const style = STYLES.find(s => s.id === r.styleId);
+  setHTML(`
+    ${riderHeaderHTML()}
+    <div class="card" style="border-left:4px solid var(--yellow);">
+      <h2>🛤️ ${tf('trajectoryTitle','Quelle carrière veux-tu construire ?')}</h2>
+      <p>${tf('trajectoryDesc','Tu as 4 saisons de recul. Il est temps de choisir le fil directeur de ta carrière — une décision permanente qui orientera tes objectifs et tes opportunités.')}</p>
+    </div>
+    <div class="card" onclick="chooseTrajectory('specialiste')" style="cursor:pointer;">
+      <strong>🎯 ${tf('traj_specialiste','Le Spécialiste')}</strong>
+      <p class="small" style="margin:6px 0 0;">${tf('traj_specialiste_desc','Tu te concentres sur quelques courses clés. +12% de performance sur tes courses de prédilection. Si tu en joues plus de 8 dans la saison, ta fatigue augmente plus vite.')}</p>
+    </div>
+    <div class="card" onclick="chooseTrajectory('globetrotter')" style="cursor:pointer;">
+      <strong>🌍 ${tf('traj_globetrotter','Le Globe-trotteur')}</strong>
+      <p class="small" style="margin:6px 0 0;">${tf('traj_globetrotter_desc',"Tu courses partout, tu t\u2019exposes partout. +1 point de r\u00e9putation sur chaque course hors sp\u00e9cialit\u00e9. Tu arrives en d\u00e9but de saison avec +8 de fatigue r\u00e9siduelle, mais les \u00e9quipes de rang sup\u00e9rieur s\u2019int\u00e9ressent \u00e0 toi plus vite.")}</p>
+    </div>
+    <div class="card" onclick="chooseTrajectory('leader')" style="cursor:pointer;">
+      <strong>👑 ${tf('traj_leader','Le Leader')}</strong>
+      <p class="small" style="margin:6px 0 0;">${tf('traj_leader_desc','+5% de performance sur les courses imposées par l’équipe — tu livres quand ça compte. En contrepartie, chaque contre-performance sur une course de prestige élevé te coûte 1 point de réputation supplémentaire.')}</p>
+    </div>
+  `);
+}
+
+function renderWorldEventsScreen(){
+  if(STATE) STATE._screen = 'worldevents';
+  const events = STATE.activeWorldEvents || [];
+  if(!events.length){ renderCalendarScreen(); return; }
+  const cancelNote = STATE._worldEventCancelledRace
+    ? `<p class="small" style="color:var(--red);margin:4px 0 0;">❌ ${tf('worldEventCancelled','Course annulée cette saison')} : ${STATE._worldEventCancelledRace}</p>`
+    : '';
+  setHTML(`
+    ${riderHeaderHTML()}
+    <div class="card" style="border-left:4px solid var(--blue);">
+      <h2>🌐 ${tf('worldEventsTitle','Actualité du peloton')}</h2>
+      <p class="small">${tf('worldEventsSubtitle','Avant de bâtir ton calendrier, voici ce qui agite le monde cycliste cette saison.')}</p>
+    </div>
+    ${events.map(ev=>`
+      <div class="card">
+        <strong>${ev.icon} ${ev.title}</strong>
+        <p class="small" style="margin:6px 0 4px;">${ev.desc}</p>
+        <p class="small" style="font-weight:700;color:var(--blue);">↳ ${ev.effect}</p>
+      </div>
+    `).join('')}
+    ${cancelNote}
+    <button class="btn" onclick="renderCalendarScreen()">📅 ${tf('buildCalendar','Construire mon calendrier')}</button>
+  `);
+}
+
+function chooseTrajectory(id){
+  const r = STATE.rider;
+  r.trajectory = id;
+  r.careerFlags._trajectoryDone = true;
+  addJournalEntry(r, `🛤️ ${tf('trajectoryChosen','Trajectoire choisie')} : ${tf('trajectory_'+id, id)}`);
+  saveGame();
+  renderWorldEventsScreen();
+}
+
 function maybeShowPersonalEvent(){
+  // La trajectoire a priorité absolue en S5 (une seule fois)
+  if(checkTrajectoryTrigger()){ renderTrajectoryChoice(); return; }
+  // Les pivots ont priorité sur les événements personnels ordinaires
+  const pivot = checkPivotTrigger();
+  if(pivot){ renderPivotEvent(pivot); return; }
+
   if(Math.random() < 0.3){
     const pool = personalEventPool(STATE.rider, true, STATE.rivalRecords);
     STATE.pendingPersonalEvent = pool[Math.floor(Math.random()*pool.length)];
     renderPersonalEvent();
   } else {
-    renderCalendarScreen();
+    renderWorldEventsScreen();
   }
 }
 
@@ -4661,13 +5366,79 @@ function maybeShowPersonalEvent(){
    seasonStartOnly (liés à la coupure hivernale) restent réservés au début de saison. */
 function maybeShowMidSeasonPersonalEvent(){
   STATE.personalEventReturnTo = 'nextraceChoice';
+  // Proposition de confirmation/ajustement de profil en S2 ou S3, une seule fois
+  if(!STATE.rider.styleConfirmed && (STATE.rider.season===2||STATE.rider.season===3) && !STATE._styleEventShown){
+    const suggested = detectRiderProfile(STATE.rider);
+    if(suggested){
+      STATE._styleEventShown = true;
+      renderStyleConfirmEvent(suggested);
+      return;
+    }
+  }
   const pool = personalEventPool(STATE.rider, false, STATE.rivalRecords);
   if(Math.random() < 0.15){
     STATE.pendingPersonalEvent = pool[Math.floor(Math.random()*pool.length)];
     renderPersonalEvent();
   } else {
-    renderNextRaceChoiceScreen();
+    beginRaceOrFinish();
   }
+}
+
+/* Détecte le profil émergent du coureur selon ses résultats récents et ses stats dominantes. */
+function detectRiderProfile(rider){
+  // On ne propose que si le profil actuel semble confirmé OU si les résultats divergent
+  const results = (rider.palmares||[]).filter(p=>p.season===rider.season||p.season===rider.season-1);
+  if(results.length < 2) return null; // pas assez de données
+  const stats = rider.stats;
+  // Profil suggéré basé sur la stat dominante
+  // Scores normalisés : chaque profil est évalué sur sa stat principale uniquement
+  // pour éviter que les profils mixtes (puncheur, rouleur) ne surpassent les purs spécialistes
+  const statScores = {
+    grimpeur: stats.montagne,
+    sprinteur: stats.sprint,
+    rouleur: stats.clm,
+    puncheur: stats.classiques,
+    polyvalent: (stats.montagne+stats.sprint+stats.clm+stats.classiques+stats.resistance)/5,
+  };
+  const best = Object.entries(statScores).reduce((a,b)=>b[1]>a[1]?b:a)[0];
+  // Ne proposer que si le profil détecté diffère du style actuel (vrais ajustements uniquement)
+  return best !== rider.styleId ? best : rider.styleId;
+}
+
+function renderStyleConfirmEvent(suggestedStyleId){
+  if(STATE) STATE._screen='styleconfirm';
+  const r = STATE.rider;
+  const currentStyle = STYLES.find(s=>s.id===r.styleId);
+  const suggestedStyle = STYLES.find(s=>s.id===suggestedStyleId);
+  const isSame = suggestedStyleId === r.styleId;
+  setHTML(`
+    ${riderHeaderHTML()}
+    <div class="card">
+      <h2>🔍 ${tf('profileConfirmTitle','Ton profil prend forme')}</h2>
+      <p>${isSame
+        ? `${tf('profileConfirmSame','Tes résultats confirment ton profil')} <strong>${currentStyle.icon} ${currentStyle.name}</strong>. ${tf('profileConfirmSameDesc','Continue dans cette direction.')}`
+        : `${tf('profileConfirmDiff','Tes performances suggèrent un profil')} <strong>${suggestedStyle.icon} ${suggestedStyle.name}</strong> ${tf('profileConfirmDiff2','plutôt que')} <strong>${currentStyle.icon} ${currentStyle.name}</strong>.`
+      }</p>
+      ${!isSame ? `<p class="small">${tf('profileSwitchDesc','Basculer vers ce profil ajustera ton style de jeu — les courses correspondantes te seront plus favorables.')}</p>` : ''}
+    </div>
+    ${!isSame ? `
+      <button class="btn" onclick="confirmStyleSwitch('${suggestedStyleId}')">${suggestedStyle.icon} ${tf('adoptProfile','Adopter le profil')} ${suggestedStyle.name}</button>
+      <button class="btn ghost" onclick="keepCurrentStyle()">${currentStyle.icon} ${tf('keepProfile','Garder mon profil')} ${currentStyle.name}</button>
+    ` : `
+      <button class="btn" onclick="keepCurrentStyle()">${tf('continue','Continuer')}</button>
+    `}
+  `);
+}
+
+function confirmStyleSwitch(newStyleId){
+  STATE.rider.styleId = newStyleId;
+  STATE.rider.styleConfirmed = true;
+  beginRaceOrFinish();
+}
+
+function keepCurrentStyle(){
+  STATE.rider.styleConfirmed = true;
+  beginRaceOrFinish();
 }
 
 function renderPersonalEvent(){
@@ -4701,7 +5472,7 @@ function applyPersonalEvent(i){
       if(delta!==0) changes.push(`${STAT_ICONS[k]} ${STAT_LABELS[k]} ${delta>=0?'+':''}${delta}`);
     });
   }
-  if(eff.fatigue){ r.fatigue = clamp(r.fatigue + eff.fatigue, 0, 130); changes.push(`🔥 ${tf('fatigueWord','Fatigue')} ${eff.fatigue>=0?'+':''}${eff.fatigue}`); }
+  if(eff.fatigue){ r.fatigue = clamp(r.fatigue + eff.fatigue, 0, 100); changes.push(`🔥 ${tf('fatigueWord','Fatigue')} ${eff.fatigue>=0?'+':''}${eff.fatigue}`); }
   if(eff.reputation){ r.reputation = clamp(r.reputation + eff.reputation, 0, 100); changes.push(`⭐ ${tf('reputationWord','Réputation')} ${eff.reputation>=0?'+':''}${eff.reputation}`); }
   if(choice.bond && r.teammate){
     r.teammate.bond = clamp(r.teammate.bond + choice.bond, 0, 100);
@@ -4728,9 +5499,9 @@ function renderPersonalEventResult(){
 
 function proceedAfterPersonalEvent(){
   STATE.pendingPersonalEventResult = null;
-  if(STATE.personalEventReturnTo === 'nextraceChoice'){ renderNextRaceChoiceScreen(); }
+  if(STATE.personalEventReturnTo === 'nextraceChoice'){ beginRaceOrFinish(); }
   else if(STATE.personalEventReturnTo === 'race'){ beginRace(); }
-  else { renderCalendarScreen(); }
+  else { renderWorldEventsScreen(); }
 }
 
 /* ---- Calendrier / choix des courses ---- */
@@ -4769,74 +5540,93 @@ function raceFocusIcons(race){
 function renderCalendarScreen(keepScroll){
   if(STATE) STATE._screen='calendar';
   const r = STATE.rider;
-  const imposedCount = STATE.imposedRaceIds.length;
   const olympicNote = isOlympicSeason(r)
     ? (STATE.seasonRacePool.some(race=>race.olympic)
         ? `<div class="card" style="border:1.5px solid var(--yellow);background:#FFF8E2;"><p style="margin:0;"><strong>🥇 ${tf('olympicSelected','Sélectionné aux Jeux Panhelléniques !')}</strong> ${tf('olympicSelectedDesc',"Ta fédération t'a retenu parmi les rares dossards disponibles cette saison — un vrai accomplissement.")}</p></div>`
         : `<div class="card"><p style="margin:0;" class="small">🥇 ${tf('olympicNotSelected',"Année olympique, mais ta fédération ne t'a pas retenu cette fois")} (${tf('currentRep','réputation actuelle')} : ${Math.round(r.reputation)}${(r.olympicSelections||0)===0?tf('firstSelectionHard',', et une première sélection est particulièrement exigeante'):''}). ${tf('maybeIn4Years','Peut-être dans 4 ans.')}</p></div>`)
     : '';
-  const imposedRaces = STATE.imposedRaceIds.map(id=>STATE.seasonRacePool.find(r=>r.id===id)).filter(Boolean).sort((a,b)=>a.month-b.month);
+
+  const daysTotal = selectedDaysTotal();
+  const raceCount = STATE.selectedRaceIds.length;
+  const imposedCount = STATE.imposedRaceIds.length;
+  const under40 = daysTotal < 40;
+  const over45 = daysTotal > 45;
+  const over65 = daysTotal > 65;
+  const daysColor = over65 ? 'var(--red)' : under40 ? 'var(--red)' : over45 ? '#E07B20' : 'var(--green-dark)';
+  const gtSelected = STATE.selectedRaceIds.filter(id=>{ const rc=STATE.seasonRacePool.find(r=>r.id===id); return rc&&rc.type==='grandtour'; }).length;
+
+  if(!STATE._calCollapsed) STATE._calCollapsed = new Set();
+  const pool = STATE.seasonRacePool.slice().sort((a,b)=>a.month-b.month);
+
+  // Grouper par mois
+  const byMonth = {};
+  pool.forEach(race=>{
+    if(!byMonth[race.month]) byMonth[race.month] = [];
+    byMonth[race.month].push(race);
+  });
+
+  const rows = Object.keys(byMonth).map(m=>{
+    m = parseInt(m);
+    const monthRaces = byMonth[m];
+    const selInMonth = monthRaces.filter(rc=>STATE.selectedRaceIds.includes(rc.id)).length;
+    const totalInMonth = monthRaces.filter(rc=>!rc.locked).length;
+    const isCollapsed = STATE._calCollapsed.has(m);
+
+    const monthHeader = `<div onclick="toggleCalMonth(${m})" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 4px 4px;"><p class="small" style="font-weight:700;margin:0;color:var(--text-soft);">${MONTHS[m].toUpperCase()}</p><span class="small" style="color:var(--text-soft);">${selInMonth}/${totalInMonth} ${isCollapsed?'▶':'▼'}</span></div>`;
+
+    if(isCollapsed) return monthHeader;
+
+    const raceItems = monthRaces.map(race=>{
+      const isImposed = STATE.imposedRaceIds.includes(race.id);
+      const isSelected = STATE.selectedRaceIds.includes(race.id);
+      const diff = difficultyForRace(race, r);
+      const rv = (STATE.rivals||[]).filter(rv=>(rv.raceIds||[]).includes(race.id));
+      const borderStyle = isImposed ? 'border-left:3px solid var(--red);' : isSelected ? 'border-left:3px solid var(--green-dark);' : '';
+      const lockInfo = race.locked ? `<span class="pill" style="border-color:var(--text-soft);color:var(--text-soft);font-size:0.7em;">${race.lockReason||tf('locked','Verrouillée')}</span>` : '';
+      const imposedBadge = isImposed ? `<span class="pill" style="border-color:var(--red);color:var(--red);font-size:0.7em;">${tf('imposedByTeamPill','Imposée')}</span>` : '';
+      const rivalBadge = rv.length ? ` <span style="color:var(--blue);font-size:0.8em;font-weight:600;">🥊 ${rv.map(x=>x.name.split(' ')[0]).join(', ')}</span>` : '';
+      const styleMatch = r.styleId && raceMatchesStyle(race, r.styleId);
+      const styleBadge = styleMatch ? ` <span style="color:var(--green-dark);font-size:0.85em;">⭐</span>` : '';
+      const clickable = !isImposed && !race.locked;
+      const opacity = race.locked ? 'opacity:0.45;' : '';
+      return `<div class="race-item" style="cursor:${clickable?'pointer':'default'};${borderStyle}${opacity}" ${clickable?`onclick="toggleRace('${race.id}')"`:''}><div style="flex:1;"><strong>${race.flag?race.flag+' ':''}${race.name}</strong>${styleBadge}${rivalBadge}<p class="small" style="margin:2px 0 0;">${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)} ${imposedBadge}${lockInfo}</p></div><div style="text-align:right;min-width:70px;">${badgeHTML(race.type)}<p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p></div></div>`;
+    }).join('');
+
+    return monthHeader + raceItems;
+  }).join('');
+
+  const warnUnder = under40 ? `<p class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('minDays40','Minimum 40 jours de course requis.')}</p>` : '';
+  const warnFatigue = over45 && !over65 ? `<p class="small" style="color:#E07B20;margin:2px 0 0;">⚠️ ${tf('fatigueWarning','Au-delà de 45 jours, la fatigue s\'accumule nettement plus vite sur le reste de la saison.')}</p>` : '';
+  const warnOver = over65 ? `<p class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('exceeds65','Dépasse 65 j')}</p>` : '';
+
   setHTML(`
     ${riderHeaderHTML()}
     ${olympicNote}
     <div class="counter card" style="padding:10px 16px;">
-      <strong>📅 ${tf('newSeasonReady','Nouvelle saison — prêt à partir ?')}</strong>
-      <p class="small" style="margin:4px 0 0;">${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+" par l'équipe")} (${tf('linkedToFocus',"liée à ton axe d'entraînement")} : ${STAT_LABELS[STATE.trainingFocus]}).</p>
-      <p class="small" style="margin:2px 0 0;">${tf('calendarDynamicNote',"Le reste du calendrier se construit au fil de la saison — tu choisiras tes courses au fur et à mesure, selon ta forme et ta fatigue.")}</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>📅 ${tf('prepareSeason','Préparer la saison')} ${r.season}</strong>
+        <strong style="font-size:1.1rem;color:${daysColor};">${daysTotal} / 65 ${tf('daysAbbr','j')}</strong>
+      </div>
+      <p class="small" style="margin:4px 0 0;">${raceCount} ${tf(raceCount>1?'racesP':'race','course'+(raceCount>1?'s':''))} · ${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+' par l\'équipe')} · ${gtSelected}/2 ${tf('grandToursAbbr','Grands Tours')}</p>
+      ${warnUnder}${warnFatigue}${warnOver}
     </div>
-    ${imposedRaces.length ? `
-      <p class="small" style="font-weight:700;margin:12px 0 4px;">📌 ${tf('imposedByTeamHeader',"Courses imposées par l'équipe")}</p>
-      ${imposedRaces.map(race=>{
-        const diff = difficultyForRace(race, r);
-        const rv = (STATE.rivals||[]).filter(rv=>(rv.raceIds||[]).includes(race.id));
-        return `<div class="race-item imposed">
-          <div>
-            <strong>${race.flag?race.flag+' ':''}${race.name}</strong>${rv.length ? ` <span style="color:var(--blue);font-size:0.8em;font-weight:600;">🥊 ${rv.map(r=>r.name.split(' ')[0]).join(', ')}</span>` : ''}
-            <p class="small" style="margin:2px 0 0;">${MONTHS[race.month]} · ${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)} · <span class="pill" style="border-color:var(--red);color:var(--red);">${tf('imposedByTeamPill',"Imposée par l'équipe")}</span></p>
-          </div>
-          <div style="text-align:right;">
-            ${badgeHTML(race.type)}
-            <p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p>
-          </div>
-        </div>`;
-      }).join('')}
-    ` : ''}
-    <button class="btn" onclick="confirmCalendar()">🚀 ${tf('startSeason','Lancer la saison')}</button>
+    <div class="card" style="padding:8px 12px;">${rows}</div>
+    <button class="btn" ${(over65||under40)?'disabled':''} onclick="confirmCalendar()">🚀 ${tf('startSeason','Lancer la saison')}</button>
     <button class="btn ghost" onclick="renderRaceAlmanac()">${tf('raceAlmanac','📖 Almanach des courses')}</button>
   `, keepScroll);
 }
-
-function renderRaceAlmanac(){
-  const r = STATE.rider;
-  const TIER_ORDER = ['victoire','podium','top10','peloton','jourssans','abandon','forfait'];
-  const rows = RACES_DATA().map(race=>{
-    const history = r.palmares.filter(p=> p.raceId ? p.raceId===race.id : p.raceName===race.name);
-    const wins = history.filter(p=>p.tier==='victoire').length;
-    let best = null;
-    history.forEach(p=>{ if(!best || TIER_ORDER.indexOf(p.tier) < TIER_ORDER.indexOf(best.tier)) best = p; });
-    return {race, timesRaced:history.length, wins, best};
-  }).sort((a,b)=> b.timesRaced - a.timesRaced);
-  setHTML(`
-    <h1>📖 ${tf('raceAlmanacTitle','Almanach des courses')}</h1>
-    <p class="small">${tf('almanacDesc','Ton historique personnel sur les 55 courses du jeu, cette carrière.')}</p>
-    <div class="card">
-      ${rows.map(row=>`<div class="race-item" style="cursor:default;">
-        <div>
-          <strong>${row.race.flag?row.race.flag+' ':''}${row.race.name}</strong>
-          <p class="small" style="margin:2px 0 0;">${raceFocusIcons(row.race)} · ${row.timesRaced ? `${row.timesRaced}x ${tf('raced','disputée')} · ${row.wins} ${tf(row.wins!==1?'winsP':'win','victoire'+(row.wins!==1?'s':''))} · ${tf('bestResult','meilleur résultat')} : ${TIER_LABEL[row.best.tier]}` : tf('neverRaced','Jamais disputée')}</p>
-        </div>
-        ${badgeHTML(row.race.type)}
-      </div>`).join('')}
-    </div>
-    <button class="btn ghost" onclick="renderCalendarScreen()">${tf('backToCalendar','← Retour au calendrier')}</button>
-  `);
+function toggleCalMonth(m){
+  if(!STATE._calCollapsed) STATE._calCollapsed = new Set();
+  if(STATE._calCollapsed.has(m)) STATE._calCollapsed.delete(m);
+  else STATE._calCollapsed.add(m);
+  renderCalendarScreen(true);
 }
 
 function toggleRace(id){
   if(STATE.imposedRaceIds.includes(id)) return;
   const i = STATE.selectedRaceIds.indexOf(id);
   if(i>=0){ STATE.selectedRaceIds.splice(i,1); }
-  else if(STATE.selectedRaceIds.length<10){
+  else {
     const race = STATE.seasonRacePool.find(r=>r.id===id);
     if(race.locked) return;
     if(selectedDaysTotal() + race.days > 65) return;
@@ -4845,7 +5635,7 @@ function toggleRace(id){
         const rr = STATE.seasonRacePool.find(r=>r.id===rid);
         return rr && rr.type==='grandtour';
       }).length;
-      if(gtCount >= 2) return; // impossible de disputer 3 grands tours la meme saison
+      if(gtCount >= 2) return;
     }
     STATE.selectedRaceIds.push(id);
   }
@@ -4853,17 +5643,15 @@ function toggleRace(id){
 }
 
 function confirmCalendar(){
-  // Lancer la saison avec les courses imposées seulement dans le runQueue initial
-  // Le reste se construit dynamiquement via renderNextRaceChoiceScreen
   const all = STATE.seasonRacePool;
-  STATE.runQueue = STATE.imposedRaceIds.map(id=>all.find(r=>r.id===id)).filter(Boolean).sort((a,b)=>a.month-b.month);
-  STATE.seasonTotalDays = 0; // calculé dynamiquement au fil de la saison
+  // runQueue = toutes les courses sélectionnées (imposées + libres), triées chronologiquement
+  STATE.runQueue = STATE.selectedRaceIds.map(id=>all.find(r=>r.id===id)).filter(Boolean).sort((a,b)=>a.month-b.month);
+  STATE.seasonTotalDays = STATE.runQueue.reduce((sum,r)=>sum+r.days,0);
   STATE.cumulativeDaysRaced = 0;
   STATE.seasonSummary = {repStart: STATE.rider.reputation, rankStart: STATE.rider.worldRank, ratingStart: globalRiderRating(STATE.rider.stats), results:[]};
   STATE.runRaceIdx = 0;
-  STATE.lastRacedMonth = 0; // réinitialiser pour la nouvelle saison
-  // Avant la 1ère course, proposer d'ajouter des courses libres si le mois est avant la 1ère imposée
-  renderNextRaceChoiceScreen();
+  STATE.lastRacedMonth = 0;
+  beginRace();
 }
 
 /* ---- Déroulé des courses ---- */
@@ -5127,15 +5915,17 @@ function rollRivalRaceEvent(race, rivals){
   return event;
 }
 
-function rollBonusPhases(race){
+function rollBonusPhases(race, rivalPresent){
   /* Nombre de phases bonus selon prestige :
      1 → 0-1 | 2-3 → 1-2 | 4-5 → 2-3
+     Si un rival est présent dans la course, on plafonne à 1 pour ne pas surcharger.
      Aléatoire dans la plage, légèrement biaisé vers le bas pour éviter la répétition. */
   const p = race.prestige || 1;
   let min, max;
   if(p <= 1){ min=0; max=1; }
   else if(p <= 3){ min=1; max=2; }
   else { min=2; max=3; }
+  if(rivalPresent){ max = Math.min(max, 1); min = Math.min(min, 1); }
   const count = min + Math.floor(Math.random()*(max-min+1));
   if(count === 0) return [];
 
@@ -5191,7 +5981,9 @@ function beginRace(){
   if(!race._bonusInjected){
     race._bonusInjected = true;
     race._baseEventCount = race.events.length;
-    const bonusPhases = rollBonusPhases(race);
+    // Vérifier si un rival est présent : si oui, limiter les phases bonus à 1 max
+    const _rivalPresent = (STATE.rivals||[]).some(rv => (rv.raceIds||[]).includes(race.id));
+    const bonusPhases = rollBonusPhases(race, _rivalPresent);
     if(bonusPhases.length > 0){
       race.events = bonusPhases.concat(race.events);
     }
@@ -5479,7 +6271,7 @@ function chooseOption(i){
 
   const isHomeRace = race.flag && race.flag === COUNTRIES.find(c=>c.code===STATE.rider.countryCode)?.flag;
   const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
-  const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace, isSignatureRace);
+  const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace, isSignatureRace, race.type);
   applyFatigue(STATE.rider, race, choice, weatherId);
   STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained});
   STATE.runEventIdx++;
@@ -5982,9 +6774,13 @@ function renderInterviewReactionScreen(){
   `);
 }
 
+function beginRaceOrFinish(){
+  if(STATE.runRaceIdx >= STATE.runQueue.length){ finishSeason(); }
+  else { beginRace(); }
+}
+
 function nextAfterRaceResult(){
   STATE.runRaceIdx++;
-  // Après chaque course, on propose le prochain choix plutôt que d'enchaîner direct
   maybeShowMidSeasonPersonalEvent();
 }
 
@@ -6050,6 +6846,7 @@ function renderNextRaceChoiceScreen(){
   const fatigueLvl = r.fatigue > 80 ? 'diff-4' : r.fatigue > 55 ? 'diff-3' : r.fatigue > 30 ? 'diff-2' : 'diff-1';
   const fatigueLabel = r.fatigue > 80 ? tf('fatigueVeryHigh','Très haute') : r.fatigue > 55 ? tf('fatigueHigh','Élevée') : r.fatigue > 30 ? tf('fatigueMedium','Modérée') : tf('fatigueLow','Basse');
 
+  const _scrollY = window.scrollY || 0;
   setHTML(`
     ${riderHeaderHTML()}
     <div class="counter card" style="padding:10px 16px;">
@@ -6081,7 +6878,8 @@ function renderNextRaceChoiceScreen(){
       ? `<button class="btn ghost" onclick="beginRace()">⏭️ ${tf('skipToImposed','Passer directement à')} ${nextInQueue.name} (${MONTHS[nextInQueue.month]})</button>`
       : `<button class="btn ghost" onclick="finishSeason()">🏁 ${tf('endSeasonNow','Terminer la saison')}</button>`
     }
-  `);
+  `, true);
+  window.scrollTo(0, _scrollY);
 }
 
 /* Insère une course libre dans la fenêtre avant la prochaine imposée, puis la lance. */
@@ -6115,6 +6913,9 @@ function addRaceAndRun(id){
 /* ---- Fin de saison ---- */
 
 function finishSeason(){
+  if(STATE._seasonEnding) return; // garde contre double-tap / appel en boucle
+  if(!STATE.seasonSummary){ renderSeasonSetupScreen(); return; } // état incohérent : repartir proprement
+  STATE._seasonEnding = true;
   const rider = STATE.rider;
   const completedSeason = rider.season;
   const results = STATE.seasonSummary.results;
@@ -6135,7 +6936,9 @@ function finishSeason(){
   if(obj && obj!=='aucun'){
     const objDef = SEASON_OBJECTIVES.find(o=>o.id===obj);
     let met = null; // true = tenu, false = raté, null = non évaluable (course non couru)
-    if(obj==='top10'){
+    if(obj==='survive'){
+      met = !results.some(x=>x.bestTier==='abandon'||x.bestTier==='forfait');
+    } else if(obj==='top10'){
       const attempted = results.some(x=>x.prestige>=3);
       if(attempted) met = results.some(x=>x.prestige>=3 && (x.bestTier==='victoire'||x.bestTier==='podium'||x.bestTier==='top10'));
     } else if(obj==='podium'){
@@ -6182,6 +6985,18 @@ function finishSeason(){
     }
   }
   STATE.seasonObjective = null;
+
+  /* Stagnation publique : si le coureur a une réputation établie (>30) mais n'a
+     obtenu aucun résultat notable (aucun top10 sur prestige ≥ 2), le peloton et
+     la presse commencent à questionner son niveau. Malus léger mais réel. */
+  const hasNotableResult = results.some(r => r.bestTier !== 'peloton' && r.bestTier !== 'jourssans' && r.bestTier !== 'forfait' && r.bestTier !== 'abandon' && r.prestige >= 2);
+  if(!hasNotableResult && rider.reputation > 30){
+    const stagnationMalus = Math.round(rider.reputation * 0.04); // ~4% de la rep actuelle
+    rider.reputation = clamp(rider.reputation - stagnationMalus, 0, 100);
+    if(!STATE.objectiveNote){
+      STATE.objectiveNote = {ok:false, text:tf('stagnationNote','Saison discrète — ton niveau est questionné dans le peloton.'), severity:1};
+    }
+  }
 
   /* Défi secondaire optionnel : petite récompense si relevé et réussi. */
   STATE.challengeNote = null;
@@ -6269,6 +7084,28 @@ function renderSeasonRecap(){
   const forcedRetire = forcedByAge || forcedBySeasons;
   const canRetire = r.age >= 30;
   const contractOver = r.contractYearsLeft <= 0;
+
+  /* Hint recrutement : signale discrètement quand des équipes supérieures sont à portée
+     même si le contrat court encore — pour que le joueur sache que ça bouge. */
+  const _currentTierIdx = TEAM_TIER_ORDER[currentTeam(r).tier] || 0;
+  const _nextTierTeams = TEAMS.filter(t =>
+    TEAM_TIER_ORDER[t.tier] === _currentTierIdx + 1 && t.minRep <= r.reputation + 10
+  );
+  const _contractLeftStr = r.contractYearsLeft > 1
+    ? `encore ${r.contractYearsLeft} saisons`
+    : `encore 1 saison`;
+  const _contractLeftStrEN = r.contractYearsLeft > 1
+    ? `${r.contractYearsLeft} seasons left`
+    : `1 season left`;
+  const recruitHintHTML = (!contractOver && !forcedRetire && _nextTierTeams.length > 0) ? `
+    <div class="card" style="border-left:4px solid var(--green);background:var(--green-light);">
+      <p style="margin:0;font-size:0.9rem;">📈 <strong>${SETTINGS.lang==='en'
+        ? 'Higher-level teams are showing interest in you.'
+        : "Des équipes de niveau supérieur s'intéressent à toi."}</strong> ${SETTINGS.lang==='en'
+        ? `Your contract with ${currentTeam(r).name} has ${_contractLeftStrEN}, but keep this in mind for your next contract negotiation.`
+        : `Ton contrat avec ${currentTeam(r).name} court ${_contractLeftStr}, mais garde ça en tête pour la prochaine fin de contrat.`}</p>
+    </div>` : '';
+
   const sponsorNote = STATE.sponsorNote;
   const sponsorNoteHTML = sponsorNote ? `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;">
     <p style="margin:0;"><strong>${sponsorNote.icon} ${sponsorNote.name}</strong> ${sponsorNote.type==='dropped'
@@ -6316,6 +7153,7 @@ function renderSeasonRecap(){
       <h3>${tf('newStats','Nouvelles statistiques')}</h3>
       ${statBarsHTML(r.stats)}
     </div>
+    ${recruitHintHTML}
     ${forcedRetire ? `
       <div class="card center">
         <p>${forcedByAge
