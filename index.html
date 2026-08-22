@@ -8,6 +8,9 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-PVK5ZYQZ6T');
+  function trackEvent(name, params){
+    if(typeof gtag === 'function') gtag('event', name, params || {});
+  }
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4200,6 +4203,7 @@ function confirmCreation(){
   rivals.forEach(rv=>{ rivalRecords[rv.name] = {wins:0, losses:0}; });
   rider.teammate = generateTeammate();
   STATE = { rider, trainingFocus:null, selectedRaceIds:[], imposedRaceIds:[], seasonRacePool:[], seasonTotalDays:0, runQueue:[], runRaceIdx:0, runEventIdx:0, runRaceAccum:[], seasonSummary:null, pendingPersonalEvent:null, pendingInjury:null, injuryAbsenceRemaining:0, injuryEndNote:null, pendingTrophyUnlocks:[], rivals, rivalRecords, pendingRivalNote:null, domestiqueBonus:false, lastRacedMonth:0 };
+  trackEvent('career_start', { rider_style: rider.style, rider_country: rider.country });
   renderSeasonSetupScreen();
 }
 
@@ -6916,6 +6920,12 @@ function finishSeason(){
   if(STATE._seasonEnding) return; // garde contre double-tap / appel en boucle
   if(!STATE.seasonSummary){ renderSeasonSetupScreen(); return; } // état incohérent : repartir proprement
   STATE._seasonEnding = true;
+  const _remainingImposed = (STATE.runQueue||[]).slice(STATE.runRaceIdx||0).filter(rc=>(STATE.imposedRaceIds||[]).includes(rc.id)).length;
+  if(_remainingImposed > 0){
+    trackEvent('mid_season_abandon', { season_number: STATE.rider ? STATE.rider.season : undefined, races_remaining: _remainingImposed });
+  } else {
+    trackEvent('season_end', { season_number: STATE.rider ? STATE.rider.season : undefined });
+  }
   const rider = STATE.rider;
   const completedSeason = rider.season;
   const results = STATE.seasonSummary.results;
@@ -7241,6 +7251,7 @@ function chooseTeam(teamId){
 function goCareerEnd(reason){
   STATE.rider.retired = true;
   STATE.rider.retireReason = reason || 'age';
+  trackEvent('career_end', { reason: reason || 'age', seasons: STATE.rider ? STATE.rider.season : undefined });
   if(STATE.rider.isMentor && STATE.rider.teammate){
     addJournalEntry(STATE.rider, `🧑‍🏫 ${tf('mentorFarewellPrefix','Dernière saison en tant que mentor de')} ${STATE.rider.teammate.name} — ${tf('mentorFarewellSuffix',"la transmission s'achève, le relais est passé.")}`);
   }
@@ -7443,6 +7454,7 @@ function paintShareCard(ctx, canvas, r, logo){
 }
 
 function downloadShareCard(){
+  trackEvent('share_card', { seasons: STATE.rider ? STATE.rider.season : undefined });
   const canvas = document.getElementById('shareCanvas');
   if(!canvas) return;
   canvas.toBlob(blob=>{
