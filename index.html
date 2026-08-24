@@ -410,6 +410,7 @@ const I18N = {
     slot:'Slot', empty:'empty', noCareer:'No career in progress.',
     yourProgress:'Your progress', careersDone:'career completed', careersDoneP:'careers completed',
     trophiesWord:'trophies', countriesTried:'countries tried', bestCareer:'Best career',
+    tagline:'Ride. Choose. Become a legend.', pill55races:'55 races', pill5styles:'5 rider profiles', pill20countries:'20 nationalities', startCareerCTA:'🚀 Start a career',
     yourSlots:'Your 3 career slots', hallOfFame:'🏆 Hall of Legends',
     howToPlay:'📖 How to play?', accessibility:'♿ Accessibility',
     yourRiderCard:'Your rider card', rerollName:'🎲 Generate another name', orEnterYourName:'Or enter your own name…', amongStyle:'among', ofCountry:'from',
@@ -3139,8 +3140,7 @@ function applyFatigue(rider, race, choice, weatherId){
   if(_wm.globalFatigueBoost) worldFatMult *= _wm.globalFatigueBoost;
   if(_wm.julyFatigue && race.month === 7) worldFatMult *= _wm.julyFatigue;
   if(_wm.springFatigue && race.month >= 3 && race.month <= 4 && (race.type === 'monument' || race.type === 'classique')) worldFatMult *= _wm.springFatigue;
-  const eventCount = (race.events && race.events.length > 0) ? race.events.length : 1;
-  const cost = race.fatCost * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult / eventCount;
+  const cost = race.fatCost * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult;
   rider.fatigue = clamp(rider.fatigue + cost, 0, 100);
 }
 
@@ -3406,7 +3406,18 @@ function offersForRider(rider){
 let CAREER_HISTORY = [];
 
 function careerScore(entry){
-  return entry.wins*25 + entry.podiums*8 + Math.round(entry.finalReputation);
+  const WIN_PTS  = {grandtour:150, monument:100, champ:80, semitour:40, classique:25, crit:10};
+  const POD_PTS  = {grandtour:40,  monument:30,  champ:25, semitour:12, classique:8,  crit:3};
+  const DEFAULT_WIN = 10, DEFAULT_POD = 3;
+  let score = 0;
+  const wbt = entry.winsByType   || {};
+  const pbt = entry.podiumsByType || {};
+  for(const type in wbt) score += (wbt[type]||0) * (WIN_PTS[type] || DEFAULT_WIN);
+  for(const type in pbt) score += (pbt[type]||0) * (POD_PTS[type] || DEFAULT_POD);
+  score += (entry.stageWins || 0) * 15;
+  score += Math.round(entry.finalReputation || 0);
+  score += Math.max(0, 200 - (entry.bestRank || 450)) * 0.3;
+  return Math.round(score);
 }
 
 function recordCareer(rider){
@@ -3419,9 +3430,16 @@ function recordCareer(rider){
     const type = race ? race.type : 'autre';
     winsByType[type] = (winsByType[type]||0) + 1;
   });
+  // Podiums par type de course
+  const podiumsByType = {};
+  rider.palmares.filter(p=>p.tier==='podium').forEach(p=>{
+    const race = RACES_DATA().find(r=>r.id===p.raceId);
+    const type = race ? race.type : 'autre';
+    podiumsByType[type] = (podiumsByType[type]||0) + 1;
+  });
   // Meilleur classement mondial atteint
   const bestRank = rider.worldRank || 450;
-  // Évaluation du défi si mode défi actif
+  // Evaluation du defi si mode defi actif
   const cr = window._creation || {};
   let challengeResult = null;
   if(cr.challengeMode && cr.challengeObj){
@@ -3434,7 +3452,8 @@ function recordCareer(rider){
     seasons: rider.season - 1,
     retireAge: rider.age,
     wins, podiums,
-    winsByType,
+    winsByType, podiumsByType,
+    stageWins: rider.stageWins || 0,
     bestRank,
     finalReputation: Math.round(rider.reputation),
     finalTeam: currentTeam(rider).name,
@@ -3652,7 +3671,6 @@ function backfillRiderFields(rider){
   if(typeof rider.isMentor !== 'boolean') rider.isMentor = false;
   if(typeof rider.mentorOfferDeclined !== 'boolean') rider.mentorOfferDeclined = false;
   if(typeof rider.worldRank !== 'number') rider.worldRank = 450;
-  if(typeof rider.fame !== 'number') rider.fame = 20;
   if(typeof rider.styleConfirmed !== 'boolean') rider.styleConfirmed = false;
   if(!rider.careerFlags) rider.careerFlags = {};
   if(typeof rider.trajectory === 'undefined') rider.trajectory = null;
@@ -3760,6 +3778,9 @@ function renderMainMenu(){
     </div>`;
   };
   const best = topCareers(1)[0];
+  const hasAnyCareer = SLOTS.some(s=>s && s.state && s.state.rider);
+  const hasProgress = SESSION.careersCompleted > 0 || UNLOCKED.size > 0 || SESSION.countriesPlayed.size > 0;
+  const firstEmptySlot = [0,1,2].find(i=>!(SLOTS[i] && SLOTS[i].state && SLOTS[i].state.rider));
   setHTML(`
     <div class="hero-banner" style="flex-direction:column;gap:10px;">
       <div class="grid2" style="width:100%;max-width:280px;">
@@ -3767,7 +3788,15 @@ function renderMainMenu(){
         <button class="btn ${SETTINGS.lang==='en'?'':'ghost'}" style="margin:0;padding:8px;" onclick="setLang('en')">🇬🇧 EN</button>
       </div>
       <h1 style="margin:6px 0 0;text-align:center;font-size:1.7rem;font-weight:900;color:var(--green-dark);text-shadow:1.5px 1.5px 0 var(--orange);letter-spacing:0.01em;">${tf('gameTitle','LE COUP DE PÉDALE')}</h1>
+      <p style="margin:2px 0 0;text-align:center;font-size:0.9rem;color:var(--text-soft);">${tf('tagline',"Roule. Choisis. Deviens une légende.")}</p>
     </div>
+    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:4px 0 2px;">
+      <span style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;color:var(--green-dark);">🏁 ${tf('pill55races','55 courses')}</span>
+      <span style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;color:var(--orange-dark);">🚴 ${tf('pill5styles','5 profils de coureur')}</span>
+      <span style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;color:var(--pink);">🌍 ${tf('pill20countries','20 nationalités')}</span>
+    </div>
+    ${firstEmptySlot !== undefined ? `<button class="btn" style="font-size:1.05rem;padding:14px;margin-bottom:20px;" onclick="selectSlot(${firstEmptySlot})">${tf('startCareerCTA','🚀 Débuter une carrière')}</button>` : ''}
+    ${hasProgress ? `
     <div class="card">
       <h3>📊 ${tf('yourProgress','Ta progression')}</h3>
       <div class="grid3">
@@ -3776,16 +3805,16 @@ function renderMainMenu(){
         <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.4rem;color:var(--pink);">${SESSION.countriesPlayed.size}/${COUNTRIES.length}</p><p class="small" style="margin:0;">${tf('countriesTried','pays essayés')}</p></div>
       </div>
       ${best ? `<p class="small" style="margin-top:10px;text-align:center;">🏆 ${tf('bestCareer','Meilleure carrière')} : <strong>${best.name}</strong> — ${legacyTitleText(best.title)}</p>` : ''}
-    </div>
+    </div>` : ''}
+    ${SESSION.careersCompleted > 0 ? `<button class="btn ghost" onclick="renderChallenge()" style="border-color:var(--orange);color:var(--orange-dark);">🎯 ${tf('challengeMode','Mode défi')}</button>` : ''}
     <div class="card">
       <h3>💾 ${tf('yourSlots','Tes 3 emplacements de carrière')}</h3>
       ${[0,1,2].map(slotCardHTML).join('')}
     </div>
-    <div class="grid2">
+        <div class="grid2">
       <button class="btn ghost" onclick="renderHallOfFame()">${tf('hallOfFame','🏆 Palmarès des légendes')}</button>
       <button class="btn ghost" onclick="renderTrophiesScreen()">${tf('trophies','🎖️ Trophées')} (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
     </div>
-    ${SESSION.careersCompleted > 0 ? `<button class="btn ghost" onclick="renderChallenge()" style="border-color:var(--orange);color:var(--orange-dark);">🎯 ${tf('challengeMode','Mode défi')}</button>` : ''}
     <button class="btn ghost" onclick="renderCareerComparator()">${tf('careerComparator','📊 Comparateur de carrières')}</button>
     <div class="footer-links">
       <button class="footer-link" onclick="renderTutorialScreen()">${tf('howToPlay','📖 Comment jouer ?')}</button>
@@ -6278,7 +6307,7 @@ function chooseOption(i){
   const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
   const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace, isSignatureRace, race.type);
   applyFatigue(STATE.rider, race, choice, weatherId);
-  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained, _isBonus:event._isBonus||false});
+  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained});
   STATE.runEventIdx++;
   /* Sur une course à plusieurs semaines (grand tour), abandonner une semaine met fin à
      toute la course : impossible de repartir la semaine suivante, comme dans la réalité. */
@@ -6361,12 +6390,8 @@ function finalizeRace(){
     /* Plusieurs semaines : la médiane (pas la moyenne) détermine le classement général —
        une seule semaine exceptionnelle ne doit pas suffire à faire basculer tout le
        classement dans le palier supérieur si les autres semaines sont médiocres. Un grand
-       tour se gagne sur la régularité, pas sur un coup d'éclat isolé.
-       Les events bonus (rivaux, phases intermédiaires) sont exclus : seules les semaines
-       réelles comptent pour le résultat final. */
-    const realAccum = STATE.runRaceAccum.filter(e=>!e._isBonus);
-    const accumForMedian = realAccum.length > 0 ? realAccum : STATE.runRaceAccum;
-    const perfs = accumForMedian.map(e=>e.perf).sort((a,b)=>a-b);
+       tour se gagne sur la régularité, pas sur un coup d'éclat isolé. */
+    const perfs = STATE.runRaceAccum.map(e=>e.perf).sort((a,b)=>a-b);
     const mid = Math.floor(perfs.length/2);
     const medianPerf = perfs.length%2 ? perfs[mid] : (perfs[mid-1]+perfs[mid])/2;
     bestPerf = medianPerf;
