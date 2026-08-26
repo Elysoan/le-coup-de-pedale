@@ -3140,7 +3140,11 @@ function applyFatigue(rider, race, choice, weatherId){
   if(_wm.globalFatigueBoost) worldFatMult *= _wm.globalFatigueBoost;
   if(_wm.julyFatigue && race.month === 7) worldFatMult *= _wm.julyFatigue;
   if(_wm.springFatigue && race.month >= 3 && race.month <= 4 && (race.type === 'monument' || race.type === 'classique')) worldFatMult *= _wm.springFatigue;
-  const cost = race.fatCost * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult;
+  /* Diviser par le nombre d'events canoniques (hors bonus injectés) pour que
+     le coût de fatigue global reste constant quelle que soit l'injection de
+     phases bonus. _baseEventCount est posé par beginRace() avant tout appel. */
+  const canonicalEvents = (race._baseEventCount) || (race.events && race.events.length) || 1;
+  const cost = (race.fatCost / canonicalEvents) * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult;
   rider.fatigue = clamp(rider.fatigue + cost, 0, 100);
 }
 
@@ -5960,6 +5964,7 @@ function rollBonusPhases(race, rivalPresent){
   else if(p <= 3){ min=1; max=2; }
   else { min=2; max=3; }
   if(rivalPresent){ max = Math.min(max, 1); min = Math.min(min, 1); }
+  if(race.type === 'grandtour'){ max = Math.min(max, 2); }
   const count = min + Math.floor(Math.random()*(max-min+1));
   if(count === 0) return [];
 
