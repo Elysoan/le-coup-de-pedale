@@ -4059,6 +4059,27 @@ function riderHeaderHTML(){
       return extra;
     })()}</p>
     ${r.sponsor ? `<p class="small">${r.sponsor.icon} ${tf('sponsorWord','Sponsor')} : ${r.sponsor.name}</p>` : ''}
+    ${(()=>{
+      /* Suivi de l'objectif de saison en temps réel */
+      const _obj = STATE && STATE.seasonObjective;
+      const _res = STATE && STATE.seasonSummary && STATE.seasonSummary.results;
+      if(!_obj || _obj === 'aucun' || !_res) return '';
+      const _lang = SETTINGS.lang === 'en';
+      const _objDef = SEASON_OBJECTIVES.find(o=>o.id===_obj);
+      if(!_objDef) return '';
+      let _met = null;
+      if(_obj==='survive'||_obj==='solide') _met = !_res.some(x=>x.bestTier==='abandon'||x.bestTier==='forfait');
+      else if(_obj==='top10') _met = _res.some(x=>x.prestige>=3&&['victoire','podium','top10'].includes(x.bestTier));
+      else if(_obj==='podium') _met = _res.some(x=>x.prestige>=3&&['victoire','podium'].includes(x.bestTier));
+      else if(_obj==='etapes') _met = _res.some(x=>(x.type==='grandtour'||x.type==='semitour')&&['victoire','podium'].includes(x.bestTier));
+      else if(_obj==='victoire') _met = _res.some(x=>x.prestige>=3&&x.bestTier==='victoire');
+      else if(_obj==='monument') _met = _res.some(x=>x.prestige>=4&&x.bestTier==='victoire');
+      const _icon = _met===true ? '✅' : _met===false ? '🎯' : '🎯';
+      const _color = _met===true ? 'var(--green-dark)' : 'var(--text-soft)';
+      const _objLabel = (_lang && _objDef.labelEN) ? _objDef.labelEN : _objDef.label;
+      const _status = _met===true ? (_lang?'achieved':'atteint') : (_lang?'in progress':'en cours');
+      return `<p class="small" style="color:${_color};margin:2px 0 0;">${_icon} ${tf('seasonObjective','Objectif')} : ${_objLabel} — <em>${_status}</em></p>`;
+    })()}
     ${r.teammate ? `<p class="small">🤝 ${tf('teammateWord','Coéquipier')} : ${r.teammate.name} (${TEAMMATE_ARCHETYPE_LABELS[r.teammate.archetype]})${r.isMentor?` · 🧑‍🏫 ${tf('youAreMentor','Tu es son mentor')}`:''}</p>` : ''}
     <div class="grid2">
       <div class="stat-row">
@@ -4070,6 +4091,12 @@ function riderHeaderHTML(){
         <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.teamConfidence))}%;background:linear-gradient(90deg,var(--blue),var(--green));"></div></div>
       </div>
     </div>
+    ${(()=>{
+      const _pscore = palmaresPrestigeScore(r);
+      const _plabel = palmaresPrestigeLabel(_pscore, SETTINGS.lang==='en');
+      if(!_plabel) return '';
+      return `<p class="small" style="color:${_plabel.color};margin:2px 0 4px;">🏅 ${_plabel.label}</p>`;
+    })()}
     <div class="stat-row">
       <div class="stat-label"><span>🔥 ${tf('fatigueWord','Fatigue')}</span><span>${Math.round(r.fatigue)}</span></div>
       <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.fatigue))}%;background:linear-gradient(90deg,var(--green),var(--red));"></div></div>
@@ -4654,9 +4681,39 @@ const ROLE_SALARY_MULT = {
 };
 
 /* Calcule le rôle que propose une équipe à un coureur donné */
+/* Score de prestige qualitatif du palmarès :
+   Pondère les victoires par type de course pour distinguer
+   un coureur avec 60 rep en petites courses d'un avec 60 rep en monuments. */
+function palmaresPrestigeScore(rider){
+  const weights = {grandtour:5, monument:4, semitour:2, classique:1, crit:0.5, champ:1};
+  let score = 0;
+  (rider.palmares||[]).forEach(p=>{
+    if(p.tier === 'victoire') score += (weights[p.type]||0.5) * 2;
+    else if(p.tier === 'podium') score += (weights[p.type]||0.5) * 0.8;
+    else if(p.tier === 'top10') score += (weights[p.type]||0.5) * 0.2;
+  });
+  return Math.round(score);
+}
+
+/* Étiquette qualitative du profil palmares */
+function palmaresPrestigeLabel(score, lang){
+  if(score >= 30) return {label: lang ? 'Grand Tour pedigree' : 'Palmarès de Grand Tour', color:'var(--pink)'};
+  if(score >= 18) return {label: lang ? 'Monument hunter' : 'Chasseur de monuments', color:'var(--yellow)'};
+  if(score >= 10) return {label: lang ? 'Stage race specialist' : 'Spécialiste courses à étapes', color:'var(--blue)'};
+  if(score >= 4)  return {label: lang ? 'Solid classics rider' : 'Classicman solide', color:'var(--green-dark)'};
+  if(score >= 1)  return {label: lang ? 'Rising talent' : 'Talent en devenir', color:'var(--text-soft)'};
+  return null;
+}
+
 function computeOfferedRole(rider, team){
   const tierThresholds = {'Continentale':15,'ProTeam':30,'WorldTour':50,'Équipe de légende':70};
-  const leaderThreshold = tierThresholds[team.tier] || 15;
+  let leaderThreshold = tierThresholds[team.tier] || 15;
+  /* Palmarès qualitatif : un coureur avec des victoires en GT/monuments accède
+     au statut de leader plus facilement — la réputation "brute" seule ne suffit pas
+     à distinguer un sprinteur de critériums d'un vainqueur de Monument. */
+  const _prestige = palmaresPrestigeScore(rider);
+  if(_prestige >= 18) leaderThreshold = Math.max(10, leaderThreshold - 10); // pedigree monument/GT
+  else if(_prestige >= 8) leaderThreshold = Math.max(10, leaderThreshold - 5); // solide
   const isLeader = rider.reputation >= leaderThreshold;
   const style = rider.styleId;
   const spec = team.specialty;
@@ -5762,6 +5819,12 @@ function renderCalendarScreen(keepScroll){
       </div>
       <p class="small" style="margin:4px 0 0;">${raceCount} ${tf(raceCount>1?'racesP':'race','course'+(raceCount>1?'s':''))} · ${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+' par l\'équipe')} · ${gtSelected}/2 ${tf('grandToursAbbr','Grands Tours')}</p>
       ${warnUnder}${warnFatigue}${warnOver}${warnSmart}
+      <p class="small" style="margin:8px 0 4px;color:var(--text-soft);">${SETTINGS.lang==='en'?'Pre-fill your calendar automatically (optional — you can adjust after):':'Remplis automatiquement ton calendrier (facultatif — tu peux ajuster ensuite) :'}</p>
+      <div style="display:flex;gap:6px;">
+        <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('conservateur')" title="${SETTINGS.lang==='en'?'~40-45 days, safer races':'~40-45 j, courses plus sûres'}">🧘 ${SETTINGS.lang==='en'?'Calm':'Pépère'}</button>
+        <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('equilibre')" title="${SETTINGS.lang==='en'?'~47-54 days, balanced':'~47-54 j, équilibré'}">⚖️ ${SETTINGS.lang==='en'?'Balanced':'Équilibré'}</button>
+        <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('ambitieux')" title="${SETTINGS.lang==='en'?'~55-63 days, high prestige':'~55-63 j, haut prestige'}">🔥 ${SETTINGS.lang==='en'?'Ambitious':'Ambitieux'}</button>
+      </div>
     </div>
     <div class="card" style="padding:8px 12px;">${rows}</div>
     <button class="btn" ${(over65||under40)?'disabled':''} onclick="confirmCalendar()">🚀 ${tf('startSeason','Lancer la saison')}</button>
@@ -5773,6 +5836,159 @@ function toggleCalMonth(m){
   if(!STATE._calCollapsed) STATE._calCollapsed = new Set();
   if(STATE._calCollapsed.has(m)) STATE._calCollapsed.delete(m);
   else STATE._calCollapsed.add(m);
+  renderCalendarScreen(true);
+}
+
+/* ---- Calendrier automatique ---- */
+/* Construit un calendrier optimal selon un profil de charge (conservateur/equilibre/ambitieux).
+   Respecte toutes les contraintes existantes (max 65j, max 2 GT, courses locked).
+   Priorise : course signature, style matching, trajectoire, difficulté adaptée. */
+function autoSelectCalendar(profile){
+  const r = STATE.rider;
+  const pool = STATE.seasonRacePool;
+  const imposed = STATE.imposedRaceIds.slice();
+  const targets = {conservateur:{min:38, max:46}, equilibre:{min:47, max:54}, ambitieux:{min:55, max:63}};
+  const target = targets[profile] || targets.equilibre;
+
+  // Partir des imposées
+  let selected = imposed.slice();
+
+  // Courses disponibles (non locked, non imposées)
+  const available = pool.filter(rc => !rc.locked && !imposed.includes(rc.id));
+
+  // Scorer chaque course (qualité intrinsèque + contexte carrière)
+  function scoreRace(race){
+    let s = 0;
+
+    // --- Style et trajectoire ---
+    if(r.styleId && raceMatchesStyle(race, r.styleId)) s += 20;
+    if(r.signatureRaceId && race.id === r.signatureRaceId) s += 30;
+    if(r.trajectory === 'specialiste' && r.styleId && raceMatchesStyle(race, r.styleId)) s += 15;
+    if(r.trajectory === 'globetrotter') s += race.prestige * 2;
+    if(r.trajectory === 'leader' && (race.type === 'grandtour' || race.type === 'monument')) s += 10;
+
+    // --- Rôle contractuel ---
+    const roleTypes = ROLE_RECOMMENDED_TYPES[r.role] || [];
+    if(roleTypes.includes(race.type)) s += 12;
+
+    // --- Progression selon la saison ---
+    const season = r.season || 1;
+    if(season <= 2){
+      // Débutant : favoriser les courses accessibles, éviter les monumentaux
+      if(race.prestige <= 2) s += 10;
+      if(race.prestige >= 4) s -= 15;
+    } else if(season <= 5){
+      // En développement : montée en prestige progressive
+      if(race.prestige === 3) s += 8;
+      if(race.prestige === 4) s += 4;
+    } else {
+      // Confirmé : les grands rendez-vous sont prioritaires
+      if(race.prestige >= 4) s += 12;
+      if(race.prestige >= 5) s += 6; // cumulatif GT/monument top
+    }
+
+    // --- Niveau mondial ---
+    if(r.worldRank <= 30 && race.prestige >= 4) s += 8;  // top30 : viser les grandes
+    if(r.worldRank > 150 && race.prestige >= 4) s -= 10; // bas du classement : se concentrer sur l'accessible
+
+    // --- Objectif de saison en cours ---
+    const obj = STATE.seasonObjective;
+    if(obj === 'monument' && (race.type === 'monument' || race.type === 'grandtour') && race.prestige >= 4) s += 20;
+    if(obj === 'victoire' && race.prestige <= 3) s += 10; // viser des courses gagnables
+    if(obj === 'etapes' && (race.type === 'grandtour' || race.type === 'semitour')) s += 15;
+    if(obj === 'top10' && race.prestige >= 3) s += 8;
+    if((obj === 'survive' || obj === 'solide') && race.prestige >= 4) s -= 8; // ne pas surcharger
+
+    // --- Career cap actif ---
+    const cap = r.careerCap && r.careerCap.type;
+    if(cap === 'grandtour' && race.type === 'grandtour') s += 18;
+    if(cap === 'monument' && race.type === 'monument') s += 18;
+    if(cap === 'cinq-victoires' && race.prestige <= 3) s += 8; // viser des victoires gagnables
+    if(cap === 'top20' && race.prestige >= 3) s += 6; // accumuler des points de ranking
+
+    // --- Palmarès : bonus si jamais couru, légère pénalité si déjà gagné ---
+    const alreadyWon = r.palmares.some(p => p.raceId === race.id && p.tier === 'victoire');
+    const neverRun = !r.palmares.some(p => p.raceId === race.id);
+    if(neverRun && race.prestige >= 3) s += 6; // explorer de nouvelles courses
+    if(alreadyWon && profile !== 'ambitieux') s -= 5; // inutile de ressortir une course déjà gagnée, sauf si ambitieux (défendre)
+
+    // --- Difficulté adaptée ---
+    const diff = difficultyForRace(race, r);
+    if(diff.cls === 'diff-1' || diff.cls === 'diff-2') s += 8;
+    else if(diff.cls === 'diff-3') s += 4;
+    else if(diff.cls === 'diff-5') s -= 5;
+
+    // --- Rival présent ---
+    if((STATE.rivals||[]).some(rv=>(rv.raceIds||[]).includes(race.id))) s += 10;
+
+    // --- Ajustements profil ---
+    if(profile === 'ambitieux') s += race.prestige * 3;
+    if(profile === 'conservateur') s -= race.days * 0.5;
+
+    return s;
+  }
+
+  // Pré-scorer toutes les courses disponibles
+  const scored = available.map(rc => ({rc, score: scoreRace(rc)}));
+
+  // Calculer les jours déjà imposés par mois
+  const monthDays = {};
+  imposed.forEach(id => {
+    const rc = pool.find(r => r.id === id);
+    if(rc) monthDays[rc.month] = (monthDays[rc.month] || 0) + rc.days;
+  });
+
+  // Budget par mois : max 1 course longue (GT/semitour) ou 2 courtes par mois
+  // On répartit sur ~10 mois actifs (fév-nov), avec un quota adapté au profil
+  const maxDaysPerMonth = profile === 'conservateur' ? 7 : profile === 'ambitieux' ? 14 : 10;
+  const maxRacesPerMonth = 2;
+
+  let gtCount = selected.filter(id => { const rc = pool.find(r=>r.id===id); return rc && rc.type==='grandtour'; }).length;
+  let daysTotal = selected.reduce((sum, id) => { const rc = pool.find(r=>r.id===id); return sum + (rc?rc.days:0); }, 0);
+  const monthCount = {}; // nb de courses ajoutées par mois
+  imposed.forEach(id => {
+    const rc = pool.find(r=>r.id===id);
+    if(rc) monthCount[rc.month] = (monthCount[rc.month]||0) + 1;
+  });
+
+  // Parcourir les mois dans l'ordre, prendre la meilleure course disponible
+  // puis une 2e si la place le permet
+  const months = [...new Set(available.map(rc => rc.month))].sort((a,b) => a-b);
+
+  let passes = 0;
+  while(daysTotal < target.min && passes < 3){
+    passes++;
+    for(const month of months){
+      if(daysTotal >= target.max) break;
+      const usedDaysThisMonth = (monthDays[month] || 0);
+      const usedRacesThisMonth = (monthCount[month] || 0);
+      // Quota mensuel déjà atteint ?
+      if(usedDaysThisMonth >= maxDaysPerMonth) continue;
+      if(usedRacesThisMonth >= maxRacesPerMonth) continue;
+
+      // Meilleure course non encore sélectionnée dans ce mois
+      const candidates = scored
+        .filter(({rc}) => rc.month === month && !selected.includes(rc.id))
+        .sort((a,b) => b.score - a.score);
+
+      for(const {rc} of candidates){
+        if(daysTotal + rc.days > 65) continue;
+        if(rc.type === 'grandtour'){
+          if(gtCount >= 2) continue;
+          gtCount++;
+        }
+        // Vérifier que le mois ne dépasse pas les quotas après ajout
+        if(usedDaysThisMonth + rc.days > maxDaysPerMonth && passes < 3) continue;
+        selected.push(rc.id);
+        daysTotal += rc.days;
+        monthDays[month] = (monthDays[month]||0) + rc.days;
+        monthCount[month] = (monthCount[month]||0) + 1;
+        break; // une seule course par mois par passe
+      }
+    }
+  }
+
+  STATE.selectedRaceIds = selected;
   renderCalendarScreen(true);
 }
 
@@ -6454,6 +6670,15 @@ function renderCurrentEvent(){
   const isHomeRace = race.flag && race.flag === COUNTRIES.find(c=>c.code===STATE.rider.countryCode)?.flag;
   const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
   const riskIcon = {sur:'🛡️', equilibre:'⚖️', audacieux:'🎲', loufoque:'🤪'};
+  /* Indicateur stat↔phase : montre au joueur si ses stats sont adaptées à cet event */
+  const _statAvgForEvent = statFocusAverage(STATE.rider, event.focus);
+  const _statIndicator = (() => {
+    const lang = SETTINGS.lang === 'en';
+    if(_statAvgForEvent >= 70) return {icon:'💪', color:'var(--green-dark)', label: lang ? 'Your stats are well-suited to this phase' : 'Tes stats sont bien adaptées à cette phase'};
+    if(_statAvgForEvent >= 50) return {icon:'😐', color:'var(--blue)', label: lang ? 'Average match for this phase' : 'Correspondance moyenne pour cette phase'};
+    return {icon:'⚠️', color:'var(--red)', label: lang ? 'Your stats are weak on this phase' : 'Tes stats sont faibles sur cette phase'};
+  })();
+  const statMatchHTML = `<p class="small" style="color:${_statIndicator.color};margin:2px 0 0;">${_statIndicator.icon} ${_statIndicator.label} <span style="opacity:0.6;">(${Math.round(_statAvgForEvent)})</span></p>`;
   /* Mini-résultat de la phase précédente sur courses multi-étapes */
   const _lpr = STATE._lastPhaseResult;
   STATE._lastPhaseResult = null;
@@ -6495,6 +6720,7 @@ function renderCurrentEvent(){
       ${isHomeRace ? `<p class="small" style="color:var(--green-dark);font-weight:700;">📣 ${tf('homeCrowdNote','Le public te porte — tu cours à domicile !')}</p>` : ''}
       ${isSignatureRace ? `<p class="small" style="color:var(--pink);font-weight:700;">❤️ ${tf('signatureRaceNote','Ta course de cœur — celle que tu attends toute la saison !')}</p>` : ''}
       ${event._isRivalEvent ? `<p class="small" style="color:var(--blue);font-weight:700;">🥊 ${tf('rivalPresentNote','Duel en cours !')}</p>` : ''}
+      ${statMatchHTML}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
       <h3>${event.title}</h3>
       <p>${event.desc}</p>
@@ -7217,6 +7443,18 @@ function finishSeason(){
   endSeasonAging(rider, STATE.trainingFocus);
   /* Tracker les saisons dans le top 50 pour le career cap 'top50-trois-saisons' */
   if(rider.worldRank <= 50) rider._top50Seasons = (rider._top50Seasons||0) + 1;
+  /* Rivaux qui progressent : ajuster leur force selon le niveau du joueur.
+     Si le joueur est top 50, les rivaux s'améliorent pour rester menaçants.
+     Si le joueur régresse, les rivaux stagnent légèrement.
+     On vise que les rivaux restent toujours légèrement en dessous du joueur
+     pour que les duels restent crédibles mais pas écrasants. */
+  if(STATE.rivals && STATE.rivals.length){
+    const _targetStrength = clamp(40 + (100 - rider.worldRank) * 0.35, 30, 82);
+    STATE.rivals.forEach(rv => {
+      const _delta = (_targetStrength - rv.strength) * 0.25 + (Math.random()*4 - 2);
+      rv.strength = clamp(rv.strength + _delta, 25, 85);
+    });
+  }
   rider.season = completedSeason + 1;
   rider.contractYearsLeft = Math.max(0, rider.contractYearsLeft - 1);
   STATE.injuryAbsenceRemaining = 0;
