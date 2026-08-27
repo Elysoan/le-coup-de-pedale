@@ -3140,12 +3140,11 @@ function applyFatigue(rider, race, choice, weatherId){
   if(_wm.globalFatigueBoost) worldFatMult *= _wm.globalFatigueBoost;
   if(_wm.julyFatigue && race.month === 7) worldFatMult *= _wm.julyFatigue;
   if(_wm.springFatigue && race.month >= 3 && race.month <= 4 && (race.type === 'monument' || race.type === 'classique')) worldFatMult *= _wm.springFatigue;
-  /* Diviser par le nombre d'events canoniques (hors bonus injectés) pour que
-     le coût de fatigue global reste constant quelle que soit l'injection de
-     phases bonus. _baseEventCount est posé par beginRace() avant tout appel. */
   const canonicalEvents = (race._baseEventCount) || (race.events && race.events.length) || 1;
   const cost = (race.fatCost / canonicalEvents) * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult;
   rider.fatigue = clamp(rider.fatigue + cost, 0, 100);
+  /* Tracker le pic de fatigue saisonnière pour le défi fatigue-maitrisee */
+  if(STATE && rider.fatigue > (STATE._seasonMaxFatigue||0)) STATE._seasonMaxFatigue = rider.fatigue;
 }
 
 /* Récupération passive entre deux courses du calendrier, selon l'écart de mois et la
@@ -3678,6 +3677,8 @@ function backfillRiderFields(rider){
   if(typeof rider.styleConfirmed !== 'boolean') rider.styleConfirmed = false;
   if(!rider.careerFlags) rider.careerFlags = {};
   if(typeof rider.trajectory === 'undefined') rider.trajectory = null;
+  if(!Array.isArray(rider.seasonHistory)) rider.seasonHistory = [];
+  if(typeof rider._top50Seasons === 'undefined') rider._top50Seasons = 0;
 }
 
 /* Journal de carrière : quelques lignes chronologiques sur les vrais temps forts,
@@ -4383,6 +4384,39 @@ function renderHallOfFame(){
    Vue d'ensemble de toutes les carrières jouées dans la session (pas seulement le top 5
    du Hall of Fame) : styles/pays essayés, moyennes, et la liste complète — pour donner
    une vraie perspective sur ses habitudes de jeu au fil des parties. */
+function renderSeasonHistory(){
+  if(STATE) STATE._screen = 'seasonhistory';
+  const r = STATE.rider;
+  const hist = (r.seasonHistory||[]).slice().reverse(); // plus récente en premier
+  const lang = SETTINGS.lang === 'en';
+  const rows = hist.length === 0
+    ? `<p class="small" style="color:var(--text-soft);">${lang ? 'No seasons completed yet.' : 'Aucune saison terminée pour le moment.'}</p>`
+    : hist.map(h => {
+        const repColor = h.rep >= 60 ? 'var(--green-dark)' : h.rep >= 30 ? 'var(--text)' : 'var(--red)';
+        const rankStr = h.worldRank ? `🌍 ${h.worldRank}${lang ? 'th' : 'e'}` : '';
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">
+          <div>
+            <strong>${lang ? 'Season' : 'Saison'} ${h.season}</strong>
+            <p class="small" style="margin:2px 0 0;color:var(--text-soft);">${h.teamName} · ${h.races} ${lang ? 'races' : 'courses'}</p>
+          </div>
+          <div style="text-align:right;">
+            <p style="margin:0;font-weight:700;">🏆 ${h.wins} · 🥈 ${h.podiums}</p>
+            <p class="small" style="margin:2px 0 0;color:${repColor};">⭐ ${h.rep} ${rankStr}</p>
+          </div>
+        </div>`;
+      }).join('');
+
+  setHTML(`
+    ${riderHeaderHTML()}
+    <div class="card">
+      <h2>📜 ${lang ? 'Season history' : 'Historique des saisons'}</h2>
+      <p class="small" style="margin:0;color:var(--text-soft);">${lang ? 'Your career, season after season.' : 'Ta carrière, saison après saison.'}</p>
+    </div>
+    <div class="card">${rows}</div>
+    <button class="btn ghost" onclick="renderCalendarScreen()">← ${lang ? 'Back to calendar' : 'Retour au calendrier'}</button>
+  `);
+}
+
 function renderCareerComparator(){
   const careers = CAREER_HISTORY;
   if(careers.length===0){
@@ -4512,6 +4546,7 @@ function startNewSeason(){
   STATE.rider.isNationalChampion = false;
   STATE.seasonWorldMods = {};
   STATE.activeWorldEvents = [];
+  STATE._seasonMaxFatigue = 0;
   /* Globetrotter : arrive en début de saison avec une fatigue résiduelle — il tourne
      trop, ne récupère jamais vraiment. Contrepartie : accès plus rapide aux équipes sup. */
   if(STATE.rider.trajectory === 'globetrotter' && STATE.rider.season > 1){
@@ -4730,6 +4765,14 @@ const SIDE_CHALLENGES = [
   {id:'zero-blessure', icon:'🩹', label:"Termine la saison sans blessure", labelEN:"Finish the season without injury", check:(results, rider, hadInjury)=>!hadInjury, reward:{reputation:2}},
   {id:'une-victoire', icon:'🏆', label:"Remporte au moins une course cette saison", labelEN:"Win at least one race this season", check:(results)=>results.some(x=>x.bestTier==='victoire'), reward:{money:2000}},
   {id:'trois-podiums', icon:'🥈', label:"Décroche 3 podiums ou mieux cette saison", labelEN:"Land 3 podiums or better this season", check:(results)=>results.filter(x=>['victoire','podium'].includes(x.bestTier)).length>=3, reward:{reputation:2}},
+  {id:'deux-grands-tours', icon:'🗺️', label:"Termine deux grands tours la même saison", labelEN:"Finish two grand tours in the same season", check:(results)=>results.filter(x=>x.type==='grandtour' && x.bestTier!=='abandon' && x.bestTier!=='forfait').length>=2, reward:{reputation:3}},
+  {id:'fatigue-maitrisee', icon:'🧘', label:"Ne dépasse jamais 65 de fatigue toute la saison", labelEN:"Never exceed 65 fatigue all season", check:(results, rider)=>!(STATE&&STATE._seasonMaxFatigue&&STATE._seasonMaxFatigue>65), reward:{reputation:2}},
+  {id:'top100-monde', icon:'🌍', label:"Termine la saison dans le top 100 mondial", labelEN:"Finish the season in the world top 100", check:(results, rider)=>rider.worldRank<=100, reward:{reputation:3}},
+  {id:'cinq-courses', icon:'🗓️', label:"Course dans au moins 5 épreuves cette saison", labelEN:"Race in at least 5 events this season", check:(results)=>results.filter(x=>x.bestTier!=='forfait').length>=5, reward:{money:1000}},
+  {id:'podium-monument', icon:'🥇', label:"Monte sur le podium d'un monument", labelEN:"Reach the podium of a monument", check:(results)=>results.some(x=>x.type==='monument' && ['victoire','podium'].includes(x.bestTier)), reward:{reputation:4}},
+  {id:'zero-abandon', icon:'🛡️', label:"Termine toutes tes courses sans abandon ni forfait", labelEN:"Finish every race without abandonment or withdrawal", check:(results)=>!results.some(x=>x.bestTier==='abandon'||x.bestTier==='forfait'), reward:{reputation:2, money:500}},
+  {id:'victoire-semitour', icon:'🚵', label:"Remporte un semi-tour cette saison", labelEN:"Win a semi-tour this season", check:(results)=>results.some(x=>x.type==='semitour' && x.bestTier==='victoire'), reward:{money:1500, reputation:2}},
+  {id:'deux-victoires', icon:'🎯', label:"Remporte au moins 2 courses cette saison", labelEN:"Win at least 2 races this season", check:(results)=>results.filter(x=>x.bestTier==='victoire').length>=2, reward:{reputation:3, money:1000}},
 ];
 
 /* ---------- STAGE DE PRÉPARATION ----------
@@ -4750,6 +4793,9 @@ const CAREER_CAP_TYPES = [
   {id:'monument', icon:'🥇', label:"Gagner un monument", labelEN:"Win a monument", years:4},
   {id:'top20', icon:'🌍', label:"Entrer dans le top 20 mondial", labelEN:"Break into the world top 20", years:4},
   {id:'reputation70', icon:'⭐', label:"Atteindre 70 de réputation", labelEN:"Reach 70 reputation", years:3},
+  {id:'cinq-victoires', icon:'🎯', label:"Remporter 5 victoires au total", labelEN:"Win 5 races in total", years:4},
+  {id:'top50-trois-saisons', icon:'📈', label:"Finir 3 saisons dans le top 50 mondial", labelEN:"Finish 3 seasons in the world top 50", years:5},
+  {id:'fidelite-equipe', icon:'🤝', label:"Ne jamais changer d'équipe en 4 saisons", labelEN:"Never change teams for 4 seasons", years:4},
 ];
 
 function checkCareerCapCondition(rider, type){
@@ -4757,6 +4803,9 @@ function checkCareerCapCondition(rider, type){
   if(type==='monument') return rider.palmares.some(p=>p.type==='monument' && p.tier==='victoire');
   if(type==='top20') return rider.worldRank <= 20;
   if(type==='reputation70') return rider.reputation >= 70;
+  if(type==='cinq-victoires') return rider.palmares.filter(p=>p.tier==='victoire').length >= 5;
+  if(type==='top50-trois-saisons') return (rider._top50Seasons||0) >= 3;
+  if(type==='fidelite-equipe') return (rider.teamChanges||0) === 0;
   return false;
 }
 
@@ -4971,6 +5020,28 @@ function localizeEvent(ev){
    Ils modifient concrètement la saison en cours — effets visibles
    à l'écran ET mécaniques réels.
    ====================================================================== */
+
+/* ---------- POOL VESTIAIRE ----------
+   Courts messages narratifs d'ambiance générés en début de saison — pas de choix,
+   pas de mécanique : juste une phrase qui plante le contexte humain du groupe. */
+const VESTIAIRE_POOL = [
+  {icon:'💬', fr:"Un vétéran de l'équipe a glissé dans le vestiaire : ‘Cette saison, on va faire quelque chose de bien.’ Personne n'a répondu. Tout le monde a souri.", en:"A team veteran murmured in the locker room: ‘This season, we’re going to do something special.’ No one replied. Everyone smiled."},
+  {icon:'🎧', fr:"L'ambiance au camp d'entraînement est studieuse. Chacun travaille en silence, écouteurs vissés aux oreilles. Le groupe est sérieux.", en:"The atmosphere at training camp is focused. Everyone works in silence, earphones on. The group means business."},
+  {icon:'⚡', fr:"La compétition interne est perceptible dès les premières sorties. Chaque montée se transforme en mini-duel. C'est bon signe.", en:"Internal competition is palpable from the first rides. Every climb becomes a mini-duel. That's a good sign."},
+  {icon:'🌧️', fr:"Le stage hivernal a été rude. Pluie, froid, routes cassées. Mais tout le groupe est allé au bout. Ça soude.", en:"Winter camp was brutal. Rain, cold, broken roads. But everyone made it through. That kind of thing bonds a team."},
+  {icon:'😴', fr:"Le directeur sportif est entré dans la salle de réunion avec une seule diapositive. ‘La saison commence maintenant.’ Silence. Tout était dit.", en:"The team director walked into the meeting room with a single slide. ‘The season starts now.’ Silence. That said it all."},
+  {icon:'🤝', fr:"Un nouveau coéquipier a rejoint l'équipe cet hiver. Il est discret, observateur. Le genre de profil qui surprend au printemps.", en:"A new teammate joined the squad this winter. Quiet, observant. The kind of rider who surprises you in spring."},
+  {icon:'📰', fr:"Un journaliste a prédit en janvier que ton équipe serait décevante cette saison. L'article est affiché dans le couloir du centre d'entraînement.", en:"A journalist predicted in January that your team would disappoint this season. The article is pinned up in the training centre hallway."},
+  {icon:'🏔️', fr:"Au stage altitude, quelqu'un a tracé ‘S'EN SOUVENIR’ sur un tableau blanc. Personne ne l'a effacé avant le départ.", en:"At altitude camp, someone wrote ‘REMEMBER THIS’ on a whiteboard. Nobody erased it before leaving."},
+  {icon:'🔥', fr:"L'hiver a été court. Trop court, peut-être. Mais tout le groupe ressent cette faim particulière qui n'appartient qu'aux débuts de saison.", en:"The winter felt short. Too short, maybe. But the whole group feels that particular hunger that only comes at the start of a season."},
+  {icon:'📦', fr:"Les nouveaux maillots sont arrivés ce matin. Quand on les a sortis des cartons, personne n'a rien dit, mais tout le monde les a essayés aussitôt.", en:"The new jerseys arrived this morning. When they came out of the boxes, nobody said a word — but everyone tried them on straight away."},
+];
+
+function pickVestiaireMessage(){
+  if(!STATE || (STATE.rider && STATE.rider.season <= 1)) return null; // pas en S1
+  const msg = VESTIAIRE_POOL[Math.floor(Math.random()*VESTIAIRE_POOL.length)];
+  return msg;
+}
 
 const WORLD_EVENTS = [
   {id:'canicule_juillet', icon:'🥵',
@@ -5351,12 +5422,28 @@ function renderTrajectoryChoice(){
 function renderWorldEventsScreen(){
   if(STATE) STATE._screen = 'worldevents';
   const events = STATE.activeWorldEvents || [];
-  if(!events.length){ renderCalendarScreen(); return; }
   const cancelNote = STATE._worldEventCancelledRace
     ? `<p class="small" style="color:var(--red);margin:4px 0 0;">❌ ${tf('worldEventCancelled','Course annulée cette saison')} : ${STATE._worldEventCancelledRace}</p>`
     : '';
+  /* Message vestiaire : ambiance narrative aléatoire, à partir de la S2 */
+  const vestMsg = pickVestiaireMessage();
+  const vestHTML = vestMsg ? `<div class="card" style="border-left:4px solid var(--text-soft);background:var(--surface-alt);">
+    <p class="narrative-text" style="margin:0;">${vestMsg.icon} <em>${SETTINGS.lang==='en' ? vestMsg.en : vestMsg.fr}</em></p>
+  </div>` : '';
+  /* Si aucun world event ET aucun message vestiaire, aller directement au calendrier */
+  if(!events.length && !vestHTML){ renderCalendarScreen(); return; }
+  /* S'il n'y a que le vestiaire (pas de world events), afficher simplement le message + bouton */
+  if(!events.length){
+    setHTML(`
+      ${riderHeaderHTML()}
+      ${vestHTML}
+      <button class="btn" onclick="renderCalendarScreen()">📅 ${tf('buildCalendar','Construire mon calendrier')}</button>
+    `);
+    return;
+  }
   setHTML(`
     ${riderHeaderHTML()}
+    ${vestHTML}
     <div class="card" style="border-left:4px solid var(--blue);">
       <h2>🌐 ${tf('worldEventsTitle','Actualité du peloton')}</h2>
       <p class="small">${tf('worldEventsSubtitle','Avant de bâtir ton calendrier, voici ce qui agite le monde cycliste cette saison.')}</p>
@@ -5620,14 +5707,16 @@ function renderCalendarScreen(keepScroll){
       const diff = difficultyForRace(race, r);
       const rv = (STATE.rivals||[]).filter(rv=>(rv.raceIds||[]).includes(race.id));
       const borderStyle = isImposed ? 'border-left:3px solid var(--red);' : isSelected ? 'border-left:3px solid var(--green-dark);' : '';
-      const lockInfo = race.locked ? `<span class="pill" style="border-color:var(--text-soft);color:var(--text-soft);font-size:0.7em;">${race.lockReason||tf('locked','Verrouillée')}</span>` : '';
+      const lockInfo = race.locked ? `<span class="pill" style="border-color:var(--text-soft);color:var(--text-soft);font-size:0.7em;">${race.lockReason==='continental' ? tf('lockReasonContinental','Équipe trop petite') : race.lockReason==='confidence' ? tf('lockReasonConfidence','Confiance insuffisante') : tf('locked','Verrouillée')}</span>` : '';
       const imposedBadge = isImposed ? `<span class="pill" style="border-color:var(--red);color:var(--red);font-size:0.7em;">${tf('imposedByTeamPill','Imposée')}</span>` : '';
       const rivalBadge = rv.length ? ` <span style="color:var(--blue);font-size:0.8em;font-weight:600;">🥊 ${rv.map(x=>x.name.split(' ')[0]).join(', ')}</span>` : '';
       const styleMatch = r.styleId && raceMatchesStyle(race, r.styleId);
       const styleBadge = styleMatch ? ` <span style="color:var(--green-dark);font-size:0.85em;">⭐</span>` : '';
+      const isSignature = r.signatureRaceId && race.id === r.signatureRaceId;
+      const signatureBadge = isSignature ? ` <span style="color:var(--pink);font-size:0.85em;">❤️</span>` : '';
       const clickable = !isImposed && !race.locked;
       const opacity = race.locked ? 'opacity:0.45;' : '';
-      return `<div class="race-item" style="cursor:${clickable?'pointer':'default'};${borderStyle}${opacity}" ${clickable?`onclick="toggleRace('${race.id}')"`:''}><div style="flex:1;"><strong>${race.flag?race.flag+' ':''}${race.name}</strong>${styleBadge}${rivalBadge}<p class="small" style="margin:2px 0 0;">${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)} ${imposedBadge}${lockInfo}</p></div><div style="text-align:right;min-width:70px;">${badgeHTML(race.type)}<p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p></div></div>`;
+      return `<div class="race-item" style="cursor:${clickable?'pointer':'default'};${borderStyle}${opacity}" ${clickable?`onclick="toggleRace('${race.id}')"`:''}><div style="flex:1;"><strong>${race.flag?race.flag+' ':''}${race.name}</strong>${styleBadge}${signatureBadge}${rivalBadge}<p class="small" style="margin:2px 0 0;">${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)} ${imposedBadge}${lockInfo}</p></div><div style="text-align:right;min-width:70px;">${badgeHTML(race.type)}<p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p></div></div>`;
     }).join('');
 
     return monthHeader + raceItems;
@@ -5636,6 +5725,32 @@ function renderCalendarScreen(keepScroll){
   const warnUnder = under40 ? `<p class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('minDays40','Minimum 40 jours de course requis.')}</p>` : '';
   const warnFatigue = over45 && !over65 ? `<p class="small" style="color:#E07B20;margin:2px 0 0;">⚠️ ${tf('fatigueWarning','Au-delà de 45 jours, la fatigue s\'accumule nettement plus vite sur le reste de la saison.')}</p>` : '';
   const warnOver = over65 ? `<p class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('exceeds65','Dépasse 65 j')}</p>` : '';
+
+  /* ---- Alerte calendrier intelligente ---- */
+  const _sel = STATE.selectedRaceIds;
+  const _pool = STATE.seasonRacePool;
+  const _smartWarns = [];
+  const _lang = SETTINGS.lang === 'en';
+  // Détecter GT + monument dans le même mois ou mois consécutifs
+  const _gtMonths = _sel.map(id=>{ const rc=_pool.find(r=>r.id===id); return rc&&rc.type==='grandtour'?rc.month:null; }).filter(Boolean);
+  const _monMonths = _sel.map(id=>{ const rc=_pool.find(r=>r.id===id); return rc&&rc.type==='monument'?rc.month:null; }).filter(Boolean);
+  const _hasGTMonCombo = _gtMonths.some(gm=>_monMonths.some(mm=>Math.abs(mm-gm)<=1));
+  if(_hasGTMonCombo) _smartWarns.push(_lang
+    ? '🧠 A monument falls very close to a grand tour — your legs may suffer.'
+    : '🧠 Un monument tombe très proche d\'un grand tour — tes jambes pourraient en souffrir.');
+  // Détecter 3+ courses dans le même mois
+  const _monthCounts = {};
+  _sel.forEach(id=>{ const rc=_pool.find(r=>r.id===id); if(rc){ _monthCounts[rc.month]=(_monthCounts[rc.month]||0)+1; } });
+  if(Object.values(_monthCounts).some(c=>c>=3)) _smartWarns.push(_lang
+    ? '🧠 Three or more races in the same month — that\'s a very dense block.'
+    : '🧠 Trois courses ou plus dans le même mois — c\'est un bloc très dense.');
+  // Détecter 2 grands tours (avertissement doux si spécialiste)
+  if(_gtMonths.length >= 2 && STATE.rider.trajectory === 'specialiste') _smartWarns.push(_lang
+    ? '🧠 Two grand tours is unusual for a specialist — your focus races may suffer.'
+    : '🧠 Deux grands tours, c\'est inhabituel pour un spécialiste — tes courses cibles pourraient en pâtir.');
+  const warnSmart = _smartWarns.length
+    ? _smartWarns.map(w=>`<p class="small" style="color:var(--blue);margin:2px 0 0;">${w}</p>`).join('')
+    : '';
 
   setHTML(`
     ${riderHeaderHTML()}
@@ -5646,11 +5761,12 @@ function renderCalendarScreen(keepScroll){
         <strong style="font-size:1.1rem;color:${daysColor};">${daysTotal} / 65 ${tf('daysAbbr','j')}</strong>
       </div>
       <p class="small" style="margin:4px 0 0;">${raceCount} ${tf(raceCount>1?'racesP':'race','course'+(raceCount>1?'s':''))} · ${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+' par l\'équipe')} · ${gtSelected}/2 ${tf('grandToursAbbr','Grands Tours')}</p>
-      ${warnUnder}${warnFatigue}${warnOver}
+      ${warnUnder}${warnFatigue}${warnOver}${warnSmart}
     </div>
     <div class="card" style="padding:8px 12px;">${rows}</div>
     <button class="btn" ${(over65||under40)?'disabled':''} onclick="confirmCalendar()">🚀 ${tf('startSeason','Lancer la saison')}</button>
     <button class="btn ghost" onclick="renderRaceAlmanac()">${tf('raceAlmanac','📖 Almanach des courses')}</button>
+    ${(STATE.rider.seasonHistory&&STATE.rider.seasonHistory.length>0)?`<button class="btn ghost" onclick="renderSeasonHistory()">📜 ${SETTINGS.lang==='en'?'Season history':'Historique des saisons'}</button>`:''}
   `, keepScroll);
 }
 function toggleCalMonth(m){
@@ -5908,6 +6024,89 @@ const RIVAL_RACE_EVENTS = [
     ]
   },
 ];
+
+/* ---------- FEEDBACK NARRATIF DUEL RIVAL ----------
+   Affiché après le choix du joueur sur un event _isRivalEvent.
+   Segmenté selon le résultat (bon/mauvais) et le risk choisi. */
+const RIVAL_DUEL_FEEDBACK = {
+  good: {
+    sur: [
+      {fr:"Tu gères. {name} a tenté de faire l'écart mais tu as su placer tes relayeurs au bon moment — l'écart est resté contenu.", en:"{name} tried to break clear but your positioning was perfect. The gap never opened."},
+      {fr:"Lecture impeccable de la course. Tu n'as pas cédé à la provocation de {name}, et ça t'a payé.", en:"Flawless race reading. You didn't take {name}'s bait — and it paid off."},
+      {fr:"La prudence avait du sens ici. {name} avait l'air fort, mais tu l'as bien contenu.", en:"Caution made sense here. {name} looked strong, but you kept them in check."},
+    ],
+    equilibre: [
+      {fr:"Bon timing. Tu es resté dans la roue de {name} juste ce qu'il fallait — ni trop tôt, ni trop tard.", en:"Good timing. You stayed on {name}'s wheel just long enough — not too early, not too late."},
+      {fr:"Jeu d'équilibriste réussi. Tu as su doser ton effort face à {name} sans te découvrir.", en:"Perfectly balanced move. You measured your effort against {name} without overcommitting."},
+      {fr:"Décision équilibrée, résultat clair. {name} n'a pas réussi à t'isoler.", en:"Balanced call, clear result. {name} couldn't isolate you."},
+    ],
+    audacieux: [
+      {fr:"Pari gagnant. Tu as pris le contre-pied de {name} au moment où personne ne s'y attendait.", en:"Bold move, right call. You caught {name} off guard at exactly the right moment."},
+      {fr:"{name} ne t'a pas vu venir. L'audace a payé — le peloton va en parler.", en:"{name} didn't see it coming. The gamble paid off — the peloton will be talking about this."},
+      {fr:"Tu as pris le risque, et c'est passé. Face à {name}, il fallait oser.", en:"You took the risk, and it landed. Against {name}, you had to be bold."},
+    ],
+  },
+  bad: {
+    sur: [
+      {fr:"Trop sage, peut-être. {name} a pris de l'avance pendant que tu gérais — la prudence a un coût.", en:"Too cautious, maybe. {name} built a gap while you managed — caution has a price."},
+      {fr:"Tu t'es protégé, mais {name} en a profité pour prendre le large. L'écart va être difficile à combler.", en:"You protected yourself, but {name} used it to pull away. That gap will be hard to close."},
+      {fr:"Jouer la sécurité avait l'air raisonnable — mais {name} s'en est sorti mieux que toi.", en:"Playing it safe seemed reasonable — but {name} came out of it better than you."},
+    ],
+    equilibre: [
+      {fr:"La bonne intention, mais pas le bon moment. {name} avait une longueur d'avance sur toi dans cette séquence.", en:"Right instinct, wrong timing. {name} was a step ahead of you in this sequence."},
+      {fr:"L'équilibre n'a pas suffi. {name} a su faire la différence là où tu espérais limiter les dégâts.", en:"Balance wasn't enough. {name} made the difference exactly where you hoped to limit the damage."},
+      {fr:"Tu as bien essayé de tenir le cap, mais {name} t'a débordé sur cette phase.", en:"You tried to hold the line, but {name} got past you on this one."},
+    ],
+    audacieux: [
+      {fr:"L'audace ne passe pas à tous les coups. Cette fois-ci, {name} l'a vu venir et en a profité.", en:"Boldness doesn't always pay off. This time, {name} saw it coming and took advantage."},
+      {fr:"Trop risqué. Tu t'es découvert face à {name} et ça t'a coûté de l'énergie sans contrepartie.", en:"Too risky. You overcommitted against {name} and it cost you energy for nothing."},
+      {fr:"{name} t'attendait sur ce coup-là. L'attaque n'a pas surpris — elle a juste fatigué.", en:"{name} was waiting for that move. The attack didn't surprise — it just tired you out."},
+    ],
+  },
+};
+
+function renderRivalDuelFeedback(){
+  if(STATE) STATE._screen = 'rivalduel';
+  const fd = STATE._pendingRivalDuelFeedback;
+  if(!fd){ renderCurrentEvent(); return; }
+  STATE._pendingRivalDuelFeedback = null;
+  const lang = SETTINGS.lang === 'en';
+  const isGood = fd.good;
+  const pool = isGood ? RIVAL_DUEL_FEEDBACK.good[fd.risk] : RIVAL_DUEL_FEEDBACK.bad[fd.risk];
+  const raw = pool[Math.floor(Math.random()*pool.length)];
+  const msg = (lang ? raw.en : raw.fr).replace(/\{name\}/g, fd.rivalName);
+  const color = isGood ? 'var(--green)' : 'var(--red)';
+  const bgColor = isGood ? 'var(--green-light)' : '#FDF1EF';
+  const icon = isGood ? '✅' : '❌';
+  const riskIcon = {sur:'🛡️', equilibre:'⚖️', audacieux:'🎲', loufoque:'🤪'}[fd.risk] || '⚡';
+  const tierLabel = {
+    victoire: lang?'Win':'Victoire',
+    podium: lang?'Podium':'Podium',
+    top10: lang?'Top 10':'Top 10',
+    jourssans: lang?'Off day':'Jour sans',
+    abandon: lang?'DNF':'Abandon',
+  }[fd.tier] || fd.tier;
+
+  setHTML(`
+    ${riderHeaderHTML()}
+    <div class="card" style="border:2px solid ${color};background:${bgColor};">
+      <p style="margin:0 0 8px;font-weight:700;color:${color};">${icon} 🥊 ${lang?'Duel vs':'Duel contre'} ${fd.rivalName}</p>
+      <p class="narrative-text" style="margin:0 0 10px;">${msg}</p>
+      <p class="small" style="margin:0;color:var(--text-soft);">${riskIcon} ${lang?'Your choice':'Ton choix'} : <strong>${fd.choiceLabel}</strong> · ${lang?'Result on this phase':'Résultat sur cette phase'} : <strong>${tierLabel}</strong></p>
+    </div>
+    <button class="btn" onclick="proceedAfterRivalDuel()">
+      ${fd.hasNextEvent ? (lang?'Continue the race →':'Continuer la course →') : (lang?'See the result →':'Voir le résultat →')}
+    </button>
+  `);
+}
+
+function proceedAfterRivalDuel(){
+  const fd = STATE._rivalDuelNext;
+  STATE._rivalDuelNext = null;
+  if(!fd) { renderCurrentEvent(); return; }
+  if(fd.doFinalize) finalizeRace();
+  else renderCurrentEvent();
+}
 
 function rollRivalRaceEvent(race, rivals){
   // Vérifier si un rival est présent dans cette course
@@ -6255,8 +6454,18 @@ function renderCurrentEvent(){
   const isHomeRace = race.flag && race.flag === COUNTRIES.find(c=>c.code===STATE.rider.countryCode)?.flag;
   const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
   const riskIcon = {sur:'🛡️', equilibre:'⚖️', audacieux:'🎲', loufoque:'🤪'};
+  /* Mini-résultat de la phase précédente sur courses multi-étapes */
+  const _lpr = STATE._lastPhaseResult;
+  STATE._lastPhaseResult = null;
+  const _tierColor = {victoire:'var(--green-dark)', podium:'var(--green-dark)', top10:'var(--blue)', peloton:'var(--text-soft)', jourssans:'var(--red)', abandon:'var(--red)'};
+  const _tierIcon  = {victoire:'🏆', podium:'🥈', top10:'👍', peloton:'🚴', jourssans:'😓', abandon:'❌'};
+  const _lang = SETTINGS.lang === 'en';
+  const lastPhaseHTML = _lpr ? `<div style="background:var(--surface-alt);border-left:3px solid ${_tierColor[_lpr.tier]||'var(--line)'};padding:6px 10px;border-radius:0 6px 6px 0;margin-bottom:6px;">
+    <p class="small" style="margin:0;color:var(--text-soft);">${_lang?'Previous phase':'Phase précédente'} · <strong style="color:${_tierColor[_lpr.tier]||'var(--text)'};">${_tierIcon[_lpr.tier]||''} ${tierNarrative(_lpr.tier)}</strong></p>
+  </div>` : '';
   setHTML(`
     ${riderHeaderHTML()}
+    ${lastPhaseHTML}
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <h2>${race.flag?race.flag+' ':''}${race.name}</h2>
@@ -6312,11 +6521,40 @@ function chooseOption(i){
   const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
   const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace, isSignatureRace, race.type);
   applyFatigue(STATE.rider, race, choice, weatherId);
-  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained});
+  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained, isRivalEvent:!!event._isRivalEvent});
   STATE.runEventIdx++;
   /* Sur une course à plusieurs semaines (grand tour), abandonner une semaine met fin à
      toute la course : impossible de repartir la semaine suivante, comme dans la réalité. */
-  if(result.tier==='abandon' || STATE.runEventIdx >= race.events.length){ finalizeRace(); }
+  const doFinalize = (result.tier==='abandon' || STATE.runEventIdx >= race.events.length);
+
+  /* Feedback narratif immédiat après un event rival */
+  if(event._isRivalEvent){
+    const presentRivals = (STATE.rivals||[]).filter(rv=>(rv.raceIds||[]).includes(race.id));
+    const rival = presentRivals[0] || {name:'ton rival'};
+    const isGood = result.perf >= 65;
+    STATE._pendingRivalDuelFeedback = {
+      good: isGood,
+      risk: choice.risk,
+      rivalName: rival.name,
+      choiceLabel: choice.label,
+      tier: result.tier,
+      hasNextEvent: !doFinalize,
+    };
+    STATE._rivalDuelNext = {doFinalize};
+    renderRivalDuelFeedback();
+    return;
+  }
+
+  /* Sur les courses à étapes (multi-events non-rival), mémoriser le résultat
+     de la phase pour l'afficher en contexte sur l'écran suivant */
+  const isMultiEvent = race.events && race.events.filter(e=>!e._isBonus).length > 1;
+  if(isMultiEvent && !doFinalize){
+    STATE._lastPhaseResult = {tier: result.tier, perf: result.perf, eventTitle: event.title};
+  } else {
+    STATE._lastPhaseResult = null;
+  }
+
+  if(doFinalize){ finalizeRace(); }
   else { renderCurrentEvent(); }
 }
 
@@ -6557,9 +6795,18 @@ function checkRivalAppearance(race, bestTier){
   const assignedRivals = STATE.rivals.filter(rv=>(rv.raceIds||[]).includes(race.id));
   if(assignedRivals.length === 0) return;
   const rival = assignedRivals[Math.floor(Math.random()*assignedRivals.length)];
-  const rivalPerf = clamp(rival.strength + (Math.random()*30-15) + race.prestige*2, 0, 100);
-  const playerPerf = Math.max(...STATE.runRaceAccum.map(e=>e.perf||0));
-  const won = playerPerf >= rivalPerf;
+  /* Priorité : utiliser la perf de la phase rival si elle existe dans runRaceAccum.
+     Cela garantit la cohérence avec le feedback narratif intermédiaire (seuil 65).
+     Fallback : meilleure perf globale vs tirage aléatoire sur la force du rival. */
+  const rivalEntry = STATE.runRaceAccum.find(e=>e.isRivalEvent);
+  let won;
+  if(rivalEntry){
+    won = rivalEntry.perf >= 65;
+  } else {
+    const rivalPerf = clamp(rival.strength + (Math.random()*30-15) + race.prestige*2, 0, 100);
+    const playerPerf = Math.max(...STATE.runRaceAccum.map(e=>e.perf||0));
+    won = playerPerf >= rivalPerf;
+  }
   const rec = STATE.rivalRecords[rival.name] || {wins:0, losses:0};
   if(won) rec.wins++; else rec.losses++;
   STATE.rivalRecords[rival.name] = rec;
@@ -6968,6 +7215,8 @@ function finishSeason(){
   const rankStart = STATE.seasonSummary.rankStart;
   const ratingStart = STATE.seasonSummary.ratingStart;
   endSeasonAging(rider, STATE.trainingFocus);
+  /* Tracker les saisons dans le top 50 pour le career cap 'top50-trois-saisons' */
+  if(rider.worldRank <= 50) rider._top50Seasons = (rider._top50Seasons||0) + 1;
   rider.season = completedSeason + 1;
   rider.contractYearsLeft = Math.max(0, rider.contractYearsLeft - 1);
   STATE.injuryAbsenceRemaining = 0;
@@ -7107,6 +7356,18 @@ function finishSeason(){
     }
     // Sinon, le cap reste actif silencieusement — pas encore de date limite atteinte.
   }
+
+  /* Stocker l'entrée d'historique saisonnier */
+  if(!rider.seasonHistory) rider.seasonHistory = [];
+  rider.seasonHistory.push({
+    season: completedSeason,
+    teamName: currentTeam(rider).name,
+    wins: results.filter(x=>x.bestTier==='victoire').length,
+    podiums: results.filter(x=>['victoire','podium'].includes(x.bestTier)).length,
+    rep: Math.round(rider.reputation),
+    worldRank: rider.worldRank,
+    races: results.length,
+  });
 
   checkSeasonAchievements(results);
   STATE.seasonRecapData = {seasonNum: completedSeason, results, repStart, rankStart, ratingStart};
