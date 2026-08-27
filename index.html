@@ -4870,7 +4870,8 @@ function renderSeasonSetupScreen(keepScroll){
   if(STATE) STATE._screen='seasonsetup';
   const r = STATE.rider;
   if(!STATE.pendingSetup){
-    STATE.pendingSetup = {focus:null, stage:'aucun', objective:'aucun', sponsorIdx:'skip', challengeAccept:true, careerCapChoice:null};
+    const _isS1 = r.season === 1;
+    STATE.pendingSetup = {focus:null, stage:'aucun', objective:_isS1?'survive':'aucun', sponsorIdx:'skip', challengeAccept:!_isS1, careerCapChoice:null};
   }
   const setup = STATE.pendingSetup;
   const hasSponsor = !!r.sponsor;
@@ -4908,27 +4909,75 @@ function renderSeasonSetupScreen(keepScroll){
       </div>`).join('') + `<div class="row-item ${setup.sponsorIdx==='skip'?'active':''}" onclick="setSeasonSetup('sponsorIdx','skip')"><span>${tf('noSponsorThisSeason','Pas de sponsor cette saison')}</span></div>`;
   }
 
+  /* --- Messages d'introduction contextuels --- */
+  const _isS1 = r.season === 1;
+  const _isS2 = r.season === 2;
+  const _isS3 = r.season === 3;
+  const _lang = SETTINGS.lang === 'en';
+
+  const s1WelcomeHTML = _isS1 ? `<div class="card" style="border-left:4px solid var(--pink);background:var(--pink-light,#FFF0F5);">
+    <p style="font-weight:700;margin:0 0 6px;">${_lang ? '🚴 Your first professional season' : '🚴 Ta première saison professionnelle'}</p>
+    <p class="small" style="margin:0;">${_lang
+      ? "You've just signed your first pro contract with Vélo Passion. No pressure — this season is about learning the ropes. Choose a cautious objective, build your calendar around accessible races, and see how it feels."
+      : "Tu viens de signer ton premier contrat pro avec Vélo Passion. Pas de pression — cette saison, l'essentiel est de prendre tes marques. Choisis un objectif prudent, construis ton calendrier avec des courses accessibles, et ressens comment tout ça fonctionne."
+    }</p>
+  </div>` : '';
+
+  const s2StageIntroHTML = _isS2 ? `<div class="card" style="border-left:4px solid var(--blue);background:var(--blue-light,#EFF6FF);margin-bottom:0;">
+    <p style="font-weight:700;margin:0 0 4px;">🏕️ ${_lang ? 'New this season: training camp' : 'Nouveau cette saison : le stage de préparation'}</p>
+    <p class="small" style="margin:0;">${_lang
+      ? "After a full season, you know your strengths. A training camp lets you sharpen one quality before the season starts — at the cost of a slight dip in another."
+      : "Après une saison complète, tu connais tes points forts. Un stage te permet d'affûter une qualité avant le coup d'envoi — au léger détriment d'une autre."
+    }</p>
+  </div>` : '';
+
+  const s2SponsorIntroHTML = _isS2 ? `<div class="card" style="border-left:4px solid var(--yellow);background:#FFFBEB;margin-bottom:0;">
+    <p style="font-weight:700;margin:0 0 4px;">🤝 ${_lang ? 'New this season: personal sponsor' : 'Nouveau cette saison : le sponsor personnel'}</p>
+    <p class="small" style="margin:0;">${_lang
+      ? "Your first results have attracted attention. Brands are now approaching you for sponsorship deals — extra income on top of your team salary. The demanding sponsor pays more, but drops you without at least one podium."
+      : "Tes premiers résultats ont attiré des regards. Des marques te sollicitent maintenant pour des contrats de sponsoring — un revenu complémentaire en plus de ton salaire d'équipe. Le sponsor exigeant paie mieux, mais te lâche sans au moins un podium."
+    }</p>
+  </div>` : '';
+
+  const s3CapIntroHTML = _isS3 && !r.careerCap ? `<div class="card" style="border-left:4px solid var(--yellow);background:#FFFBEB;margin-bottom:0;">
+    <p style="font-weight:700;margin:0 0 4px;">🚩 ${_lang ? 'New this season: career milestone' : 'Nouveau cette saison : le cap de carrière'}</p>
+    <p class="small" style="margin:0;">${_lang
+      ? "Two seasons in, you have a clearer picture of where you're heading. Set yourself an ambitious multi-season goal — if you hit it in time, you earn a real reputation bonus. Totally optional."
+      : "Deux saisons au compteur, tu vois mieux où tu vas. Fixe-toi un objectif ambitieux sur plusieurs saisons — si tu l'atteins dans les temps, tu décroches un vrai bonus de réputation. Entièrement optionnel."
+    }</p>
+  </div>` : '';
+
+  const calendarS1TipHTML = _isS1 ? `<div style="background:var(--blue-light,#EFF6FF);border-radius:8px;padding:8px 12px;margin-bottom:8px;">
+    <p class="small" style="margin:0;color:var(--blue);">💡 ${_lang
+      ? "Tip: start with 3–4 accessible races (green/yellow difficulty). The 🧘 Calm automatic calendar is a good starting point."
+      : "Astuce : commence par 3-4 courses accessibles (difficulté vert/jaune). Le calendrier automatique 🧘 Pépère est une bonne base de départ."
+    }</p>
+  </div>` : '';
+
   setHTML(`
     ${riderHeaderHTML()}
     ${trophyBannerHTML()}
+    ${s1WelcomeHTML}
     <h1>🚀 ${tf('prepareSeason','Préparer la saison')} ${r.season}</h1>
     <div class="card">
       <h3>⭐ ${tf('seasonPriority','Priorité de saison')}${helpBtn('help-priority',r.season)}</h3>${helpBox('help-priority','Choisir une qualité à développer en priorité cette saison. Cela influence tes chances sur les courses adaptées à ce profil — un grimpeur qui entraîne la montagne sera plus efficace dans les cols.',"Choose a quality to develop as a priority this season. It influences your odds on adapted races — a climber training in the mountains will be more effective on climbs.",r.season)}
       <div class="chip-row">${focusChips}</div>
     </div>
-    <div class="card">
+    ${!_isS1 ? `<div class="card">
       <h3>🏕️ ${tf('trainingCamp','Stage de préparation')}${helpBtn('help-camp',r.season)}</h3>${helpBox('help-camp','Optionnel. Un stage booste légèrement une qualité avant la saison, au détriment d\'une autre. Si tu n\'as pas de besoin précis, \'Aucun\' est un choix tout à fait valide.','Optional. A training camp slightly boosts one quality before the season, at the expense of another. If you have no specific need, \'None\' is perfectly fine.',r.season)}
-      <p class="small" style="margin-top:0;">${tf('trainingCampDesc',"Optionnel — booste une qualité, léger recul d'une autre.")}</p>
+      ${s2StageIntroHTML}
+      <p class="small" style="margin-top:${_isS2?'8':'0'}px;">${tf('trainingCampDesc',"Optionnel — booste une qualité, léger recul d'une autre.")}</p>
       <div class="chip-row">${stageChips}</div>
-    </div>
+    </div>` : ''}
     <div class="card">
       <h3>🎯 ${tf('seasonObjective','Objectif de saison')}${helpBtn('help-obj',r.season)}</h3>${helpBox('help-obj','L\'équipe te fixe un contrat moral pour la saison. Si tu le rates : perte de réputation, baisse de la confiance de l\'équipe, et pour un objectif Majeur, ton contrat peut être raccourci d\'une saison. Choisis en fonction de ton niveau réel.','The team sets a moral contract for the season. Miss it and you lose reputation, team confidence drops, and a Major objective failure can shorten your contract by a season. Choose according to your actual level.',r.season)}
       ${objectiveRows}
     </div>
-    <div class="card">
+    ${!_isS1 ? `<div class="card">
       <h3>🤝 ${tf('personalSponsor','Sponsor personnel')}${helpBtn('help-sponsor',r.season)}</h3>${helpBox('help-sponsor','Revenu complémentaire en plus de ton salaire d\'équipe. Le sponsor Exigeant paie mieux mais te lâche si tu n\'as pas au moins un podium dans la saison. Le sponsor Fidèle est moins généreux mais reste quoi qu\'il arrive.','Extra income on top of your team salary. The Demanding sponsor pays more but drops you without at least one podium in the season. The Loyal sponsor is less generous but stays regardless.',r.season)}
-      ${sponsorHTML}
-    </div>
+      ${s2SponsorIntroHTML}
+      <div style="margin-top:${_isS2?'8':'0'}px;">${sponsorHTML}</div>
+    </div>` : ''}
     <div class="card">
       <h3>🎲 ${tf('seasonChallenge','Défi de la saison')}${helpBtn('help-challenge',r.season)}</h3>${helpBox('help-challenge','Contrainte optionnelle qui t\'offre un bonus de fin de saison si tu la relèves. Tu peux l\'ignorer sans aucune pénalité — c\'est un extra, pas une obligation.','An optional constraint that earns you a season-end bonus if completed. You can ignore it without any penalty — it\'s a bonus, not an obligation.',r.season)}
       <div class="row-item ${setup.challengeAccept?'active':''}" onclick="setSeasonSetup('challengeAccept',true)">
@@ -4940,14 +4989,15 @@ function renderSeasonSetupScreen(keepScroll){
     ${r.careerCap ? `<div class="card" style="border:1.5px solid var(--yellow);background:var(--yellow-light,#FFF8E1);">
       <h3>🚩 ${tf('careerCapActive','Cap de carrière en cours')}</h3>
       <p class="small">${CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).icon} ${(lang==='en' && CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).labelEN) ? CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).labelEN : CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).label} — ${tf('deadlineBy','à atteindre avant la fin de la saison')} ${r.careerCap.deadlineSeason}</p>
-    </div>` : `<div class="card">
+    </div>` : (!_isS1 && !_isS2) ? `<div class="card">
       <h3>🚩 ${tf('careerCapTitle','Cap de carrière')} <span class="small">(${tf('optional','optionnel')})</span></h3>
-      <p class="small" style="margin-top:0;">${tf('careerCapDesc',"Fixe-toi un objectif ambitieux sur plusieurs saisons — récompensé par un vrai bonus de réputation s'il est atteint à temps.")}</p>
+      ${s3CapIntroHTML}
+      <p class="small" style="margin-top:${_isS3?'8':'0'}px;">${tf('careerCapDesc',"Fixe-toi un objectif ambitieux sur plusieurs saisons — récompensé par un vrai bonus de réputation s'il est atteint à temps.")}</p>
       ${CAREER_CAP_TYPES.map(c=>`<div class="row-item ${setup.careerCapChoice===c.id?'active':''}" onclick="setSeasonSetup('careerCapChoice','${c.id}')">
         <div><strong>${c.icon} ${(lang==='en' && c.labelEN) ? c.labelEN : c.label}</strong><p class="small" style="margin:2px 0 0;">${c.years} ${tf('seasonsBareLower','saisons')}</p></div>
       </div>`).join('')}
       <div class="row-item ${!setup.careerCapChoice?'active':''}" onclick="setSeasonSetup('careerCapChoice',null)"><span>${tf('noCareerCap',"Pas de cap pour l'instant")}</span></div>
-    </div>`}
+    </div>` : ''}
     ${rivalsCardHTML()}
     <button class="btn" ${setup.focus?'':'disabled'} onclick="confirmSeasonSetup()">✅ ${tf('validateStartSeason','Valider et débuter la saison')}</button>
   `, keepScroll);
@@ -5844,6 +5894,15 @@ function toggleCalMonth(m){
    Respecte toutes les contraintes existantes (max 65j, max 2 GT, courses locked).
    Priorise : course signature, style matching, trajectoire, difficulté adaptée. */
 function autoSelectCalendar(profile){
+  /* Confirmation si le joueur a déjà une sélection manuelle */
+  const manualCount = STATE.selectedRaceIds.filter(id => !STATE.imposedRaceIds.includes(id)).length;
+  if(manualCount > 0){
+    const lang = SETTINGS.lang === 'en';
+    const msg = lang
+      ? `You have ${manualCount} race(s) already selected. Replace with automatic calendar?`
+      : `Tu as déjà ${manualCount} course(s) sélectionnée(s). Remplacer par le calendrier automatique ?`;
+    if(!confirm(msg)) return;
+  }
   const r = STATE.rider;
   const pool = STATE.seasonRacePool;
   const imposed = STATE.imposedRaceIds.slice();
@@ -6034,6 +6093,12 @@ function renderConvalescenceScreen(race){
   if(STATE) STATE._screen='convalescence';
   setHTML(`
     ${riderHeaderHTML()}
+    ${STATE.rider.season === 1 ? `<div style="background:var(--blue-light,#EFF6FF);border-radius:10px;padding:10px 14px;margin-bottom:8px;">
+      <p class="small" style="margin:0;color:var(--blue);font-weight:600;">💡 ${SETTINGS.lang==='en'
+        ? 'Tip: start with 3–4 accessible races (green/yellow difficulty). The 🧘 Calm automatic calendar below is a good starting point — you can adjust it after.'
+        : 'Astuce : commence par 3-4 courses accessibles (difficulté vert/jaune). Le calendrier automatique 🧘 Pépère ci-dessous est une bonne base de départ — tu peux ajuster ensuite.'
+      }</p>
+    </div>` : ''}
     <div class="card">
       <h2>🚑 ${tf('convalescence','Convalescence')}</h2>
       <p>${tf('convalescenceDesc','Encore en soins après la blessure — forfait sur')} « ${race.name} ». ${tf('convalescenceDesc2','Comment abordes-tu cette étape de la rééducation ?')}</p>
@@ -6313,7 +6378,7 @@ function renderRivalDuelFeedback(){
     <button class="btn" onclick="proceedAfterRivalDuel()">
       ${fd.hasNextEvent ? (lang?'Continue the race →':'Continuer la course →') : (lang?'See the result →':'Voir le résultat →')}
     </button>
-  `);
+  `, true);
 }
 
 function proceedAfterRivalDuel(){
@@ -6674,19 +6739,24 @@ function renderCurrentEvent(){
   const _statAvgForEvent = statFocusAverage(STATE.rider, event.focus);
   const _statIndicator = (() => {
     const lang = SETTINGS.lang === 'en';
-    if(_statAvgForEvent >= 70) return {icon:'💪', color:'var(--green-dark)', label: lang ? 'Your stats are well-suited to this phase' : 'Tes stats sont bien adaptées à cette phase'};
-    if(_statAvgForEvent >= 50) return {icon:'😐', color:'var(--blue)', label: lang ? 'Average match for this phase' : 'Correspondance moyenne pour cette phase'};
-    return {icon:'⚠️', color:'var(--red)', label: lang ? 'Your stats are weak on this phase' : 'Tes stats sont faibles sur cette phase'};
+    const v = Math.round(_statAvgForEvent);
+    if(_statAvgForEvent >= 70) return {icon:'💪', color:'var(--green-dark)', label: lang ? `Terrain that suits you (${v})` : `Terrain favorable (${v})`};
+    if(_statAvgForEvent >= 50) return {icon:'⚡', color:'var(--text-soft)', label: lang ? `You can hold your own here (${v})` : `Tu peux t'y accrocher (${v})`};
+    return {icon:'😬', color:'var(--red)', label: lang ? `This phase doesn't play to your strengths (${v})` : `Cette phase ne joue pas en ta faveur (${v})`};
   })();
-  const statMatchHTML = `<p class="small" style="color:${_statIndicator.color};margin:2px 0 0;">${_statIndicator.icon} ${_statIndicator.label} <span style="opacity:0.6;">(${Math.round(_statAvgForEvent)})</span></p>`;
+  const statMatchHTML = `<p class="small" style="color:${_statIndicator.color};margin:2px 0 0;">${_statIndicator.icon} ${_statIndicator.label}</p>`;
   /* Mini-résultat de la phase précédente sur courses multi-étapes */
   const _lpr = STATE._lastPhaseResult;
   STATE._lastPhaseResult = null;
   const _tierColor = {victoire:'var(--green-dark)', podium:'var(--green-dark)', top10:'var(--blue)', peloton:'var(--text-soft)', jourssans:'var(--red)', abandon:'var(--red)'};
   const _tierIcon  = {victoire:'🏆', podium:'🥈', top10:'👍', peloton:'🚴', jourssans:'😓', abandon:'❌'};
   const _lang = SETTINGS.lang === 'en';
-  const lastPhaseHTML = _lpr ? `<div style="background:var(--surface-alt);border-left:3px solid ${_tierColor[_lpr.tier]||'var(--line)'};padding:6px 10px;border-radius:0 6px 6px 0;margin-bottom:6px;">
-    <p class="small" style="margin:0;color:var(--text-soft);">${_lang?'Previous phase':'Phase précédente'} · <strong style="color:${_tierColor[_lpr.tier]||'var(--text)'};">${_tierIcon[_lpr.tier]||''} ${tierNarrative(_lpr.tier)}</strong></p>
+  const lastPhaseHTML = _lpr ? `<div style="background:${_lpr.tier==='victoire'||_lpr.tier==='podium'?'var(--green-light)':_lpr.tier==='abandon'||_lpr.tier==='jourssans'?'#FDF1EF':'var(--surface-alt)'};border:2px solid ${_tierColor[_lpr.tier]||'var(--line)'};border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+    <span style="font-size:1.4em;line-height:1;">${_tierIcon[_lpr.tier]||'📋'}</span>
+    <div>
+      <p class="small" style="margin:0;font-weight:700;color:${_tierColor[_lpr.tier]||'var(--text)'};">${tierNarrative(_lpr.tier)}</p>
+      <p class="small" style="margin:0;color:var(--text-soft);">${_lang?'Result of the previous phase':'Résultat de la phase précédente'}</p>
+    </div>
   </div>` : '';
   setHTML(`
     ${riderHeaderHTML()}
@@ -6723,10 +6793,13 @@ function renderCurrentEvent(){
       ${statMatchHTML}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
       <h3>${event.title}</h3>
-      <p>${event.desc}</p>
       ${event.choices.map((c,i)=>`<button class="btn ${c.risk}" onclick="chooseOption(${i})">${riskIcon[c.risk]} ${c.label} <span class="mono" style="font-size:0.7rem;opacity:0.8;">(${RISK_LABEL[c.risk]})</span></button>`).join('')}
+      <details style="margin-top:8px;">
+        <summary class="small" style="color:var(--text-soft);cursor:pointer;list-style:none;">▸ ${SETTINGS.lang==='en'?'Event details':'Voir le détail'}</summary>
+        <p style="margin:6px 0 0;color:var(--text-soft);">${event.desc}</p>
+      </details>
     </div>
-  `);
+  `, true);
 }
 
 function chooseOption(i){
@@ -7192,7 +7265,7 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
       <p class="small">⭐ ${tf('reputationWord','Réputation')} ${repGain>=0?'+':''}${repGain} · 🤝 ${tf('confidenceWord','Confiance')} ${confDelta>=0?'+':''}${confDelta} · 🔥 ${tf('fatigueWord','Fatigue')} ${Math.round(STATE.rider.fatigue)}${prize>0?` · 💰 +${prize.toLocaleString('fr-FR')} €`:''}${teamPrize>0?` · 🎽 +${teamPrize.toLocaleString('fr-FR')} € (${tf('team','équipe')})`:''}</p>
     </div>
     <button class="btn" ${continueAttr}>${continueLabel}</button>
-  `);
+  `, true);
 }
 
 /* ---------- INTERVIEW D'APRÈS-COURSE ----------
