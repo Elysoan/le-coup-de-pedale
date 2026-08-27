@@ -4068,16 +4068,22 @@ function riderHeaderHTML(){
       const _objDef = SEASON_OBJECTIVES.find(o=>o.id===_obj);
       if(!_objDef) return '';
       let _met = null;
-      if(_obj==='survive'||_obj==='solide') _met = !_res.some(x=>x.bestTier==='abandon'||x.bestTier==='forfait');
+      if(_obj==='survive'||_obj==='solide'){
+        /* Ces objectifs ne peuvent être qu'en cours (null) ou échoués (false) en cours de
+           saison — "atteint" ne peut être déclaré qu'à la fin de la saison, une fois
+           que toutes les courses sont terminées. */
+        if(_res.some(x=>x.bestTier==='abandon'||x.bestTier==='forfait')) _met = false;
+        // sinon : _met reste null (en cours), jamais true ici
+      }
       else if(_obj==='top10') _met = _res.some(x=>x.prestige>=3&&['victoire','podium','top10'].includes(x.bestTier));
       else if(_obj==='podium') _met = _res.some(x=>x.prestige>=3&&['victoire','podium'].includes(x.bestTier));
       else if(_obj==='etapes') _met = _res.some(x=>(x.type==='grandtour'||x.type==='semitour')&&['victoire','podium'].includes(x.bestTier));
       else if(_obj==='victoire') _met = _res.some(x=>x.prestige>=3&&x.bestTier==='victoire');
       else if(_obj==='monument') _met = _res.some(x=>x.prestige>=4&&x.bestTier==='victoire');
-      const _icon = _met===true ? '✅' : _met===false ? '🎯' : '🎯';
-      const _color = _met===true ? 'var(--green-dark)' : 'var(--text-soft)';
+      const _icon = _met===true ? '✅' : _met===false ? '❌' : '🎯';
+      const _color = _met===true ? 'var(--green-dark)' : _met===false ? 'var(--red)' : 'var(--text-soft)';
       const _objLabel = (_lang && _objDef.labelEN) ? _objDef.labelEN : _objDef.label;
-      const _status = _met===true ? (_lang?'achieved':'atteint') : (_lang?'in progress':'en cours');
+      const _status = _met===true ? (_lang?'achieved':'atteint') : _met===false ? (_lang?'failed':'échoué') : (_lang?'in progress':'en cours');
       return `<p class="small" style="color:${_color};margin:2px 0 0;">${_icon} ${tf('seasonObjective','Objectif')} : ${_objLabel} — <em>${_status}</em></p>`;
     })()}
     ${r.teammate ? `<p class="small">🤝 ${tf('teammateWord','Coéquipier')} : ${r.teammate.name} (${TEAMMATE_ARCHETYPE_LABELS[r.teammate.archetype]})${r.isMentor?` · 🧑‍🏫 ${tf('youAreMentor','Tu es son mentor')}`:''}</p>` : ''}
@@ -6093,12 +6099,6 @@ function renderConvalescenceScreen(race){
   if(STATE) STATE._screen='convalescence';
   setHTML(`
     ${riderHeaderHTML()}
-    ${STATE.rider.season === 1 ? `<div style="background:var(--blue-light,#EFF6FF);border-radius:10px;padding:10px 14px;margin-bottom:8px;">
-      <p class="small" style="margin:0;color:var(--blue);font-weight:600;">💡 ${SETTINGS.lang==='en'
-        ? 'Tip: start with 3–4 accessible races (green/yellow difficulty). The 🧘 Calm automatic calendar below is a good starting point — you can adjust it after.'
-        : 'Astuce : commence par 3-4 courses accessibles (difficulté vert/jaune). Le calendrier automatique 🧘 Pépère ci-dessous est une bonne base de départ — tu peux ajuster ensuite.'
-      }</p>
-    </div>` : ''}
     <div class="card">
       <h2>🚑 ${tf('convalescence','Convalescence')}</h2>
       <p>${tf('convalescenceDesc','Encore en soins après la blessure — forfait sur')} « ${race.name} ». ${tf('convalescenceDesc2','Comment abordes-tu cette étape de la rééducation ?')}</p>
@@ -6367,13 +6367,18 @@ function renderRivalDuelFeedback(){
     jourssans: lang?'Off day':'Jour sans',
     abandon: lang?'DNF':'Abandon',
   }[fd.tier] || fd.tier;
+  /* Estimation de la place finale — disponible seulement si c'est le dernier event
+     (sinon la course continue, la place finale n'est pas encore déterminée) */
+  const finalPlaceLine = !fd.hasNextEvent
+    ? ` · 🏁 ${lang?'Est. finish':'Place estimée'} : <strong>${estimatePlacement(fd.tier, fd.perf??50)}</strong>`
+    : '';
 
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card" style="border:2px solid ${color};background:${bgColor};">
       <p style="margin:0 0 8px;font-weight:700;color:${color};">${icon} 🥊 ${lang?'Duel vs':'Duel contre'} ${fd.rivalName}</p>
       <p class="narrative-text" style="margin:0 0 10px;">${msg}</p>
-      <p class="small" style="margin:0;color:var(--text-soft);">${riskIcon} ${lang?'Your choice':'Ton choix'} : <strong>${fd.choiceLabel}</strong> · ${lang?'Result on this phase':'Résultat sur cette phase'} : <strong>${tierLabel}</strong></p>
+      <p class="small" style="margin:0;color:var(--text-soft);">${riskIcon} ${lang?'Your choice':'Ton choix'} : <strong>${fd.choiceLabel}</strong> · ${lang?'Result on this phase':'Résultat sur cette phase'} : <strong>${tierLabel}</strong>${finalPlaceLine}</p>
     </div>
     <button class="btn" onclick="proceedAfterRivalDuel()">
       ${fd.hasNextEvent ? (lang?'Continue the race →':'Continuer la course →') : (lang?'See the result →':'Voir le résultat →')}
@@ -6837,6 +6842,7 @@ function chooseOption(i){
       rivalName: rival.name,
       choiceLabel: choice.label,
       tier: result.tier,
+      perf: result.perf,
       hasNextEvent: !doFinalize,
     };
     STATE._rivalDuelNext = {doFinalize};
