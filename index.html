@@ -4459,6 +4459,40 @@ function renderHallOfFame(){
   `);
 }
 
+/* ---------- ALMANACH DES COURSES ----------
+   Historique personnel du coureur sur les 55 courses du jeu, pour la carrière en cours :
+   meilleur résultat obtenu sur chaque course, ou "jamais courue" si elle n'a jamais été
+   sélectionnée. */
+function renderRaceAlmanac(){
+  if(STATE) STATE._screen = 'racealmanac';
+  const r = STATE.rider;
+  const races = RACES_DATA().slice().sort((a,b)=>a.month-b.month);
+  const bestByRace = {};
+  (r.palmares||[]).forEach(p=>{
+    if(!bestByRace[p.raceId] || TIER_VALUE[p.tier] > TIER_VALUE[bestByRace[p.raceId].tier]) bestByRace[p.raceId] = p;
+  });
+  const racedCount = Object.keys(bestByRace).length;
+  const rows = races.map(race=>{
+    const best = bestByRace[race.id];
+    return `<div class="race-item" style="cursor:default;">
+      <div>
+        <strong>${race.flag} ${race.name}</strong>
+        <p class="small" style="margin:2px 0 0;">${MONTHS[race.month]} · ${'★'.repeat(race.prestige)}</p>
+      </div>
+      <div style="text-align:right;min-width:100px;">
+        ${badgeHTML(race.type)}
+        <p class="small ${best?tierClass(best.tier):''}" style="margin:4px 0 0;font-weight:700;">${best?TIER_LABEL[best.tier]:tf('neverRaced','Jamais courue')}</p>
+      </div>
+    </div>`;
+  }).join('');
+  setHTML(`
+    ${heroHTML(tf('raceAlmanacTitle','Almanach des courses'), tf('almanacDesc',"Ton historique personnel sur les 55 courses du jeu, cette carrière."))}
+    <p class="small" style="margin:-6px 0 8px;text-align:center;">${racedCount} / ${races.length} ${tf('raced','courues')}</p>
+    <div class="card" style="padding:8px 12px;">${rows}</div>
+    <button class="btn ghost" onclick="${STATE.seasonRacePool ? 'renderCalendarScreen()' : 'renderMainMenu()'}">${STATE.seasonRacePool ? tf('backToCalendar','← Retour au calendrier') : tf('back','← Retour')}</button>
+  `);
+}
+
 /* ---------- COMPARATEUR DE CARRIÈRES ----------
    Vue d'ensemble de toutes les carrières jouées dans la session (pas seulement le top 5
    du Hall of Fame) : styles/pays essayés, moyennes, et la liste complète — pour donner
