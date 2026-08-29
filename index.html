@@ -441,7 +441,7 @@ const I18N = {
     yourProgress:'Your progress', careersDone:'career completed', careersDoneP:'careers completed',
     trophiesWord:'trophies', countriesTried:'countries tried', bestCareer:'Best career',
     tagline:'Ride. Choose. Become a legend.', pill55races:'55 races', pill5styles:'5 rider profiles', pill20countries:'20 nationalities', startCareerCTA:'🚀 Start a career',
-    yourSlots:'Your 3 career slots', hallOfFame:'🏆 Hall of Legends',
+    yourSlots:'Your 3 career slots', hallOfFame:'🏆 Hall of Legends', explore:'Explore',
     howToPlay:'📖 How to play?', accessibility:'♿ Accessibility',
     yourRiderCard:'Your rider card', rerollName:'🎲 Generate another name', orEnterYourName:'Or enter your own name…', amongStyle:'among', ofCountry:'from',
     creationIntro:'Develop a road cyclist, season after season, from warm-up races to the monuments of the calendar.',
@@ -3598,7 +3598,7 @@ function toggleReduceMotion(){ SETTINGS.reduceMotion = !SETTINGS.reduceMotion; a
 
 function renderSettingsScreen(keepScroll){
   setHTML(`
-    <h1>${tf('accessibility','♿ Accessibilité')}</h1>
+    ${heroHTML(tf('accessibility','♿ Accessibilité'))}
     <div class="card">
       <h3>🔠 ${tf('textSize','Taille du texte')}</h3>
       <div class="grid3">
@@ -3797,20 +3797,26 @@ function renderMainMenu(){
       const country = COUNTRIES.find(c=>c.code===r.countryCode);
       const style = STYLES.find(s=>s.id===r.styleId);
       const label = r.retired ? tf('careerOver','Carrière terminée') : `${tf('season','Saison')} ${r.season} · ${r.age} ${tf('yo','ans')}`;
-      return `<div class="race-item" style="align-items:center;">
-        <div>
-          <strong>${country?country.flag:''} ${r.name}</strong>
-          <p class="small" style="margin:2px 0 0;">${style?style.name:''} · ${label}</p>
+      return `<div class="race-item" style="align-items:center;cursor:pointer;" onclick="selectSlot(${i})">
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div class="avatar">${country?country.flag:''}</div>
+          <div>
+            <strong>${r.name}</strong>
+            <p class="small" style="margin:2px 0 0;">${style?style.name:''} · ${label}</p>
+          </div>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn" style="width:auto;margin:0;padding:10px 16px;" onclick="selectSlot(${i})">${r.retired?tf('view','Voir'):tf('resume','▶️ Reprendre')}</button>
-          <button class="footer-link" onclick="confirmDeleteSlot(${i})">🗑️</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span style="color:var(--hero);font-weight:800;font-size:0.9rem;">${r.retired?tf('view','Voir'):tf('resume','▶️ Reprendre')}</span>
+          <button class="footer-link" style="padding:0;" onclick="event.stopPropagation();confirmDeleteSlot(${i})">🗑️</button>
         </div>
       </div>`;
     }
-    return `<div class="race-item" style="align-items:center;">
-      <div><strong>${tf('slot','Emplacement')} ${i+1} — ${tf('empty','vide')}</strong><p class="small" style="margin:2px 0 0;">${tf('noCareer','Aucune carrière en cours.')}</p></div>
-      <button class="btn" style="width:auto;margin:0;padding:10px 16px;" onclick="selectSlot(${i})">${tf('newCareer','🆕 Nouvelle carrière')}</button>
+    return `<div class="race-item" style="align-items:center;cursor:pointer;" onclick="selectSlot(${i})">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="avatar" style="background:var(--surface-alt);"></div>
+        <div><strong>${tf('slot','Emplacement')} ${i+1} — ${tf('empty','vide')}</strong><p class="small" style="margin:2px 0 0;">${tf('noCareer','Aucune carrière en cours.')}</p></div>
+      </div>
+      <span style="color:var(--hero);font-weight:800;font-size:0.9rem;">${tf('newCareer','🆕 Nouvelle carrière')}</span>
     </div>`;
   };
   const best = topCareers(1)[0];
@@ -3818,35 +3824,33 @@ function renderMainMenu(){
   const hasProgress = SESSION.careersCompleted > 0 || UNLOCKED.size > 0 || SESSION.countriesPlayed.size > 0;
   const firstEmptySlot = [0,1,2].find(i=>!(SLOTS[i] && SLOTS[i].state && SLOTS[i].state.rider));
   setHTML(`
-    <div class="hero-banner" style="flex-direction:column;gap:10px;">
-      <div class="grid2" style="width:100%;max-width:280px;">
-        <button class="btn ${(SETTINGS.lang||'fr')==='fr'?'':'ghost'}" style="margin:0;padding:8px;" onclick="setLang('fr')">🇫🇷 FR</button>
-        <button class="btn ${SETTINGS.lang==='en'?'':'ghost'}" style="margin:0;padding:8px;" onclick="setLang('en')">🇬🇧 EN</button>
+    <div class="screen-hero">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px;">
+        <button style="background:${(SETTINGS.lang||'fr')==='fr'?'#fff':'rgba(255,255,255,0.22)'};color:${(SETTINGS.lang||'fr')==='fr'?'var(--hero)':'#fff'};border:none;border-radius:20px;padding:6px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;" onclick="setLang('fr')">🇫🇷 FR</button>
+        <button style="background:${SETTINGS.lang==='en'?'#fff':'rgba(255,255,255,0.22)'};color:${SETTINGS.lang==='en'?'var(--hero)':'#fff'};border:none;border-radius:20px;padding:6px 14px;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.82rem;cursor:pointer;" onclick="setLang('en')">🇬🇧 EN</button>
       </div>
-      <h1 style="margin:6px 0 0;text-align:center;font-size:1.7rem;font-weight:900;color:var(--green-dark);text-shadow:1.5px 1.5px 0 var(--orange);letter-spacing:0.01em;">${tf('gameTitle','LE COUP DE PÉDALE')}</h1>
-      <p style="margin:2px 0 0;text-align:center;font-size:0.9rem;color:var(--text-soft);">${tf('tagline',"Roule. Choisis. Deviens une légende.")}</p>
-    </div>
-    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:4px 0 2px;">
-      <span style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;color:var(--green-dark);">🏁 ${tf('pill55races','55 courses')}</span>
-      <span style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;color:var(--orange-dark);">🚴 ${tf('pill5styles','5 profils de coureur')}</span>
-      <span style="background:var(--card-bg);border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.82rem;font-weight:700;color:var(--pink);">🌍 ${tf('pill20countries','20 nationalités')}</span>
+      <h1 style="text-align:center;">${tf('gameTitle','LE COUP DE PÉDALE')}</h1>
+      <p style="text-align:center;">${tf('tagline',"Roule. Choisis. Deviens une légende.")}</p>
+      <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:14px;">
+        <span style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:700;color:#fff;">🏁 ${tf('pill55races','55 courses')}</span>
+        <span style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:700;color:#fff;">🚴 ${tf('pill5styles','5 profils de coureur')}</span>
+        <span style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:700;color:#fff;">🌍 ${tf('pill20countries','20 nationalités')}</span>
+      </div>
     </div>
     ${firstEmptySlot !== undefined ? `<button class="btn" style="font-size:1.05rem;padding:14px;margin-bottom:20px;" onclick="selectSlot(${firstEmptySlot})">${tf('startCareerCTA','🚀 Débuter une carrière')}</button>` : ''}
     ${hasProgress ? `
-    <div class="card">
-      <h3>📊 ${tf('yourProgress','Ta progression')}</h3>
-      <div class="grid3">
-        <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.4rem;color:var(--green-dark);">${SESSION.careersCompleted}</p><p class="small" style="margin:0;">${tf(SESSION.careersCompleted>1?'careersDoneP':'careersDone','carrière'+(SESSION.careersCompleted>1?'s':'')+' terminée'+(SESSION.careersCompleted>1?'s':''))}</p></div>
-        <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.4rem;color:var(--yellow-dark);">${UNLOCKED.size}/${ACHIEVEMENTS.length}</p><p class="small" style="margin:0;">${tf('trophiesWord','trophées')}</p></div>
-        <div class="center"><p class="small" style="margin:0;font-weight:800;font-size:1.4rem;color:var(--pink);">${SESSION.countriesPlayed.size}/${COUNTRIES.length}</p><p class="small" style="margin:0;">${tf('countriesTried','pays essayés')}</p></div>
-      </div>
-      ${best ? `<p class="small" style="margin-top:10px;text-align:center;">🏆 ${tf('bestCareer','Meilleure carrière')} : <strong>${best.name}</strong> — ${legacyTitleText(best.title)}</p>` : ''}
-    </div>` : ''}
-    ${SESSION.careersCompleted > 0 ? `<button class="btn ghost" onclick="renderChallenge()" style="border-color:var(--orange);color:var(--orange-dark);">🎯 ${tf('challengeMode','Mode défi')}</button>` : ''}
-    <div class="card">
-      <h3>💾 ${tf('yourSlots','Tes 3 emplacements de carrière')}</h3>
-      ${[0,1,2].map(slotCardHTML).join('')}
+    <h3>📊 ${tf('yourProgress','Ta progression')}</h3>
+    <div class="grid3" style="margin-bottom:12px;">
+      <div class="stat-tile"><span class="stat-tile-num" style="color:var(--green-dark);">${SESSION.careersCompleted}</span><span class="stat-tile-label">${tf(SESSION.careersCompleted>1?'careersDoneP':'careersDone','carrière'+(SESSION.careersCompleted>1?'s':'')+' terminée'+(SESSION.careersCompleted>1?'s':''))}</span></div>
+      <div class="stat-tile"><span class="stat-tile-num" style="color:var(--yellow-dark);">${UNLOCKED.size}/${ACHIEVEMENTS.length}</span><span class="stat-tile-label">${tf('trophiesWord','trophées')}</span></div>
+      <div class="stat-tile"><span class="stat-tile-num" style="color:var(--pink);">${SESSION.countriesPlayed.size}/${COUNTRIES.length}</span><span class="stat-tile-label">${tf('countriesTried','pays essayés')}</span></div>
     </div>
+    ${best ? `<p class="small" style="margin:-4px 0 14px;text-align:center;">🏆 ${tf('bestCareer','Meilleure carrière')} : <strong>${best.name}</strong> — ${legacyTitleText(best.title)}</p>` : ''}
+    ` : ''}
+    ${SESSION.careersCompleted > 0 ? `<button class="btn ghost" onclick="renderChallenge()" style="border-color:var(--orange);color:var(--orange-dark);">🎯 ${tf('challengeMode','Mode défi')}</button>` : ''}
+    <h3>💾 ${tf('yourSlots','Tes 3 emplacements de carrière')}</h3>
+    ${[0,1,2].map(slotCardHTML).join('')}
+    <h3 style="margin-top:14px;">🔎 ${tf('explore','Explorer')}</h3>
         <div class="grid2">
       <button class="btn ghost" onclick="renderHallOfFame()">${tf('hallOfFame','🏆 Palmarès des légendes')}</button>
       <button class="btn ghost" onclick="renderTrophiesScreen()">${tf('trophies','🎖️ Trophées')} (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
@@ -3996,6 +4000,13 @@ const TYPE_LABEL = new Proxy(TYPE_LABEL_FR, {
   get(target, prop){ const v = t('type_'+prop); return v!==null ? v : target[prop]; }
 });
 
+function heroHTML(title, subtitle, kicker){
+  return `<div class="screen-hero">
+    ${kicker ? `<p class="kicker">${kicker}</p>` : ''}
+    <h1>${title}</h1>
+    ${subtitle ? `<p>${subtitle}</p>` : ''}
+  </div>`;
+}
 function app(){ return document.getElementById('app'); }
 function setHTML(html, keepScroll){
   app().innerHTML = html;
@@ -4267,7 +4278,7 @@ function applyCustomName(val){
 
 function renderTutorialScreen(){
   setHTML(`
-    <h1>📖 ${tf('howToPlayTitle','Comment jouer')}</h1>
+    ${heroHTML('📖 '+tf('howToPlayTitle','Comment jouer'))}
     <div class="card">
       <h3>🚴 ${tf('theConcept','Le principe')}</h3>
       <p>${tf('theConceptDesc',"Tu incarnes un coureur cycliste professionnel, saison après saison. Choisis ton calendrier, dispute tes courses, gère ta fatigue et fais progresser ta carrière jusqu'à 12 saisons ou 41 ans.")}</p>
@@ -4351,8 +4362,7 @@ function renderChallenge(){
   const ch = generateChallenge();
   window._pendingChallenge = ch;
   setHTML(`
-    <h1>${tf('challengeTitle','🎯 Mode défi')}</h1>
-    <p>${tf('challengeDesc',"Une carrière avec des contraintes imposées. Remplis l'objectif pour entrer au Hall of Legends.")}</p>
+    ${heroHTML(tf('challengeTitle','🎯 Mode défi'), tf('challengeDesc',"Une carrière avec des contraintes imposées. Remplis l'objectif pour entrer au Hall of Legends."))}
     <div class="card">
       <h3>${tf('challengeConstraints','Tes contraintes')}</h3>
       <div class="race-item" style="flex-direction:column;gap:6px;align-items:flex-start;">
@@ -4428,8 +4438,7 @@ function _launchChallengeInSlot(slotIdx){
 function renderHallOfFame(){
   const top = topCareers(5);
   setHTML(`
-    <h1>${tf('hallOfFame','🏆 Palmarès des légendes')}</h1>
-    <p>${tf('hallOfFameDesc',"Les 5 meilleures carrières jouées depuis l'ouverture de cette partie.")}</p>
+    ${heroHTML(tf('hallOfFame','🏆 Palmarès des légendes'), tf('hallOfFameDesc',"Les 5 meilleures carrières jouées depuis l'ouverture de cette partie."))}
     ${top.length===0 ? `<div class="card center"><p>${tf('noCareerYet',"Aucune carrière enregistrée pour l'instant. Termine une carrière pour apparaître ici.")}</p></div>` :
       top.map((c,i)=>{
         const country = COUNTRIES.find(x=>x.code===c.countryCode);
@@ -4491,7 +4500,7 @@ function renderCareerComparator(){
   const careers = CAREER_HISTORY;
   if(careers.length===0){
     setHTML(`
-      <h1>📊 ${tf('careerComparator','Comparateur de carrières')}</h1>
+      ${heroHTML('📊 '+tf('careerComparator','Comparateur de carrières'))}
       <div class="card center"><p>${tf('noCareerYet',"Aucune carrière enregistrée pour l'instant. Termine une carrière pour apparaître ici.")}</p></div>
       <button class="btn ghost" onclick="renderMainMenu()">${tf('back','← Retour')}</button>
     `);
@@ -4511,8 +4520,7 @@ function renderCareerComparator(){
     .sort((a,b)=>b.count-a.count);
 
   setHTML(`
-    <h1>📊 ${tf('careerComparator','Comparateur de carrières')}</h1>
-    <p class="small">${tf('careerComparatorDesc',"Vue d'ensemble de toutes les carrières jouées depuis l'ouverture de cette partie.")}</p>
+    ${heroHTML('📊 '+tf('careerComparator','Comparateur de carrières'), tf('careerComparatorDesc',"Vue d'ensemble de toutes les carrières jouées depuis l'ouverture de cette partie."))}
     <div class="card">
       <h3>${tf('overview',"Vue d'ensemble")}</h3>
       <div class="grid3">
@@ -4555,8 +4563,7 @@ function renderTrophiesScreen(){
     return `<p class="small" style="margin:4px 0 0;font-style:italic;">${tf('unlockedBy','Débloqué par')} ${info.riderName}, ${tf('season','Saison')} ${info.season}</p>`;
   };
   setHTML(`
-    <h1>${tf('trophies','🎖️ Trophées')}</h1>
-    <p>${UNLOCKED.size} / ${ACHIEVEMENTS.length} ${tf('unlockedSince',"débloqués depuis l'ouverture de cette partie.")}</p>
+    ${heroHTML(tf('trophies','🎖️ Trophées'), `${UNLOCKED.size} / ${ACHIEVEMENTS.length} ${tf('unlockedSince',"débloqués depuis l'ouverture de cette partie.")}`)}
     <div class="card">
       <h3>⭐ ${tf('legendaryTrophies','Trophées légendaires')}</h3>
       <p class="small" style="margin-top:-4px;">${tf('legendaryTrophiesDesc','Les plus difficiles à obtenir — de vrais accomplissements de carrière.')}</p>
@@ -5001,7 +5008,7 @@ function renderSeasonSetupScreen(keepScroll){
     ${riderHeaderHTML()}
     ${trophyBannerHTML()}
     ${s1WelcomeHTML}
-    <h1>🚀 ${tf('prepareSeason','Préparer la saison')} ${r.season}</h1>
+    ${heroHTML(`🚀 ${tf('prepareSeason','Préparer la saison')} ${r.season}`)}
     <div class="card">
       <h3>⭐ ${tf('seasonPriority','Priorité de saison')}${helpBtn('help-priority',r.season)}</h3>${helpBox('help-priority','Choisir une qualité à développer en priorité cette saison. Cela influence tes chances sur les courses adaptées à ce profil — un grimpeur qui entraîne la montagne sera plus efficace dans les cols.',"Choose a quality to develop as a priority this season. It influences your odds on adapted races — a climber training in the mountains will be more effective on climbs.",r.season)}
       <div class="chip-row">${focusChips}</div>
@@ -7854,7 +7861,7 @@ function renderContractScreen(){
   const current = currentTeam(r);
   const renewed = offers.some(t=>t.id===current.id);
   setHTML(`
-    <h1>📋 ${tf('contractEnd','Fin de contrat')}</h1>
+    ${heroHTML('📋 '+tf('contractEnd','Fin de contrat'))}
     ${riderHeaderHTML()}
     <div class="card">
       <p class="small">${renewed
@@ -7948,7 +7955,7 @@ function renderCareerEnd(){
     </div>`;
   }
   setHTML(`
-    <h1>🎬 ${tf('careerEnd','Fin de carrière')}</h1>
+    ${heroHTML('🎬 '+tf('careerEnd','Fin de carrière'))}
     ${challengeBadgeHTML}
     ${trophyBannerHTML()}
     ${injuryNote ? `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;"><p><strong>⛑️ ${injuryNote}</strong></p></div>` : ''}
@@ -7991,8 +7998,7 @@ function renderCareerJournal(){
   const r = STATE.rider;
   const entries = (r.journal||[]).slice().sort((a,b)=>a.season-b.season);
   setHTML(`
-    <h1>📖 ${tf('careerJournalTitle','Journal de carrière')}</h1>
-    <p class="small">${tf('journalDesc','Les temps forts de la carrière de')} ${r.name}, ${tf('seasonAfterSeason','saison après saison.')}</p>
+    ${heroHTML('📖 '+tf('careerJournalTitle','Journal de carrière'), `${tf('journalDesc','Les temps forts de la carrière de')} ${r.name}, ${tf('seasonAfterSeason','saison après saison.')}`)}
     <div class="card">
       ${entries.length ? entries.map(e=>`<div class="race-item"><div><span class="pill">${tf('season','Saison')} ${e.season}</span><p style="margin:6px 0 0;">${e.text}</p></div></div>`).join('') : `<p class="small">${tf('quietCareer','Une carrière discrète, sans grand moment marquant enregistré ici.')}</p>`}
     </div>
@@ -8012,7 +8018,7 @@ function resetGame(){
 function openShareCard(){
   if(STATE) STATE._screen = 'sharecard';
   setHTML(`
-    <h1>${tf('shareCareer','📤 Partager ma carrière')}</h1>
+    ${heroHTML(tf('shareCareer','📤 Partager ma carrière'))}
     <div class="card center">
       <canvas id="shareCanvas" width="1080" height="1080" style="width:100%;max-width:420px;border-radius:18px;box-shadow:0 6px 24px rgba(43,36,24,0.18);"></canvas>
       <p class="small" style="margin-top:12px;">${tf('shareCardDesc',"Image prête à partager sur les réseaux — aucune donnée envoyée nulle part, tout se génère dans ton navigateur.")}</p>
