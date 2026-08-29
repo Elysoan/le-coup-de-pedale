@@ -37,7 +37,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#FBF7EF;
+  --bg:#F5F0E8;
   --surface:#FFFFFF;
   --surface-alt:#F5F0E4;
   --line:#ECE4D2;
@@ -58,6 +58,9 @@
   --pink:#FF5C8A;
   --pink-light:#FFE5EC;
   --red:#F0433A;
+  --hero:#E8600A;
+  --hero-dark:#C6500A;
+  --avatar-bg:#FBD9C9;
   --radius-lg:26px;
   --radius-md:18px;
   --radius-sm:14px;
@@ -80,14 +83,12 @@ h2{font-size:1.15rem;color:var(--text);font-weight:800;}
 .mono{font-family:'JetBrains Mono',monospace;}
 p{line-height:1.5;color:var(--text-soft);margin:6px 0;font-weight:600;font-size:0.94rem;}
 .card{
-  background:rgba(255,255,255,0.68);
-  -webkit-backdrop-filter:blur(14px) saturate(140%);
-  backdrop-filter:blur(14px) saturate(140%);
-  border:1px solid rgba(255,255,255,0.55);
+  background:var(--surface);
+  border:1px solid var(--line);
   border-radius:var(--radius-lg);
   padding:18px;
   margin-bottom:12px;
-  box-shadow:0 2px 0 rgba(255,255,255,0.4), 0 10px 26px -14px rgba(43,36,24,0.18);
+  box-shadow:0 2px 10px rgba(43,36,24,0.07);
   position:relative;
   overflow:hidden;
 }
@@ -172,9 +173,8 @@ select{
 .stat-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--green),var(--yellow));transition:width .7s cubic-bezier(.22,1,.36,1);}
 .divider{margin:16px 0;opacity:0.5;}
 .opt-card{
-  background:rgba(245,240,228,0.55);
-  -webkit-backdrop-filter:blur(6px);
-  backdrop-filter:blur(6px);
+  background:var(--surface);
+  box-shadow:0 1px 4px rgba(43,36,24,0.05);
   border:2.5px solid transparent;
   border-radius:var(--radius-md);
   padding:14px 16px;
@@ -222,18 +222,18 @@ select{
   font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;
   padding:5px 11px;border-radius:20px;
 }
-.badge.grandtour{background:var(--yellow);color:#4a2e00;}
-.badge.monument{background:var(--pink);color:#fff;}
-.badge.classique{background:var(--purple);color:#fff;}
-.badge.semitour{background:var(--blue);color:#fff;}
-.badge.champ{background:var(--green);color:#fff;}
-.badge.crit{background:var(--surface-alt);color:var(--text-soft);}
+.badge{background:var(--surface);border:1.5px solid currentColor;}
+.badge.grandtour{color:var(--yellow-dark);}
+.badge.monument{color:#D6285A;}
+.badge.classique{color:var(--blue);}
+.badge.semitour{color:#1F5FC4;}
+.badge.champ{color:var(--green-dark);}
+.badge.crit{color:var(--text-soft);}
 .race-item{
   display:flex;justify-content:space-between;align-items:center;
   padding:14px 16px;border-radius:var(--radius-md);border:2.5px solid transparent;
-  background:rgba(245,240,228,0.55);
-  -webkit-backdrop-filter:blur(6px);
-  backdrop-filter:blur(6px);
+  background:var(--surface);
+  box-shadow:0 1px 4px rgba(43,36,24,0.05);
   margin-bottom:8px;cursor:pointer;
   transition:border-color .12s ease, background .12s ease;
 }
@@ -341,6 +341,36 @@ html.high-contrast .small{ color:var(--text-soft) !important; }
 .help-btn:hover{opacity:1;}
 .help-box{display:none;margin:6px 0 2px;padding:8px 10px;background:rgba(59,130,246,0.08);border-left:3px solid var(--blue);border-radius:6px;font-size:0.82rem;color:var(--text-soft);line-height:1.45;}
 .help-box.open{display:block;}
+
+.screen-hero{
+  background:linear-gradient(135deg,var(--hero),var(--hero-dark));
+  color:#fff;
+  margin:-22px -16px 18px;
+  padding:24px 20px 28px;
+  border-radius:0 0 28px 28px;
+  box-shadow:0 10px 24px -12px rgba(198,80,10,0.5);
+}
+.screen-hero .kicker{
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;
+  text-transform:uppercase;letter-spacing:0.09em;
+  color:rgba(255,255,255,0.78);margin:0 0 6px;
+}
+.screen-hero h1{color:#fff;font-size:1.45rem;margin:0;text-shadow:none;}
+.screen-hero p{color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:0.92rem;font-weight:600;}
+.step-track{display:flex;gap:6px;margin:0 0 16px;}
+.step-track span{flex:1;height:5px;border-radius:3px;background:var(--line);}
+.step-track span.done{background:var(--hero);}
+.avatar{
+  flex:0 0 auto;width:44px;height:44px;border-radius:50%;
+  background:var(--avatar-bg);display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;
+}
+.stat-tile{
+  background:var(--surface);border-radius:var(--radius-md);
+  padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(43,36,24,0.06);
+}
+.stat-tile .stat-tile-num{display:block;font-weight:900;font-size:1.25rem;}
+.stat-tile .stat-tile-label{display:block;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;color:var(--text-soft);margin-top:2px;}
 </style>
 </head>
 <body>
@@ -415,6 +445,7 @@ const I18N = {
     howToPlay:'📖 How to play?', accessibility:'♿ Accessibility',
     yourRiderCard:'Your rider card', rerollName:'🎲 Generate another name', orEnterYourName:'Or enter your own name…', amongStyle:'among', ofCountry:'from',
     creationIntro:'Develop a road cyclist, season after season, from warm-up races to the monuments of the calendar.',
+    newCareerKicker:'New career', createYourRiderTitle:'Create your rider',
     nationality:'Nationality', riderStyle:'Rider style', startCareer:'🚀 Start your career',
     backToMenu:'← Back to main menu',
     none:'None', alreadySponsored:'Already under contract with', seasonsLeft:'season left', seasonsLeftP:'seasons left',
@@ -486,7 +517,7 @@ const I18N = {
     objective:'Objective', jerseyResult:'Result for this jersey', basedOnWeeks:'based on week',
     and:'and', relevant:'relevant', relevantP:'relevant', outOf:'out of', week:'Week',
     finalRanking:'Final ranking', statUp:'improving', statDown:'declining',
-    reputationWord:'Reputation', confidenceWord:'Confidence', fatigueWord:'Fatigue', team:'team',
+    reputationWord:'Reputation', confidenceWord:'Confidence', fatigueWord:'Fatigue', team:'team', prizeWord:'Prize',
     roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
     roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
     arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
@@ -4030,9 +4061,12 @@ function riderHeaderHTML(){
   const team = currentTeam(r);
   return `<div class="card">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-      <div>
-        <h2><span class="flag">${c.flag}</span>${r.name}</h2>
-        <p class="small">${(()=>{ const _s=STYLES.find(s=>s.id===r.styleId); return _s?`${_s.icon} ${_s.name}`:''; })()}${r.trajectory?` · ${{'specialiste':'🎯','globetrotter':'🌍','leader':'👑'}[r.trajectory]||''} ${tf('trajectory_'+r.trajectory, r.trajectory)}`:''}  · ${r.age} ${tf('yo','ans')} · ${tf('season','Saison')} ${r.season}${r.isNationalChampion?` · 🏅 ${tf('nationalChampionBadge','Champion national')}`:''}</p>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="avatar">${c.flag}</div>
+        <div>
+          <h2>${r.name}</h2>
+          <p class="small">${(()=>{ const _s=STYLES.find(s=>s.id===r.styleId); return _s?`${_s.icon} ${_s.name}`:''; })()}${r.trajectory?` · ${{'specialiste':'🎯','globetrotter':'🌍','leader':'👑'}[r.trajectory]||''} ${tf('trajectory_'+r.trajectory, r.trajectory)}`:''}  · ${r.age} ${tf('yo','ans')} · ${tf('season','Saison')} ${r.season}${r.isNationalChampion?` · 🏅 ${tf('nationalChampionBadge','Champion national')}`:''}</p>
+        </div>
       </div>
       <div style="text-align:right;">
         <span class="pill">🎽 ${teamTierLabel(team.tier)}</span>
@@ -4155,11 +4189,14 @@ function renderCreationScreen(keepScroll){
         <input type="text" id="custom-name-input" placeholder="${tf('orEnterYourName','Ou entre ton propre nom…')}" style="flex:1;padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:0.95rem;background:var(--surface);" value="" oninput="applyCustomName(this.value)">
       </div>
     </div>` : '';
+  const _creationSteps = [true, !!cr.style, !!cr.style, !!cr.name];
   setHTML(`
-    <div class="hero-banner">
-      <img src="${LOGO_B64}" alt="Le coup de pédale" class="hero-logo hero-logo-solo">
+    <div class="screen-hero">
+      <p class="kicker">${tf('newCareerKicker','Nouvelle carrière')}</p>
+      <h1>${tf('createYourRiderTitle','Crée ton coureur')}</h1>
+      <p>${tf('creationIntro',"Fais évoluer un coureur cycliste, saison après saison, des courses de préparation jusqu'aux monuments du calendrier.")}</p>
     </div>
-    <p class="center">${tf('creationIntro',"Fais évoluer un coureur cycliste, saison après saison, des courses de préparation jusqu'aux monuments du calendrier.")}</p>
+    <div class="step-track">${_creationSteps.map(d=>`<span class="${d?'done':''}"></span>`).join('')}</div>
     <div class="card">
       <h3>🌍 ${tf('nationality','Nationalité')}</h3>
       <select onchange="updateCountry(this.value)">
@@ -7268,7 +7305,13 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
       ${trainedList.map(k=>`<p class="small">📈 ${STAT_LABELS[k]} ${tf('statUp','en hausse')}</p>`).join('')}
       ${detrainedList.map(k=>`<p class="small">📉 ${STAT_LABELS[k]} ${tf('statDown','en baisse')}</p>`).join('')}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
-      <p class="small">⭐ ${tf('reputationWord','Réputation')} ${repGain>=0?'+':''}${repGain} · 🤝 ${tf('confidenceWord','Confiance')} ${confDelta>=0?'+':''}${confDelta} · 🔥 ${tf('fatigueWord','Fatigue')} ${Math.round(STATE.rider.fatigue)}${prize>0?` · 💰 +${prize.toLocaleString('fr-FR')} €`:''}${teamPrize>0?` · 🎽 +${teamPrize.toLocaleString('fr-FR')} € (${tf('team','équipe')})`:''}</p>
+      <div class="grid3" style="${prize>0?'grid-template-columns:1fr 1fr 1fr 1fr;':''}">
+        <div class="stat-tile"><span class="stat-tile-num" style="color:${repGain>=0?'var(--green-dark)':'var(--red)'};">${repGain>=0?'+':''}${repGain}</span><span class="stat-tile-label">${tf('reputationWord','Réputation')}</span></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:${confDelta>=0?'var(--green-dark)':'var(--red)'};">${confDelta>=0?'+':''}${confDelta}</span><span class="stat-tile-label">${tf('confidenceWord','Confiance')}</span></div>
+        <div class="stat-tile"><span class="stat-tile-num">${Math.round(STATE.rider.fatigue)}</span><span class="stat-tile-label">${tf('fatigueWord','Fatigue')}</span></div>
+        ${prize>0?`<div class="stat-tile"><span class="stat-tile-num" style="color:var(--yellow-dark);">+${prize.toLocaleString('fr-FR')}€</span><span class="stat-tile-label">${tf('prizeWord','Prime')}</span></div>`:''}
+      </div>
+      ${teamPrize>0?`<p class="small" style="margin-top:8px;">🎽 +${teamPrize.toLocaleString('fr-FR')} € (${tf('team','équipe')})</p>`:''}
     </div>
     <button class="btn" ${continueAttr}>${continueLabel}</button>
   `, true);
@@ -7751,7 +7794,11 @@ function renderSeasonRecap(){
   </div>` : '';
   STATE.careerCapNote = null;
   setHTML(`
-    <h1>📊 ${tf('recap','Bilan')} — ${tf('season','Saison')} ${seasonNum}</h1>
+    <div class="screen-hero">
+      <p class="kicker">${tf('recap','Bilan')} — ${tf('season','Saison')} ${seasonNum}</p>
+      <h1>${r.name.toUpperCase()}</h1>
+      <p>${team.name} · ${r.age} ${tf('yo','ans')}${(()=>{ const _s=STYLES.find(s=>s.id===r.styleId); return _s?` · ${_s.name}`:''; })()}</p>
+    </div>
     ${riderHeaderHTML()}
     ${trophyBannerHTML()}
     ${objNoteHTML}
@@ -7760,7 +7807,12 @@ function renderSeasonRecap(){
     ${sponsorNoteHTML}
     <div class="card">
       <h3>${tf('seasonResults','Résultats de la saison')}</h3>
-      <p class="small">🏆 ${wins} ${tf(wins!==1?'winsP':'win','victoire'+(wins!==1?'s':''))} · 🥈 ${podiums} ${tf(podiums!==1?'podiumsP':'podium','podium'+(podiums!==1?'s':''))} · ⭐ ${tf('reputationWord','Réputation')} ${repChange>=0?'+':''}${repChange} · 💰 ${tf('salary','Salaire')} +${Math.round(STATE.lastSalary||0).toLocaleString('fr-FR')} €${STATE.lastSponsorPay?` · 🤝 ${tf('sponsor','Sponsor')} +${STATE.lastSponsorPay.toLocaleString('fr-FR')} €`:''}</p>
+      <div class="grid3">
+        <div class="stat-tile"><span class="stat-tile-num" style="color:var(--yellow-dark);">${wins}</span><span class="stat-tile-label">${tf(wins!==1?'winsP':'win','victoire'+(wins!==1?'s':''))}</span></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:var(--blue);">${podiums}</span><span class="stat-tile-label">${tf(podiums!==1?'podiumsP':'podium','podium'+(podiums!==1?'s':''))}</span></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:${repChange>=0?'var(--green-dark)':'var(--red)'};">${repChange>=0?'+':''}${repChange}</span><span class="stat-tile-label">${tf('reputationWord','Réputation')}</span></div>
+      </div>
+      <p class="small" style="margin-top:10px;">💰 ${tf('salary','Salaire')} +${Math.round(STATE.lastSalary||0).toLocaleString('fr-FR')} €${STATE.lastSponsorPay?` · 🤝 ${tf('sponsor','Sponsor')} +${STATE.lastSponsorPay.toLocaleString('fr-FR')} €`:''}</p>
       ${results.map(x=>`<div class="race-item"><div><strong>${x.raceName}</strong></div>
         <span class="${tierClass(x.bestTier)} mono small">${TIER_LABEL[x.bestTier]}</span></div>`).join('')}
     </div>
