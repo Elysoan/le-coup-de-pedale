@@ -5069,10 +5069,10 @@ function renderSeasonSetupScreen(keepScroll){
   </div>` : '';
 
   setHTML(`
+    ${heroHTML(`🚀 ${tf('prepareSeason','Préparer la saison')} ${r.season}`)}
     ${riderHeaderHTML()}
     ${trophyBannerHTML()}
     ${s1WelcomeHTML}
-    ${heroHTML(`🚀 ${tf('prepareSeason','Préparer la saison')} ${r.season}`)}
     <div class="card">
       <h3>⭐ ${tf('seasonPriority','Priorité de saison')}${helpBtn('help-priority',r.season)}</h3>${helpBox('help-priority','Choisir une qualité à développer en priorité cette saison. Cela influence tes chances sur les courses adaptées à ce profil — un grimpeur qui entraîne la montagne sera plus efficace dans les cols.',"Choose a quality to develop as a priority this season. It influences your odds on adapted races — a climber training in the mountains will be more effective on climbs.",r.season)}
       <div class="chip-row">${focusChips}</div>
