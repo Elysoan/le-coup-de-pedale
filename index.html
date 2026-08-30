@@ -135,9 +135,15 @@ p{line-height:1.5;color:var(--text-soft);margin:6px 0;font-weight:600;font-size:
 .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
 .chip{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;padding:9px 14px;border-radius:999px;background:var(--surface-alt);border:2px solid var(--line);color:var(--text);cursor:pointer;}
 .chip.active{background:var(--green-light);border-color:var(--green);color:var(--green-dark);}
-.row-item{cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px solid var(--line);}
-.row-item:last-child{border-bottom:none;}
-.row-item.active{background:var(--yellow-light);border-radius:12px;border-bottom-color:transparent;}
+.row-item{
+  cursor:pointer;display:flex;justify-content:space-between;align-items:center;
+  background:var(--surface);box-shadow:0 1px 4px rgba(43,36,24,0.05);
+  border-radius:var(--radius-md);border:2.5px solid transparent;
+  padding:14px 16px;margin-bottom:8px;
+  transition:border-color .12s ease, background .12s ease;
+}
+.row-item:last-child{margin-bottom:0;}
+.row-item.active{background:var(--green-light);border-color:var(--green);}
 select,input[type=text]{
   width:100%;
   background:var(--surface-alt);
@@ -416,7 +422,7 @@ const I18N = {
     yourProgress:'Your progress', careersDone:'career completed', careersDoneP:'careers completed',
     trophiesWord:'trophies', countriesTried:'countries tried', bestCareer:'Best career',
     tagline:'Ride. Choose. Become a legend.', pill55races:'63 races', pill5styles:'5 rider profiles', pill20countries:'20 nationalities', startCareerCTA:'🚀 Start a career',
-    yourSlots:'Your 3 career slots', hallOfFame:'🏆 Hall of Legends', explore:'Explore',
+    yourSlots:'Your 3 career slots', hallOfFame:'🏆 Hall of Legends', explore:'Explore', riderDetails:'Rider details',
     howToPlay:'📖 How to play?', accessibility:'♿ Accessibility',
     yourRiderCard:'Your rider card', rerollName:'🎲 Generate another name', orEnterYourName:'Or enter your own name…', amongStyle:'among', ofCountry:'from',
     creationIntro:'Develop a road cyclist, season after season, from warm-up races to the monuments of the calendar.',
@@ -4094,55 +4100,66 @@ function riderHeaderHTML(){
         <p class="small mono" style="margin:4px 0 0;">💰 ${Math.round(r.money).toLocaleString('fr-FR')} €</p>
       </div>
     </div>
-    <p class="small">${riderRole(r)}${r.role ? ` · ${(RIDER_ROLES.find(x=>x.id===r.role)||{icon:'',name:'',nameEN:''}).icon} ${SETTINGS.lang==='en'?(RIDER_ROLES.find(x=>x.id===r.role)||{nameEN:''}).nameEN:(RIDER_ROLES.find(x=>x.id===r.role)||{name:''}).name}` : ''} — ${team.name} · 📋 ${tf('contractWord','contrat')} : ${r.contractYearsLeft} ${tf(r.contractYearsLeft>1?'seasonsLeftBareP':'seasonsLeftBare','saison'+(r.contractYearsLeft>1?'s':'')+' restante'+(r.contractYearsLeft>1?'s':''))}</p>
-    <p class="small">🌍 <strong>${r.worldRank}${r.worldRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('worldwide','mondial')}${(()=>{
-      // Rang par style et national calculé depuis le worldRank
-      // (5 styles à répartition égale, pays avec poids réalistes)
-      const COUNTRY_WEIGHT = {FR:1.6,BE:1.4,IT:1.5,NL:1.3,ES:1.4,DE:1.0,AU:1.0,GB:1.0,
-        CO:0.9,DK:1.0,CH:0.7,SI:0.5,US:0.7,NO:0.8,LU:0.4,PT:0.7,PL:0.6,IE:0.5,ER:0.4,RW:0.4};
-      const TOTAL_WEIGHT = Object.values(COUNTRY_WEIGHT).reduce((a,b)=>a+b,0);
-      const wk = COUNTRY_WEIGHT[r.countryCode] || 0.7;
-      const countryShare = wk / TOTAL_WEIGHT;
-      const styleShare = 1/5; // 5 styles équilibrés
-      const styleRank = Math.max(1, Math.round(r.worldRank * styleShare));
-      const countryRank = Math.max(1, Math.round(r.worldRank * countryShare));
-      const styleLabel = STYLES.find(s=>s.id===r.styleId);
-      const countryObj = COUNTRIES.find(x=>x.code===r.countryCode);
-      let extra = '';
-      extra += ` · ${styleLabel?styleLabel.icon||'':''} <strong>${styleRank}${styleRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('amongStyle','chez les')} ${styleLabel?styleLabel.name.toLowerCase():''}s`;
-      extra += ` · ${countryObj?countryObj.flag:''} <strong>${countryRank}${countryRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('ofCountry','de')} ${countryObj?countryObj.name:''}`;
-      return extra;
-    })()}</p>
-    ${r.sponsor ? `<p class="small">${r.sponsor.icon} ${tf('sponsorWord','Sponsor')} : ${r.sponsor.name}</p>` : ''}
     ${(()=>{
-      /* Suivi de l'objectif de saison en temps réel */
-      const _obj = STATE && STATE.seasonObjective;
-      const _res = STATE && STATE.seasonSummary && STATE.seasonSummary.results;
-      if(!_obj || _obj === 'aucun' || !_res) return '';
-      const _lang = SETTINGS.lang === 'en';
-      const _objDef = SEASON_OBJECTIVES.find(o=>o.id===_obj);
-      if(!_objDef) return '';
-      let _met = null;
-      if(_obj==='survive'||_obj==='solide'){
-        /* Ces objectifs ne peuvent être qu'en cours (null) ou échoués (false) en cours de
-           saison — "atteint" ne peut être déclaré qu'à la fin de la saison, une fois
-           que toutes les courses sont terminées. */
-        if(_res.some(x=>x.bestTier==='abandon'||x.bestTier==='forfait')) _met = false;
-        // sinon : _met reste null (en cours), jamais true ici
-      }
-      else if(_obj==='top10') _met = _res.some(x=>x.prestige>=3&&['victoire','podium','top10'].includes(x.bestTier));
-      else if(_obj==='podium') _met = _res.some(x=>x.prestige>=3&&['victoire','podium'].includes(x.bestTier));
-      else if(_obj==='etapes') _met = _res.some(x=>(x.type==='grandtour'||x.type==='semitour')&&['victoire','podium'].includes(x.bestTier));
-      else if(_obj==='victoire') _met = _res.some(x=>x.prestige>=3&&x.bestTier==='victoire');
-      else if(_obj==='monument') _met = _res.some(x=>x.prestige>=4&&x.bestTier==='victoire');
-      const _icon = _met===true ? '✅' : _met===false ? '❌' : '🎯';
-      const _color = _met===true ? 'var(--green-dark)' : _met===false ? 'var(--red)' : 'var(--text-soft)';
-      const _objLabel = (_lang && _objDef.labelEN) ? _objDef.labelEN : _objDef.label;
-      const _status = _met===true ? (_lang?'achieved':'atteint') : _met===false ? (_lang?'failed':'échoué') : (_lang?'in progress':'en cours');
-      return `<p class="small" style="color:${_color};margin:2px 0 0;">${_icon} ${tf('seasonObjective','Objectif')} : ${_objLabel} — <em>${_status}</em></p>`;
+      const detailsHTML = `
+        <p class="small">${riderRole(r)}${r.role ? ` · ${(RIDER_ROLES.find(x=>x.id===r.role)||{icon:'',name:'',nameEN:''}).icon} ${SETTINGS.lang==='en'?(RIDER_ROLES.find(x=>x.id===r.role)||{nameEN:''}).nameEN:(RIDER_ROLES.find(x=>x.id===r.role)||{name:''}).name}` : ''} — ${team.name} · 📋 ${tf('contractWord','contrat')} : ${r.contractYearsLeft} ${tf(r.contractYearsLeft>1?'seasonsLeftBareP':'seasonsLeftBare','saison'+(r.contractYearsLeft>1?'s':'')+' restante'+(r.contractYearsLeft>1?'s':''))}</p>
+        <p class="small">🌍 <strong>${r.worldRank}${r.worldRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('worldwide','mondial')}${(()=>{
+          // Rang par style et national calculé depuis le worldRank
+          // (5 styles à répartition égale, pays avec poids réalistes)
+          const COUNTRY_WEIGHT = {FR:1.6,BE:1.4,IT:1.5,NL:1.3,ES:1.4,DE:1.0,AU:1.0,GB:1.0,
+            CO:0.9,DK:1.0,CH:0.7,SI:0.5,US:0.7,NO:0.8,LU:0.4,PT:0.7,PL:0.6,IE:0.5,ER:0.4,RW:0.4};
+          const TOTAL_WEIGHT = Object.values(COUNTRY_WEIGHT).reduce((a,b)=>a+b,0);
+          const wk = COUNTRY_WEIGHT[r.countryCode] || 0.7;
+          const countryShare = wk / TOTAL_WEIGHT;
+          const styleShare = 1/5; // 5 styles équilibrés
+          const styleRank = Math.max(1, Math.round(r.worldRank * styleShare));
+          const countryRank = Math.max(1, Math.round(r.worldRank * countryShare));
+          const styleLabel = STYLES.find(s=>s.id===r.styleId);
+          const countryObj = COUNTRIES.find(x=>x.code===r.countryCode);
+          let extra = '';
+          extra += ` · ${styleLabel?styleLabel.icon||'':''} <strong>${styleRank}${styleRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('amongStyle','chez les')} ${styleLabel?styleLabel.name.toLowerCase():''}s`;
+          extra += ` · ${countryObj?countryObj.flag:''} <strong>${countryRank}${countryRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('ofCountry','de')} ${countryObj?countryObj.name:''}`;
+          return extra;
+        })()}</p>
+        ${r.sponsor ? `<p class="small">${r.sponsor.icon} ${tf('sponsorWord','Sponsor')} : ${r.sponsor.name}</p>` : ''}
+        ${(()=>{
+          /* Suivi de l'objectif de saison en temps réel */
+          const _obj = STATE && STATE.seasonObjective;
+          const _res = STATE && STATE.seasonSummary && STATE.seasonSummary.results;
+          if(!_obj || _obj === 'aucun' || !_res) return '';
+          const _lang = SETTINGS.lang === 'en';
+          const _objDef = SEASON_OBJECTIVES.find(o=>o.id===_obj);
+          if(!_objDef) return '';
+          let _met = null;
+          if(_obj==='survive'||_obj==='solide'){
+            /* Ces objectifs ne peuvent être qu'en cours (null) ou échoués (false) en cours de
+               saison — "atteint" ne peut être déclaré qu'à la fin de la saison, une fois
+               que toutes les courses sont terminées. */
+            if(_res.some(x=>x.bestTier==='abandon'||x.bestTier==='forfait')) _met = false;
+            // sinon : _met reste null (en cours), jamais true ici
+          }
+          else if(_obj==='top10') _met = _res.some(x=>x.prestige>=3&&['victoire','podium','top10'].includes(x.bestTier));
+          else if(_obj==='podium') _met = _res.some(x=>x.prestige>=3&&['victoire','podium'].includes(x.bestTier));
+          else if(_obj==='etapes') _met = _res.some(x=>(x.type==='grandtour'||x.type==='semitour')&&['victoire','podium'].includes(x.bestTier));
+          else if(_obj==='victoire') _met = _res.some(x=>x.prestige>=3&&x.bestTier==='victoire');
+          else if(_obj==='monument') _met = _res.some(x=>x.prestige>=4&&x.bestTier==='victoire');
+          const _icon = _met===true ? '✅' : _met===false ? '❌' : '🎯';
+          const _color = _met===true ? 'var(--green-dark)' : _met===false ? 'var(--red)' : 'var(--text-soft)';
+          const _objLabel = (_lang && _objDef.labelEN) ? _objDef.labelEN : _objDef.label;
+          const _status = _met===true ? (_lang?'achieved':'atteint') : _met===false ? (_lang?'failed':'échoué') : (_lang?'in progress':'en cours');
+          return `<p class="small" style="color:${_color};margin:2px 0 0;">${_icon} ${tf('seasonObjective','Objectif')} : ${_objLabel} — <em>${_status}</em></p>`;
+        })()}
+        ${r.teammate ? `<p class="small">🤝 ${tf('teammateWord','Coéquipier')} : ${r.teammate.name} (${TEAMMATE_ARCHETYPE_LABELS[r.teammate.archetype]})${r.isMentor?` · 🧑‍🏫 ${tf('youAreMentor','Tu es son mentor')}`:''}</p>` : ''}
+      `;
+      const openLabel = tf('expand','▼ Déplier');
+      const closeLabel = tf('collapse','▲ Replier');
+      return `<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-top:4px;" onclick="const b=document.getElementById('riderDetailsBody'), a=document.getElementById('riderDetailsArrow'); const open = b.style.display!=='none'; b.style.display = open?'none':'block'; a.textContent = open?'${openLabel}':'${closeLabel}';">
+        <span class="small" style="color:var(--text-soft);font-weight:700;">${tf('riderDetails','Détails du coureur')}</span>
+        <span class="small" id="riderDetailsArrow">${openLabel}</span>
+      </div>
+      <div id="riderDetailsBody" style="display:none;">${detailsHTML}</div>`;
     })()}
-    ${r.teammate ? `<p class="small">🤝 ${tf('teammateWord','Coéquipier')} : ${r.teammate.name} (${TEAMMATE_ARCHETYPE_LABELS[r.teammate.archetype]})${r.isMentor?` · 🧑‍🏫 ${tf('youAreMentor','Tu es son mentor')}`:''}</p>` : ''}
-    <div class="grid2">
+    <div class="grid2" style="margin-top:8px;">
       <div class="stat-row">
         <div class="stat-label"><span>⭐ ${tf('reputationWord','Réputation')}</span><span>${Math.round(r.reputation)}</span></div>
         <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.reputation))}%"></div></div>
@@ -5964,6 +5981,7 @@ function renderCalendarScreen(keepScroll){
         <strong>📅 ${tf('prepareSeason','Préparer la saison')} ${r.season}</strong>
         <strong style="font-size:1.1rem;color:${daysColor};">${daysTotal} / 65 ${tf('daysAbbr','j')}</strong>
       </div>
+      <div class="stat-track" style="margin-top:6px;"><div class="stat-fill" style="width:${Math.min(100, daysTotal/65*100)}%;background:${daysColor};"></div></div>
       <p class="small" style="margin:4px 0 0;">${raceCount} ${tf(raceCount>1?'racesP':'race','course'+(raceCount>1?'s':''))} · ${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+' par l\'équipe')} · ${gtSelected}/2 ${tf('grandToursAbbr','Grands Tours')}</p>
       ${warnUnder}${warnFatigue}${warnOver}${warnSmart}
       <p class="small" style="margin:8px 0 4px;color:var(--text-soft);">${SETTINGS.lang==='en'?'Pre-fill your calendar automatically (optional — you can adjust after):':'Remplis automatiquement ton calendrier (facultatif — tu peux ajuster ensuite) :'}</p>
@@ -7345,11 +7363,6 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
   setHTML(`
     ${riderHeaderHTML()}
     ${trophyBannerHTML()}
-    ${injuryBanner}
-    ${confidentBetBanner}
-    ${jerseyBanner}
-    ${poisseBanner}
-    ${rivalBanner}
     <div class="card result-card ${cardClass}" ${cardStyle}>
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <h2>${race.flag?race.flag+' ':''}${race.name}</h2>
@@ -7372,6 +7385,11 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
       </div>
       ${teamPrize>0?`<p class="small" style="margin-top:8px;">🎽 +${teamPrize.toLocaleString('fr-FR')} € (${tf('team','équipe')})</p>`:''}
     </div>
+    ${injuryBanner}
+    ${confidentBetBanner}
+    ${jerseyBanner}
+    ${poisseBanner}
+    ${rivalBanner}
     <button class="btn" ${continueAttr}>${continueLabel}</button>
   `, true);
 }
