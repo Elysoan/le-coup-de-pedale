@@ -177,6 +177,7 @@ select{
 .gauge-hole{position:absolute;inset:6px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(43,36,24,0.04);}
 .gauge-num{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:0.92rem;color:var(--text);}
 .gauge-cap{font-size:0.62rem;font-weight:800;text-transform:uppercase;letter-spacing:0.03em;color:var(--text-soft);text-align:center;line-height:1.2;}
+.gauge-delta{position:absolute;top:-4px;right:-4px;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:0.6rem;padding:1px 5px;border-radius:10px;color:#fff;box-shadow:0 1px 3px rgba(43,36,24,0.25);}
 .divider{margin:16px 0;opacity:0.5;}
 .opt-card{
   background:var(--surface);
@@ -4049,13 +4050,16 @@ function gaugeLevelColor(v){
   if(v>=45) return 'var(--yellow-dark)';
   return 'var(--red)';
 }
-function statBarsHTML(stats){
+function statBarsHTML(stats, beforeStats){
   return `<div class="gauge-grid">${STAT_KEYS.map(k=>{
     const v = Math.round(stats[k]);
     const deg = clamp(v,0,100)*3.6;
+    const delta = beforeStats ? v - Math.round(beforeStats[k]) : 0;
+    const deltaHTML = delta!==0 ? `<span class="gauge-delta" style="background:${delta>0?'var(--green-dark)':'var(--red)'};">${delta>0?'+':''}${delta}</span>` : '';
     return `<div class="gauge-cell">
       <div class="gauge" style="background:conic-gradient(${gaugeLevelColor(v)} ${deg}deg, var(--surface-alt) 0deg);">
         <div class="gauge-hole"><span class="gauge-num">${v}</span></div>
+        ${deltaHTML}
       </div>
       <span class="gauge-cap">${STAT_ICONS[k]} ${STAT_LABELS[k]}</span>
     </div>`;
@@ -6189,7 +6193,7 @@ function confirmCalendar(){
   STATE.runQueue = STATE.selectedRaceIds.map(id=>all.find(r=>r.id===id)).filter(Boolean).sort((a,b)=>a.month-b.month);
   STATE.seasonTotalDays = STATE.runQueue.reduce((sum,r)=>sum+r.days,0);
   STATE.cumulativeDaysRaced = 0;
-  STATE.seasonSummary = {repStart: STATE.rider.reputation, rankStart: STATE.rider.worldRank, ratingStart: globalRiderRating(STATE.rider.stats), results:[]};
+  STATE.seasonSummary = {repStart: STATE.rider.reputation, rankStart: STATE.rider.worldRank, ratingStart: globalRiderRating(STATE.rider.stats), statsStart: {...STATE.rider.stats}, results:[]};
   STATE.runRaceIdx = 0;
   STATE.lastRacedMonth = 0;
   beginRace();
@@ -7510,6 +7514,7 @@ function finishSeason(){
   const repStart = STATE.seasonSummary.repStart;
   const rankStart = STATE.seasonSummary.rankStart;
   const ratingStart = STATE.seasonSummary.ratingStart;
+  const statsStart = STATE.seasonSummary.statsStart;
   endSeasonAging(rider, STATE.trainingFocus);
   /* Tracker les saisons dans le top 50 pour le career cap 'top50-trois-saisons' */
   if(rider.worldRank <= 50) rider._top50Seasons = (rider._top50Seasons||0) + 1;
@@ -7678,13 +7683,13 @@ function finishSeason(){
   });
 
   checkSeasonAchievements(results);
-  STATE.seasonRecapData = {seasonNum: completedSeason, results, repStart, rankStart, ratingStart};
+  STATE.seasonRecapData = {seasonNum: completedSeason, results, repStart, rankStart, ratingStart, statsStart};
   renderSeasonRecap();
 }
 
 function renderSeasonRecap(){
   if(STATE) STATE._screen='seasonrecap';
-  const {seasonNum, results, repStart, rankStart, ratingStart} = STATE.seasonRecapData;
+  const {seasonNum, results, repStart, rankStart, ratingStart, statsStart} = STATE.seasonRecapData;
   const r = STATE.rider;
   const team = currentTeam(r);
   const wins = results.filter(x=>x.bestTier==='victoire').length;
@@ -7774,7 +7779,7 @@ function renderSeasonRecap(){
     </div>` : ''}
     <div class="card">
       <h3>${tf('newStats','Nouvelles statistiques')}</h3>
-      ${statBarsHTML(r.stats)}
+      ${statBarsHTML(r.stats, statsStart)}
     </div>
     ${recruitHintHTML}
     ${forcedRetire ? `
