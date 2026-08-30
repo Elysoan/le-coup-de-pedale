@@ -585,6 +585,21 @@ const I18N = {
     leaderboardEmpty:'No score published yet — be the first!',
     leaderboardRankPrefix:'Your world rank:', leaderboardOutsideTop50:'outside the displayed top 50',
     leaderboardYourLastRank:'Your last published score',
+    challengeTutoTitle:'Challenge mode',
+    challengeTutoDesc:'Once your first career is complete, challenge mode unlocks: nationality, style, starting team, and objective are all drawn at random — a real test of versatility, with success or failure evaluated at the end of the career.',
+    unlocksTutoTitle:'Unlocking between careers',
+    unlocksTutoDesc:"Your progress never resets when a career ends. Styles and nationalities you've already played are marked ✓ on the creation screen. Your starting team improves with your cumulative wins across all careers (25 wins: ProTeam team, 60 wins: WorldTour team). And exclusive legacy titles reward players who already own rare trophies from previous careers.",
+    almanacTutoTitle:'Race almanac',
+    almanacTutoDesc:'Check your best result on each of the 63 races in the game, with a toggle between "This career" and "Legend almanac" (your best-ever result on each race, across every career you\'ve played).',
+    comparatorTutoTitle:'Career comparator',
+    comparatorTutoDesc:'Browse every career you\'ve completed: sort by wins, reputation, or date, filter by style and country, detailed average stats per style, head-to-head comparison between two careers of your choice, and a mini progression graph of your wins over time.',
+    leaderboardTutoTitle:'Global leaderboard',
+    leaderboardTutoDesc:'At the end of a career, optionally publish your score to compare yourself against every player. Only the top 50 is shown, but your exact rank is always given to you, even beyond that.',
+    scoringTitle:'How your career score is calculated',
+    scoringGrandTour:'Grand Tour', scoringMonument:'Monument', scoringChamp:'Championship',
+    scoringSemitour:'Stage race', scoringClassique:'Classic', scoringCrit:'Criterium (and others)',
+    scoringWinLabel:'win', scoringPodiumLabel:'podium',
+    scoringExtras:'+ 15 pts per stage win, + 1 pt per point of final reputation, and a bonus of up to 60 pts based on the best world ranking you reached during the career.',
     validateStartSeason:'Validate and start the season',
     objectiveWord:'Objective', objMajor:'Major', objMid:'Intermediate', objMinor:'Minor',
     objectiveMissedContract:'not met — management is reconsidering your contract. −1 season.',
@@ -4510,6 +4525,34 @@ function renderTutorialScreen(){
     <div class="card">
       <h3>🏆 ${tf('trophiesTitle','Les trophées et le palmarès')}</h3>
       <p>${tf('trophiesDesc','37 trophées à débloquer au fil de tes carrières (certains "légendaires" bien plus difficiles), et un Hall of Fame qui conserve tes 5 meilleures carrières pour toute la session.')}</p>
+    </div>
+    <div class="card">
+      <h3>🎯 ${tf('challengeTutoTitle','Le mode défi')}</h3>
+      <p>${tf('challengeTutoDesc',"Une fois ta première carrière terminée, débloque le mode défi : nationalité, style, équipe de départ et objectif sont tirés au sort pour toi — un vrai test de polyvalence, avec un succès ou un échec évalué à la fin de la carrière.")}</p>
+    </div>
+    <div class="card">
+      <h3>🔓 ${tf('unlocksTutoTitle','Le déblocage entre carrières')}</h3>
+      <p>${tf('unlocksTutoDesc',"Ta progression ne s'arrête jamais à la fin d'une carrière. Les styles et nationalités déjà joués sont marqués ✓ à la création. L'équipe de départ s'améliore avec le cumul de victoires de toutes tes carrières (25 victoires : équipe ProTeam, 60 victoires : équipe WorldTour). Et des titres de légende exclusifs récompensent les joueurs qui possèdent déjà des trophées rares issus de carrières précédentes.")}</p>
+    </div>
+    <div class="card">
+      <h3>📖 ${tf('almanacTutoTitle','Almanach des courses')}</h3>
+      <p>${tf('almanacTutoDesc',"Consulte ton meilleur résultat sur chacune des 63 courses du jeu, avec un bouton pour basculer entre « Cette carrière » et « Almanach de légende » (ton meilleur résultat jamais obtenu sur chaque course, toutes carrières confondues).")}</p>
+    </div>
+    <div class="card">
+      <h3>📊 ${tf('comparatorTutoTitle','Le comparateur de carrières')}</h3>
+      <p>${tf('comparatorTutoDesc',"Retrouve toutes tes carrières terminées : tri par victoires, réputation ou date, filtres par style et par pays, statistiques moyennes détaillées par style, comparaison tête-à-tête entre deux carrières au choix, et un mini-graphique de progression de tes victoires au fil du temps.")}</p>
+    </div>
+    <div class="card">
+      <h3>🌍 ${tf('leaderboardTutoTitle','Le classement mondial')}</h3>
+      <p>${tf('leaderboardTutoDesc',"À la fin d'une carrière, publie (facultativement) ton score pour te comparer à tous les joueurs. Seul le top 50 est affiché, mais ton rang exact t'est toujours indiqué, même au-delà.")}</p>
+      <p class="small" style="margin:10px 0 4px;"><strong>${tf('scoringTitle','Comment ton score de carrière est calculé')}</strong></p>
+      <div class="race-item" style="cursor:default;"><span>${tf('scoringGrandTour','Grand Tour')}</span><span class="pill mono">${tf('scoringWinLabel','victoire')} 150 · ${tf('scoringPodiumLabel','podium')} 40</span></div>
+      <div class="race-item" style="cursor:default;"><span>${tf('scoringMonument','Monument')}</span><span class="pill mono">${tf('scoringWinLabel','victoire')} 100 · ${tf('scoringPodiumLabel','podium')} 30</span></div>
+      <div class="race-item" style="cursor:default;"><span>${tf('scoringChamp','Championnat')}</span><span class="pill mono">${tf('scoringWinLabel','victoire')} 80 · ${tf('scoringPodiumLabel','podium')} 25</span></div>
+      <div class="race-item" style="cursor:default;"><span>${tf('scoringSemitour','Course par étapes')}</span><span class="pill mono">${tf('scoringWinLabel','victoire')} 40 · ${tf('scoringPodiumLabel','podium')} 12</span></div>
+      <div class="race-item" style="cursor:default;"><span>${tf('scoringClassique','Classique')}</span><span class="pill mono">${tf('scoringWinLabel','victoire')} 25 · ${tf('scoringPodiumLabel','podium')} 8</span></div>
+      <div class="race-item" style="cursor:default;"><span>${tf('scoringCrit','Critérium (et autres)')}</span><span class="pill mono">${tf('scoringWinLabel','victoire')} 10 · ${tf('scoringPodiumLabel','podium')} 3</span></div>
+      <p class="small" style="margin:8px 0 0;">${tf('scoringExtras',"+ 15 pts par victoire d'étape, + 1 pt par point de réputation finale, et un bonus jusqu'à 60 pts selon ton meilleur classement mondial atteint en carrière.")}</p>
     </div>
     <button class="btn ghost" onclick="renderMainMenu()">${tf('back','← Retour')}</button>
   `);
