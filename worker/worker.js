@@ -97,7 +97,12 @@ export default {
          ON CONFLICT(ip) DO UPDATE SET last_submit = excluded.last_submit`
       ).bind(ip, now.toISOString()).run();
 
-      return json({ ok: true });
+      const scoreValue = Math.round(body.score);
+      const rankRow = await env.DB.prepare(
+        'SELECT COUNT(*) + 1 AS rank FROM leaderboard WHERE score > ?'
+      ).bind(scoreValue).first();
+
+      return json({ ok: true, rank: rankRow ? rankRow.rank : null });
     }
 
     return json({ error: 'not_found' }, 404);
