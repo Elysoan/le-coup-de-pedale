@@ -576,6 +576,13 @@ const I18N = {
     pickOneMore:'Pick a second career (🆚) to compare.',
     podiumsShort:'podiums', bestRank:'best world ranking', wins:'wins',
     stageWins:'stage wins',
+    leaderboardPublished:'Score published to the global leaderboard!', viewLeaderboard:'View leaderboard',
+    leaderboardTitle:'Global leaderboard',
+    leaderboardDesc:"Publish this rider's score (name, style, country, palmarès) to the public leaderboard for all players.",
+    leaderboardError:'Failed to publish — try again later.', sending:'Sending…', leaderboardPublish:'📤 Publish to leaderboard',
+    globalLeaderboard:'🌍 Global leaderboard', globalLeaderboardDesc:'The best careers published by every player of Le Coup de Pédale.',
+    loading:'Loading…', leaderboardUnavailable:'Leaderboard unavailable right now.',
+    leaderboardEmpty:'No score published yet — be the first!',
     validateStartSeason:'Validate and start the season',
     objectiveWord:'Objective', objMajor:'Major', objMid:'Intermediate', objMinor:'Minor',
     objectiveMissedContract:'not met — management is reconsidering your contract. −1 season.',
@@ -3489,6 +3496,109 @@ function recordGlobalRaceResult(race, tier, rider){
   }
 }
 
+/* ---------- CLASSEMENT MONDIAL (backend Cloudflare Worker, optionnel) ----------
+   Le Worker se déploie séparément (voir worker/README.md) et son URL vient remplacer
+   la valeur ci-dessous une fois en ligne. Tant qu'elle n'est pas renseignée, toute la
+   fonctionnalité (bouton de publication, écran de classement) reste masquée plutôt que
+   d'afficher quelque chose de cassé. */
+const LEADERBOARD_API_URL = 'REPLACE_WITH_WORKER_URL';
+function leaderboardConfigured(){
+  return typeof LEADERBOARD_API_URL === 'string' && /^https?:\/\//.test(LEADERBOARD_API_URL);
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+async function submitToLeaderboard(entry){
+  if(!leaderboardConfigured()) return {ok:false};
+  try{
+    const res = await fetch(LEADERBOARD_API_URL + '/submit', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        riderName: entry.name,
+        styleId: entry.styleId,
+        countryCode: entry.countryCode,
+        wins: entry.wins,
+        podiums: entry.podiums,
+        stageWins: entry.stageWins || 0,
+        finalReputation: entry.finalReputation,
+        seasons: entry.seasons,
+        bestRank: entry.bestRank,
+        score: careerScore(entry),
+      }),
+    });
+    return {ok: res.ok};
+  } catch(e){ return {ok:false}; }
+}
+async function fetchLeaderboard(){
+  if(!leaderboardConfigured()) return null;
+  try{
+    const res = await fetch(LEADERBOARD_API_URL + '/leaderboard?limit=50');
+    if(!res.ok) return null;
+    const data = await res.json();
+    return Array.isArray(data.entries) ? data.entries : [];
+  } catch(e){ return null; }
+}
+async function publishToLeaderboard(){
+  if(!STATE || !STATE.rider || CAREER_HISTORY.length===0) return;
+  const entry = CAREER_HISTORY[CAREER_HISTORY.length-1];
+  STATE.leaderboardStatus = 'sending';
+  renderCareerEnd();
+  const result = await submitToLeaderboard(entry);
+  if(!STATE) return; // écran quitté entretemps
+  STATE.leaderboardStatus = result.ok ? 'ok' : 'error';
+  renderCareerEnd();
+}
+function leaderboardCardHTML(){
+  if(!leaderboardConfigured()) return '';
+  const status = STATE.leaderboardStatus || 'idle';
+  if(status==='ok'){
+    return `<div class="card center">
+      <p>🌍 ${tf('leaderboardPublished','Score publié au classement mondial !')}</p>
+      <button class="btn ghost" onclick="renderGlobalLeaderboard()">${tf('viewLeaderboard','Voir le classement')}</button>
+    </div>`;
+  }
+  return `<div class="card center">
+    <h3>🌍 ${tf('leaderboardTitle','Classement mondial')}</h3>
+    <p class="small">${tf('leaderboardDesc',"Publie le score de ce coureur (nom, style, pays, palmarès) au classement public de tous les joueurs.")}</p>
+    ${status==='error' ? `<p class="small" style="color:var(--red);">${tf('leaderboardError',"Échec de l'envoi — réessaie plus tard.")}</p>` : ''}
+    <button class="btn" ${status==='sending'?'disabled':''} onclick="publishToLeaderboard()">${status==='sending'?tf('sending','Envoi…'):tf('leaderboardPublish','📤 Publier au classement')}</button>
+  </div>`;
+}
+function renderGlobalLeaderboard(){
+  if(STATE) STATE._screen = 'globalleaderboard';
+  setHTML(`
+    ${heroHTML('🌍 '+tf('globalLeaderboard','Classement mondial'), tf('globalLeaderboardDesc',"Les meilleures carrières publiées par tous les joueurs du Coup de Pédale."))}
+    <div class="card center" id="leaderboard-loading"><p>${tf('loading','Chargement…')}</p></div>
+    <div id="leaderboard-rows"></div>
+    <button class="btn ghost" onclick="${STATE&&STATE.rider?'renderCareerEnd()':'renderMainMenu()'}">${tf('back','← Retour')}</button>
+  `);
+  loadGlobalLeaderboard();
+}
+async function loadGlobalLeaderboard(){
+  const entries = await fetchLeaderboard();
+  const loadingEl = document.getElementById('leaderboard-loading');
+  const rowsEl = document.getElementById('leaderboard-rows');
+  if(!loadingEl || !rowsEl) return; // écran quitté entretemps
+  if(entries === null){
+    loadingEl.innerHTML = `<p>${tf('leaderboardUnavailable',"Classement indisponible pour le moment.")}</p>`;
+    return;
+  }
+  loadingEl.remove();
+  if(entries.length === 0){
+    rowsEl.innerHTML = `<p class="small center" style="padding:8px;">${tf('leaderboardEmpty','Aucun score publié pour le moment — sois le premier !')}</p>`;
+    return;
+  }
+  rowsEl.innerHTML = `<div class="card">${entries.map((e,i)=>{
+    const country = COUNTRIES.find(c=>c.code===e.country_code);
+    const style = STYLES.find(s=>s.id===e.style_id);
+    return `<div class="race-item" style="cursor:default;">
+      <div><strong>#${i+1} ${country?country.flag:''} ${escapeHtml(e.rider_name)}</strong><p class="small" style="margin:2px 0 0;">${style?style.name:''} · ${e.wins}🏆 · ${e.seasons} ${tf('seasonsBareLower','saisons')}</p></div>
+      <span class="pill mono">${e.score} pts</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
 function careerScore(entry){
   const WIN_PTS  = {grandtour:150, monument:100, champ:80, semitour:40, classique:25, crit:10};
   const POD_PTS  = {grandtour:40,  monument:30,  champ:25, semitour:12, classique:8,  crit:3};
@@ -3908,6 +4018,7 @@ function renderMainMenu(){
       <button class="btn ghost" onclick="renderTrophiesScreen()">${tf('trophies','🎖️ Trophées')} (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
     </div>
     <button class="btn ghost" onclick="renderCareerComparator()">${tf('careerComparator','📊 Comparateur de carrières')}</button>
+    ${leaderboardConfigured() ? `<button class="btn ghost" onclick="renderGlobalLeaderboard()">${tf('globalLeaderboard','🌍 Classement mondial')}</button>` : ''}
     <div class="footer-links">
       <button class="footer-link" onclick="renderTutorialScreen()">${tf('howToPlay','📖 Comment jouer ?')}</button>
       <button class="footer-link" onclick="renderSettingsScreen()">${tf('accessibility','♿ Accessibilité')}</button>
@@ -8147,6 +8258,7 @@ function renderCareerEnd(){
       <h3>🏆 ${tf('top5Careers','Top 5 des carrières de la partie')}</h3>
       ${top.map((c,i)=>`<div class="race-item"><div><strong>#${i+1} ${c.name}</strong><p class="small" style="margin:2px 0 0;">${legacyTitleText(c.title)}</p></div><span class="pill">${c.wins} 🏆</span></div>`).join('')}
     </div>
+    ${leaderboardCardHTML()}
     <button class="btn" onclick="openShareCard()">${tf('shareCareer','📤 Partager ma carrière')}</button>
     <button class="btn ghost" onclick="renderCareerJournal()">${tf('careerJournal','📖 Journal de carrière')}</button>
     <button class="btn ghost" onclick="resetGame()">${tf('startNewCareer','Commencer une nouvelle carrière')}</button>
