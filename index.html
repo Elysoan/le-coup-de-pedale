@@ -197,25 +197,12 @@ select{
   padding:18px 16px 8px; margin-bottom:6px;
   display:flex; align-items:center; justify-content:center; gap:10px;
 }
-.hero-logo{width:48px;height:auto;}
-.hero-logo-solo{width:88px;}
 .splash-screen{
   min-height:calc(80vh + 22px); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:3vh;
   animation:splashFade 2.2s ease forwards;
   margin:-22px -16px 0; width:calc(100% + 32px);
   background-size:cover; background-position:center top; background-repeat:no-repeat;
 }
-.splash-logo{width:130px;height:auto;animation:splashPop .7s cubic-bezier(.22,1,.36,1);}
-.arc-title{
-  position:relative; width:390px; height:175px; margin-bottom:-22px;
-  opacity:0; animation:arcTitleFade .7s ease forwards; animation-delay:1s;
-}
-.arc-letter{
-  position:absolute; font-family:'Nunito',sans-serif; font-weight:900; font-size:2.15rem;
-  color:var(--orange); text-shadow:0 2px 0 rgba(255,255,255,0.5);
-}
-@keyframes arcTitleFade{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
-@keyframes splashPop{from{opacity:0;transform:scale(.75);}to{opacity:1;transform:scale(1);}}
 @keyframes splashFade{0%{opacity:1;}80%{opacity:1;}100%{opacity:0;}}
 .hero-wordmark{width:auto;height:52px;max-width:80%;object-fit:contain;}
 .badge{
@@ -644,7 +631,7 @@ const I18N = {
     enabled:'✅ Enabled', disabled:'Disabled', reduceMotion:'Reduce animations',
     reduceMotionDesc:"Disables transitions, confetti and appearance effects, on top of your operating system's own setting if already enabled.",
     howToPlayTitle:'How to play', theConcept:'The basics',
-    theConceptDesc:"You play as a professional road cyclist, season after season. Choose your calendar, race, manage your fatigue, and grow your career for up to 12 seasons or until age 41.",
+    theConceptDesc:"You play as a professional road cyclist, season after season. Choose your calendar, race, manage your fatigue, and grow your career for up to 15 seasons or until age 41.",
     calendarBudget:'The calendar and day budget',
     calendarBudgetDesc:"Each season, your team imposes 3 races and you choose the rest yourself. Each race lasts a number of days (a classic = 1 day, a grand tour = 21 days): you have",
     max65days:'65 days max', perSeasonEtc:"per season. Beyond 45 cumulative days, fatigue builds up noticeably faster for the rest of the season — aim for balance rather than filling the calendar.",
@@ -3329,8 +3316,8 @@ function repGainFor(race, bestTier, currentRep, rider){
   }
   /* Trajectoire globetrotter : +1 rep sur les courses hors spécialité — il est connu
      pour sa polyvalence et son palmarès éclectique. */
-  if(rider && rider.trajectory === 'globetrotter' && raceType){
-    const _raceProxyGlobe = {type: raceType};
+  if(rider && rider.trajectory === 'globetrotter' && race.type){
+    const _raceProxyGlobe = {type: race.type};
     if(!raceMatchesStyle(_raceProxyGlobe, rider.styleId) && raw > 0) raw += 1;
   }
   /* Trajectoire leader : malus supplémentaire sur les contre-perfs (peloton/jourssans)
@@ -4159,14 +4146,6 @@ function riderHeaderHTML(){
 
 window._creation = {name:'', country: COUNTRIES[0].code, style:null};
 
-/* Logo : icône professionnelle open-source "bike-pedal" de Material Design Icons
-   (Pictogrammers, licence Apache 2.0, libre d'usage commercial). */
-function svgPedal(){
-  return `<svg viewBox="0 0 24 24" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-    <path d="M6.85 5C5.87 5 5.04 5.71 4.87 6.67L4 12L4.87 17.33C5.04 18.29 5.87 19 6.85 19H14.15C15.13 19 15.97 18.29 16.13 17.33L16.68 14H18V13H20V11H18V10H16.68L16.13 6.67C15.97 5.71 15.13 5 14.15 5H6.85M6.85 7H14.15L14.82 11H6.18L6.85 7M6.18 13H14.82L14.15 17H6.85L6.18 13Z"/>
-  </svg>`;
-}
-
 /* Cycliste : icône professionnelle open-source "bike" de Material Design Icons
    (Pictogrammers, licence Apache 2.0, libre d'usage commercial) — plus fiable qu'un
    dessin à main levée. Coloré via currentColor pour s'adapter au contexte. */
@@ -4281,7 +4260,7 @@ function renderTutorialScreen(){
     ${heroHTML('📖 '+tf('howToPlayTitle','Comment jouer'))}
     <div class="card">
       <h3>🚴 ${tf('theConcept','Le principe')}</h3>
-      <p>${tf('theConceptDesc',"Tu incarnes un coureur cycliste professionnel, saison après saison. Choisis ton calendrier, dispute tes courses, gère ta fatigue et fais progresser ta carrière jusqu'à 12 saisons ou 41 ans.")}</p>
+      <p>${tf('theConceptDesc',"Tu incarnes un coureur cycliste professionnel, saison après saison. Choisis ton calendrier, dispute tes courses, gère ta fatigue et fais progresser ta carrière jusqu'à 15 saisons ou 41 ans.")}</p>
     </div>
     <div class="card">
       <h3>📅 ${tf('calendarBudget','Le calendrier et le budget de jours')}</h3>
@@ -4558,9 +4537,9 @@ function renderCareerComparator(){
     <div class="card">
       <h3>${tf('overview',"Vue d'ensemble")}</h3>
       <div class="grid3">
-        <div class="center"><p style="margin:0;font-weight:800;font-size:1.4rem;color:var(--green-dark);">${careers.length}</p><p class="small" style="margin:0;">${tf('careersPlayed','carrières jouées')}</p></div>
-        <div class="center"><p style="margin:0;font-weight:800;font-size:1.4rem;color:var(--yellow-dark);">${avgWins}</p><p class="small" style="margin:0;">${tf('avgWins','victoires en moyenne')}</p></div>
-        <div class="center"><p style="margin:0;font-weight:800;font-size:1.4rem;color:var(--pink);">${avgRep}</p><p class="small" style="margin:0;">${tf('avgFinalRep','réputation moyenne')}</p></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:var(--green-dark);">${careers.length}</span><span class="stat-tile-label">${tf('careersPlayed','carrières jouées')}</span></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:var(--yellow-dark);">${avgWins}</span><span class="stat-tile-label">${tf('avgWins','victoires en moyenne')}</span></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:var(--pink);">${avgRep}</span><span class="stat-tile-label">${tf('avgFinalRep','réputation moyenne')}</span></div>
       </div>
     </div>
     <div class="card">
@@ -6431,7 +6410,8 @@ function renderRivalDuelFeedback(){
   STATE._pendingRivalDuelFeedback = null;
   const lang = SETTINGS.lang === 'en';
   const isGood = fd.good;
-  const pool = isGood ? RIVAL_DUEL_FEEDBACK.good[fd.risk] : RIVAL_DUEL_FEEDBACK.bad[fd.risk];
+  const bank = isGood ? RIVAL_DUEL_FEEDBACK.good : RIVAL_DUEL_FEEDBACK.bad;
+  const pool = bank[fd.risk] || bank.equilibre;
   const raw = pool[Math.floor(Math.random()*pool.length)];
   const msg = (lang ? raw.en : raw.fr).replace(/\{name\}/g, fd.rivalName);
   const color = isGood ? 'var(--green)' : 'var(--red)';
@@ -7459,132 +7439,6 @@ function nextAfterRaceResult(){
   maybeShowMidSeasonPersonalEvent();
 }
 
-/* ---------- CHOIX DYNAMIQUE DE LA PROCHAINE COURSE ----------
-   Logique :
-   - runQueue contient UNIQUEMENT les imposées au départ (ordre chronologique)
-   - Cet écran s'affiche TOUJOURS après chaque course (imposée ou libre)
-   - On calcule la fenêtre libre : mois > dernière course disputée ET mois < prochaine imposée
-   - Si des courses libres existent dans cette fenêtre → on les propose
-   - Si aucune course libre disponible dans la fenêtre → on va directement à la prochaine imposée
-   - Si plus rien du tout → fin de saison */
-function renderNextRaceChoiceScreen(){
-  if(STATE) STATE._screen='nextracebchoice';
-  const r = STATE.rider;
-
-  // Mois de la dernière course EFFECTIVEMENT DISPUTÉE (indépendant de la file)
-  const currentMonth = STATE.lastRacedMonth || 0;
-
-  // Prochaine course dans la file (imposée ou déjà insérée par le joueur)
-  const nextInQueue = STATE.runQueue[STATE.runRaceIdx] || null;
-
-  // Chercher la prochaine IMPOSÉE restante dans la file (à partir de runRaceIdx)
-  const nextImposedInQueue = STATE.runQueue.slice(STATE.runRaceIdx).find(rc => STATE.imposedRaceIds.includes(rc.id)) || null;
-
-  // Fenêtre max pour les courses libres : strictement avant la prochaine imposée
-  // (ou mois 13 = après décembre si plus d'imposée)
-  const windowMaxMonth = nextImposedInQueue ? nextImposedInQueue.month : 13;
-
-  // IDs déjà utilisés (courus ou dans la file)
-  const usedIds = new Set(STATE.runQueue.map(rc => rc.id));
-
-  // Jours déjà engagés
-  const daysEngaged = STATE.runQueue.reduce((sum, rc) => sum + rc.days, 0);
-
-  // Grands tours déjà dans la file
-  const gtCount = STATE.runQueue.filter(rc => rc.type === 'grandtour').length;
-
-  // Courses libres disponibles dans la fenêtre temporelle
-  const available = STATE.seasonRacePool.filter(race => {
-    if(usedIds.has(race.id)) return false;
-    if(race.locked) return false;
-    if(race.month < currentMonth) return false;       // déjà passé (strictement avant)
-    if(race.month >= windowMaxMonth) return false;    // pas de course >= mois de l'imposée
-    if(daysEngaged + race.days > 65) return false;
-    if(race.type === 'grandtour' && gtCount >= 2) return false;
-    return true;
-  }).sort((a, b) => a.month - b.month);
-
-  // Aucune course libre dispo ET plus rien dans la file → fin de saison
-  if(available.length === 0 && !nextInQueue){
-    finishSeason();
-    return;
-  }
-
-  // Aucune course libre dispo dans la fenêtre → on lance directement la suivante (imposée)
-  if(available.length === 0 && nextInQueue){
-    beginRace();
-    return;
-  }
-
-  // Il y a des courses libres à proposer → afficher l'écran de choix
-  const form = riderFormStatus(r);
-  const fatigueLvl = r.fatigue > 80 ? 'diff-4' : r.fatigue > 55 ? 'diff-3' : r.fatigue > 30 ? 'diff-2' : 'diff-1';
-  const fatigueLabel = r.fatigue > 80 ? tf('fatigueVeryHigh','Très haute') : r.fatigue > 55 ? tf('fatigueHigh','Élevée') : r.fatigue > 30 ? tf('fatigueMedium','Modérée') : tf('fatigueLow','Basse');
-
-  const _scrollY = window.scrollY || 0;
-  setHTML(`
-    ${riderHeaderHTML()}
-    <div class="counter card" style="padding:10px 16px;">
-      <strong>🗓️ ${tf('nextRaceChoice','Quelle prochaine course ?')}</strong>
-      <p class="small" style="margin:4px 0 0;">${form.icon} ${form.label} · 🔥 ${tf('fatigueWord','Fatigue')} : <span class="${fatigueLvl}">${fatigueLabel} (${Math.round(r.fatigue)})</span></p>
-      <p class="small" style="margin:2px 0 0;">${daysEngaged} / 65 ${tf('daysAbbr','j')} · ${STATE.runQueue.length} ${tf('racePlanned','course(s) prévue(s)')}</p>
-      ${nextImposedInQueue ? `<p class="small" style="margin:4px 0 0;font-weight:700;color:var(--red);">📌 ${tf('imposedUpNext','Imposée :')}&nbsp;${nextImposedInQueue.name} (${MONTHS[nextImposedInQueue.month]})</p>` : ''}
-    </div>
-    <p class="small" style="font-weight:700;margin:12px 0 4px;">🏁 ${
-      nextImposedInQueue
-        ? `${tf('freeWindowBefore','Courses disponibles avant')} ${nextImposedInQueue.name}`
-        : tf('freeWindowEnd',"Courses disponibles jusqu'à la fin de saison")
-    }</p>
-    ${available.map(race => {
-      const diff = difficultyForRace(race, r);
-      const rv = (STATE.rivals||[]).filter(rv2 => (rv2.raceIds||[]).includes(race.id));
-      return `<div class="race-item" onclick="addRaceAndRun('${race.id}')">
-        <div>
-          <strong>${race.flag?race.flag+' ':''}${race.name}${isRoleRecommendedRace(race,r)?' <span style="color:var(--yellow);font-size:0.85em;">⭐</span>':''}</strong>${rv.length ? ` <span style="color:var(--blue);font-size:0.8em;font-weight:600;">🥊 ${rv.map(rv2=>rv2.name.split(' ')[0]).join(', ')}</span>` : ''}
-          <p class="small" style="margin:2px 0 0;">${MONTHS[race.month]} · ${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)}</p>
-        </div>
-        <div style="text-align:right;">
-          ${badgeHTML(race.type)}
-          <p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p>
-        </div>
-      </div>`;
-    }).join('')}
-    ${nextInQueue
-      ? `<button class="btn ghost" onclick="beginRace()">⏭️ ${tf('skipToImposed','Passer directement à')} ${nextInQueue.name} (${MONTHS[nextInQueue.month]})</button>`
-      : `<button class="btn ghost" onclick="finishSeason()">🏁 ${tf('endSeasonNow','Terminer la saison')}</button>`
-    }
-  `, true);
-  window.scrollTo(0, _scrollY);
-}
-
-/* Insère une course libre dans la fenêtre avant la prochaine imposée, puis la lance. */
-function addRaceAndRun(id){
-  const race = STATE.seasonRacePool.find(r => r.id === id);
-  if(!race) return;
-
-  const past = STATE.runQueue.slice(0, STATE.runRaceIdx);
-  const future = STATE.runQueue.slice(STATE.runRaceIdx);
-
-  // Trouver la position de la prochaine imposée dans future
-  const nextImposedIdx = future.findIndex(rc => STATE.imposedRaceIds.includes(rc.id));
-
-  if(nextImposedIdx === -1){
-    // Pas d'imposée restante : insérer à la fin en ordre chronologique
-    future.push(race);
-    future.sort((a, b) => a.month - b.month);
-    STATE.runQueue = past.concat(future);
-  } else {
-    // Insérer dans la fenêtre avant la prochaine imposée, en ordre chronologique
-    const beforeImposed = future.slice(0, nextImposedIdx);
-    const fromImposed = future.slice(nextImposedIdx);
-    beforeImposed.push(race);
-    beforeImposed.sort((a, b) => a.month - b.month);
-    STATE.runQueue = past.concat(beforeImposed, fromImposed);
-  }
-
-  // runRaceIdx pointe sur la prochaine course (la plus proche chronologiquement)
-  beginRace();
-}
 /* ---- Fin de saison ---- */
 
 function finishSeason(){
@@ -7860,9 +7714,9 @@ function renderSeasonRecap(){
     ${(rankChange!==null || ratingChange!==null) ? `<div class="card">
       <h3>📈 ${tf('progressVsLastSeason','Évolution par rapport à la saison précédente')}</h3>
       <div class="grid3">
-        <div class="center"><p style="margin:0;font-weight:800;font-size:1.3rem;color:${repChange>0?'var(--green-dark)':repChange<0?'var(--red)':'var(--text-soft)'};">${repChange>=0?'+':''}${repChange}</p><p class="small" style="margin:0;">${tf('reputationWord','Réputation')}</p></div>
-        <div class="center"><p style="margin:0;font-weight:800;font-size:1.3rem;color:${rankChange>0?'var(--green-dark)':rankChange<0?'var(--red)':'var(--text-soft)'};">${rankChange>=0?'+':''}${rankChange}</p><p class="small" style="margin:0;">${tf('worldRankProgress','places au classement')}</p></div>
-        <div class="center"><p style="margin:0;font-weight:800;font-size:1.3rem;color:${ratingChange>0?'var(--green-dark)':ratingChange<0?'var(--red)':'var(--text-soft)'};">${ratingChange>=0?'+':''}${Math.round(ratingChange)}</p><p class="small" style="margin:0;">${tf('overallRatingProgress','note globale')}</p></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:${repChange>0?'var(--green-dark)':repChange<0?'var(--red)':'var(--text-soft)'};">${repChange>=0?'+':''}${repChange}</span><span class="stat-tile-label">${tf('reputationWord','Réputation')}</span></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:${rankChange>0?'var(--green-dark)':rankChange<0?'var(--red)':'var(--text-soft)'};">${rankChange>=0?'+':''}${rankChange}</span><span class="stat-tile-label">${tf('worldRankProgress','places au classement')}</span></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:${ratingChange>0?'var(--green-dark)':ratingChange<0?'var(--red)':'var(--text-soft)'};">${ratingChange>=0?'+':''}${Math.round(ratingChange)}</span><span class="stat-tile-label">${tf('overallRatingProgress','note globale')}</span></div>
       </div>
     </div>` : ''}
     <div class="card">
@@ -8225,30 +8079,6 @@ function careerHighlights(r){
   if(r.season-1 >= 10) highlights.push(`⏳ ${tf('rareLongevity','Une longévité rare')} : ${r.season-1} ${tf('proSeasonsCompleted',"saisons professionnelles menées jusqu'au bout.")}`);
 
   return highlights;
-}
-
-/* Titre en arc de cercle pour le splash : chaque lettre positionnée trigonométriquement
-   le long d'un arc, le logo (rond, façon plateau de pédalier) prenant la place du "a"
-   de "pédale" — comme un blason au-dessus de l'icône. */
-function arcTitleHTML(){
-  const text = "LE COUP DE PÉDALE";
-  const n = text.length;
-  const totalAngleDeg = 130;
-  const radius = 185;
-  const startAngle = -totalAngleDeg/2;
-  const step = n>1 ? totalAngleDeg/(n-1) : 0;
-  let html = '<div class="arc-title">';
-  for(let i=0;i<n;i++){
-    const ch = text[i];
-    const angleDeg = startAngle + i*step;
-    const angleRad = angleDeg * Math.PI/180;
-    const x = radius * Math.sin(angleRad);
-    const y = radius - radius * Math.cos(angleRad);
-    const commonStyle = `left:calc(50% + ${x.toFixed(1)}px); top:${y.toFixed(1)}px; transform:translate(-50%,-50%) rotate(${angleDeg.toFixed(1)}deg);`;
-    html += `<span class="arc-letter" style="${commonStyle}">${ch===' '?'&nbsp;':ch}</span>`;
-  }
-  html += '</div>';
-  return html;
 }
 
 function showSplash(){
