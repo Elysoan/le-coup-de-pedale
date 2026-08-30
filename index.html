@@ -135,6 +135,8 @@ p{line-height:1.5;color:var(--text-soft);margin:6px 0;font-weight:600;font-size:
 .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
 .chip{font-family:'Nunito',sans-serif;font-weight:800;font-size:0.85rem;padding:9px 14px;border-radius:999px;background:var(--surface-alt);border:2px solid var(--line);color:var(--text);cursor:pointer;}
 .chip.active{background:var(--green-light);border-color:var(--green);color:var(--green-dark);}
+.chip.mastered{position:relative;}
+.chip.mastered::after{content:'✓';position:absolute;top:-5px;right:-5px;background:var(--green);color:#fff;font-size:0.55rem;font-weight:900;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;box-shadow:0 0 0 2px var(--surface);}
 .row-item{
   cursor:pointer;display:flex;justify-content:space-between;align-items:center;
   background:var(--surface);box-shadow:0 1px 4px rgba(43,36,24,0.05);
@@ -528,6 +530,7 @@ const I18N = {
     legacyCompleteRider:'A complete rider, etched into history', legacyTirelessBreakaway:'Tireless breakaway specialist',
     legacyRespectedFigure:'A respected figure of the world peloton', legacyRespectedWinner:'Respected winner',
     legacyModestDomestique:'A modest domestique, loyal to the peloton',
+    legacyLivingLegend:'Living legend of the peloton', legacyHeir:'Heir to greatness',
     rollingStageDefault:'rolling stage',
     shareNativeText:'My professional cycling career — lecoupdepedale.com',
     signatureRaceTitle:'Signature race', optional:'optional',
@@ -561,6 +564,18 @@ const I18N = {
     careerComparatorDesc:'An overview of every career played since this session began.',
     overview:'Overview', careersPlayed:'careers played', avgWins:'average wins', avgFinalRep:'average final reputation',
     stylesUsed:'Styles used', countriesUsed:'Countries tried', allCareers:'All careers',
+    alreadyPlayed:'already played',
+    almanacDescLegend:'The best result ever achieved in each of the 63 races, across every career.',
+    almanacScopeCareer:'This career', almanacScopeLegend:'Legend almanac',
+    sparklineNeedMore:'A few more careers needed to see a trend…',
+    progressionTitle:'Progression (wins per career)',
+    styleStatsTitle:'Stats by style', avgAbbrev:'avg.',
+    sortRecent:'Most recent', sortWins:'Wins ↓', sortRep:'Reputation ↓',
+    allStyles:'All styles', allCountries:'All countries',
+    headToHead:'Head-to-head comparison', clearSelection:'Clear selection',
+    pickOneMore:'Pick a second career (🆚) to compare.',
+    podiumsShort:'podiums', bestRank:'best world ranking', wins:'wins',
+    stageWins:'stage wins',
     validateStartSeason:'Validate and start the season',
     objectiveWord:'Objective', objMajor:'Major', objMid:'Intermediate', objMinor:'Minor',
     objectiveMissedContract:'not met — management is reconsidering your contract. −1 season.',
@@ -2812,7 +2827,8 @@ function newRider(name, countryCode, styleId){
     age: 19 + Math.floor(Math.random()*3),
     stats,
     reputation: 8,
-    teamId: 'velo-passion',
+    teamId: starterTeamFor(styleId).id,
+    rareTrophiesAtStart: Array.from(UNLOCKED).filter(id=>{ const a=ACHIEVEMENTS.find(x=>x.id===id); return a && a.rare; }),
     teamConfidence: 55,
     contractYearsLeft: 2,
     teamChanges: 0,
@@ -3423,6 +3439,25 @@ function endSeasonAging(rider, trainingFocus){
    Équipe de légende, un cran à la fois — chaque transfert ne peut viser qu'au maximum
    le palier juste au-dessus de l'équipe actuelle. */
 const TEAM_TIER_ORDER = {'Continentale':0, 'ProTeam':1, 'WorldTour':2, 'Équipe de légende':3};
+
+/* ---- Équipe de départ améliorée (déblocage entre carrières) ----
+   Plus le total de victoires cumulées sur toutes les carrières est élevé, plus l'équipe
+   de départ proposée est prestigieuse — sans jamais dépendre des trophées (réservés au
+   bonus exclu). */
+const STYLE_TEAM_SPECIALTY = {grimpeur:'montagne', sprinteur:'sprint', rouleur:'clm', puncheur:'classiques', polyvalent:null};
+function totalCareerWins(){
+  return CAREER_HISTORY.reduce((sum,c)=>sum+(c.wins||0), 0);
+}
+function starterTeamFor(styleId){
+  const total = totalCareerWins();
+  let tier = null;
+  if(total>=60) tier = 'WorldTour';
+  else if(total>=25) tier = 'ProTeam';
+  if(!tier) return TEAMS.find(t=>t.id==='velo-passion');
+  const pool = TEAMS.filter(t=>t.tier===tier);
+  const specialty = STYLE_TEAM_SPECIALTY[styleId] || null;
+  return (specialty && pool.find(t=>t.specialty===specialty)) || pool.find(t=>!t.specialty) || pool[0];
+}
 function offersForRider(rider){
   const current = currentTeam(rider);
   /* Globetrotter : sa visibilité internationale lui ouvre les portes plus vite */
@@ -3443,6 +3478,16 @@ function offersForRider(rider){
 /* ---------- HISTORIQUE DES CARRIÈRES (mémoire de session) ---------- */
 
 let CAREER_HISTORY = [];
+
+/* ---------- ALMANACH DE LÉGENDE (meilleur résultat par course, toutes carrières confondues) ---------- */
+
+let RACE_RECORDS = {};
+function recordGlobalRaceResult(race, tier, rider){
+  const existing = RACE_RECORDS[race.id];
+  if(!existing || TIER_VALUE[tier] > TIER_VALUE[existing.tier]){
+    RACE_RECORDS[race.id] = {tier, riderName: rider.name, season: rider.season};
+  }
+}
 
 function careerScore(entry){
   const WIN_PTS  = {grandtour:150, monument:100, champ:80, semitour:40, classique:25, crit:10};
@@ -3639,6 +3684,7 @@ function saveGame(){
       },
       careerHistory: CAREER_HISTORY,
       unlockInfo: UNLOCK_INFO,
+      raceRecords: RACE_RECORDS,
     };
     localStorage.setItem(GLOBAL_KEY, JSON.stringify(global));
     if(CURRENT_SLOT !== null){
@@ -3694,6 +3740,7 @@ function restoreGlobalData(g){
   }
   if(g.careerHistory) CAREER_HISTORY = g.careerHistory;
   if(g.unlockInfo) UNLOCK_INFO = g.unlockInfo;
+  if(g.raceRecords) RACE_RECORDS = g.raceRecords;
 }
 
 /* Compatibilité ascendante : une sauvegarde faite avant l'ajout d'un champ récent au
@@ -3960,6 +4007,8 @@ const LEGACY_TITLE_FR = {
   legacyRespectedFigure:"Cadre reconnu du peloton mondial",
   legacyRespectedWinner:"Vainqueur respecté",
   legacyModestDomestique:"Modeste équipier, fidèle au peloton",
+  legacyLivingLegend:"Légende vivante du peloton",
+  legacyHeir:"Héritier de la gloire",
 };
 /* Retourne uniquement la clé (pas le texte résolu) — utilisée pour le stockage dans
    l'historique de session (CAREER_HISTORY), afin que le titre reste traduisible même
@@ -3968,6 +4017,12 @@ function legacyTitleKey(rider){
   const wins = rider.palmares.filter(p=>p.tier==='victoire');
   const gtWins = wins.filter(p=>p.type==='grandtour').length;
   const monWins = wins.filter(p=>p.type==='monument').length;
+  /* Titres exclusifs (déblocage entre carrières) : réservés à ceux qui possédaient déjà
+     des trophées rares AVANT le début de cette carrière — rareTrophiesAtStart est figé
+     à la création du coureur, donc insensible aux trophées gagnés pendant cette carrière. */
+  const rareOwnedBefore = (rider.rareTrophiesAtStart||[]).length;
+  if(rareOwnedBefore>=4 && rider.reputation>=50) return 'legacyLivingLegend';
+  if(rareOwnedBefore>=2 && wins.length>=1) return 'legacyHeir';
   if(gtWins>=3) return 'legacyGrandTourLegend';
   if(monWins>=3) return 'legacyClassicsLord';
   if(gtWins>=1 && monWins>=1) return 'legacyCompleteRider';
@@ -4238,20 +4293,27 @@ function renderCreationScreen(keepScroll){
       <h3>🌍 ${tf('nationality','Nationalité')}</h3>
       <p class="small" style="margin:0 0 8px;">${(()=>{ const _sel=COUNTRIES.find(c=>c.code===cr.country); return _sel?`${_sel.flag} <strong>${_sel.name}</strong>`:''; })()}</p>
       <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">
-        ${COUNTRIES.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<button type="button" class="chip ${c.code===cr.country?'active':''}" style="padding:8px 0;text-align:center;font-size:1.15rem;" onclick="updateCountry('${c.code}')" title="${c.name}" aria-label="${c.name}" aria-pressed="${c.code===cr.country}">${c.flag}</button>`).join('')}
+        ${COUNTRIES.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>{
+          const mastered = SESSION.countriesPlayed.has(c.code);
+          const label = mastered ? `${c.name} — ${tf('alreadyPlayed','déjà joué')}` : c.name;
+          return `<button type="button" class="chip ${c.code===cr.country?'active':''} ${mastered?'mastered':''}" style="padding:8px 0;text-align:center;font-size:1.15rem;" onclick="updateCountry('${c.code}')" title="${label}" aria-label="${label}" aria-pressed="${c.code===cr.country}">${c.flag}</button>`;
+        }).join('')}
       </div>
     </div>
     <div class="card">
       <h3>🚦 ${tf('riderStyle','Style de coureur')}</h3>
-      ${STYLES.map(s=>`
+      ${STYLES.map(s=>{
+        const mastered = SESSION.stylesPlayed.has(s.id);
+        return `
         <div class="opt-card ${cr.style===s.id?'selected':''}" onclick="selectStyle('${s.id}')">
           ${styleBadgeHTML(s.id)}
           <div>
-            <strong>${s.name}</strong>
+            <strong>${s.name}</strong> ${mastered?`<span class="pill" style="font-size:0.62rem;vertical-align:middle;">✓ ${tf('alreadyPlayed','déjà joué')}</span>`:''}
             <p class="small" style="margin:4px 0 0;">${s.desc}</p>
           </div>
         </div>
-      `).join('')}
+      `;
+      }).join('')}
     </div>
     ${cr.style ? `<div class="card">
       <h3>❤️ ${tf('signatureRaceTitle','Course de cœur')} <span class="small">(${tf('optional','optionnel')})</span></h3>
@@ -4340,7 +4402,7 @@ function confirmCreation(){
   const name = cr.name || generateRiderName(cr.country);
   const rider = newRider(name, cr.country, cr.style);
   rider.signatureRaceId = cr.signatureRaceId || null;
-  rider.role = computeOfferedRole(rider, TEAMS.find(t=>t.id==='velo-passion')).id;
+  rider.role = computeOfferedRole(rider, currentTeam(rider)).id;
   const rivals = generateRivals(rider);
   const rivalRecords = {};
   rivals.forEach(rv=>{ rivalRecords[rv.name] = {wins:0, losses:0}; });
@@ -4491,16 +4553,23 @@ function renderHallOfFame(){
    meilleur résultat obtenu sur chaque course, ou "jamais courue" si elle n'a jamais été
    sélectionnée. */
 let ALMANAC_FILTER = 'all';
+let ALMANAC_SCOPE = 'career';
 function setAlmanacFilter(f){ ALMANAC_FILTER = f; renderRaceAlmanac(); }
+function setAlmanacScope(s){ ALMANAC_SCOPE = s; renderRaceAlmanac(); }
 
 function renderRaceAlmanac(){
   if(STATE) STATE._screen = 'racealmanac';
   const r = STATE.rider;
   const races = RACES_DATA().slice().sort((a,b)=>a.month-b.month);
+  const isLegend = ALMANAC_SCOPE==='legend';
   const bestByRace = {};
-  (r.palmares||[]).forEach(p=>{
-    if(!bestByRace[p.raceId] || TIER_VALUE[p.tier] > TIER_VALUE[bestByRace[p.raceId].tier]) bestByRace[p.raceId] = p;
-  });
+  if(isLegend){
+    races.forEach(race=>{ if(RACE_RECORDS[race.id]) bestByRace[race.id] = RACE_RECORDS[race.id]; });
+  } else {
+    (r.palmares||[]).forEach(p=>{
+      if(!bestByRace[p.raceId] || TIER_VALUE[p.tier] > TIER_VALUE[bestByRace[p.raceId].tier]) bestByRace[p.raceId] = p;
+    });
+  }
   const racedCount = Object.keys(bestByRace).length;
   const filteredRaces = races.filter(race=>{
     if(ALMANAC_FILTER==='raced') return !!bestByRace[race.id];
@@ -4508,6 +4577,7 @@ function renderRaceAlmanac(){
     return true;
   });
   const filterChip = (id, label) => `<span class="chip ${ALMANAC_FILTER===id?'active':''}" onclick="setAlmanacFilter('${id}')">${label}</span>`;
+  const scopeChip = (id, label) => `<span class="chip ${ALMANAC_SCOPE===id?'active':''}" onclick="setAlmanacScope('${id}')">${label}</span>`;
   const rows = filteredRaces.length ? filteredRaces.map(race=>{
     const best = bestByRace[race.id];
     return `<div class="race-item" style="cursor:default;">
@@ -4518,11 +4588,16 @@ function renderRaceAlmanac(){
       <div style="text-align:right;min-width:100px;">
         ${badgeHTML(race.type)}
         <p class="small ${best?tierClass(best.tier):''}" style="margin:4px 0 0;font-weight:700;">${best?TIER_LABEL[best.tier]:tf('neverRaced','Jamais courue')}</p>
+        ${isLegend && best ? `<p class="small" style="margin:2px 0 0;opacity:.7;">${best.riderName}</p>` : ''}
       </div>
     </div>`;
   }).join('') : `<p class="small center" style="padding:8px;">${tf('almanacFilterEmpty','Aucune course ne correspond à ce filtre.')}</p>`;
   setHTML(`
-    ${heroHTML(tf('raceAlmanacTitle','Almanach des courses'), tf('almanacDesc',"Ton historique personnel sur les 63 courses du jeu, cette carrière."))}
+    ${heroHTML(tf('raceAlmanacTitle','Almanach des courses'), isLegend ? tf('almanacDescLegend',"Le meilleur résultat jamais obtenu sur chacune des 63 courses, toutes carrières confondues.") : tf('almanacDesc',"Ton historique personnel sur les 63 courses du jeu, cette carrière."))}
+    <div class="chip-row" style="justify-content:center;margin-bottom:6px;">
+      ${scopeChip('career', tf('almanacScopeCareer','Cette carrière'))}
+      ${scopeChip('legend', '🏛️ '+tf('almanacScopeLegend','Almanach de légende'))}
+    </div>
     <p class="small" style="margin:-6px 0 8px;text-align:center;">${racedCount} / ${races.length} ${tf('raced','courues')}</p>
     <div class="chip-row" style="justify-content:center;margin-bottom:10px;">
       ${filterChip('all', tf('almanacFilterAll','Toutes'))}
@@ -4571,6 +4646,49 @@ function renderSeasonHistory(){
   `);
 }
 
+let COMPARATOR_SORT = 'recent';
+let COMPARATOR_FILTER_STYLE = 'all';
+let COMPARATOR_FILTER_COUNTRY = 'all';
+let COMPARATOR_COMPARE = [];
+function setComparatorSort(v){ COMPARATOR_SORT = v; renderCareerComparator(); }
+function setComparatorFilterStyle(v){ COMPARATOR_FILTER_STYLE = v; renderCareerComparator(); }
+function setComparatorFilterCountry(v){ COMPARATOR_FILTER_COUNTRY = v; renderCareerComparator(); }
+function toggleCompareCareer(i){
+  const idx = COMPARATOR_COMPARE.indexOf(i);
+  if(idx>=0){ COMPARATOR_COMPARE.splice(idx,1); }
+  else{
+    COMPARATOR_COMPARE.push(i);
+    if(COMPARATOR_COMPARE.length>2) COMPARATOR_COMPARE.shift();
+  }
+  renderCareerComparator();
+}
+function clearComparatorCompare(){ COMPARATOR_COMPARE = []; renderCareerComparator(); }
+
+/* Petit sparkline SVG inline, sans dépendance — trace les victoires carrière par
+   carrière, dans l'ordre chronologique, pour visualiser la progression méta. */
+function sparklineSVG(values){
+  const w = 280, h = 46, pad = 4;
+  if(values.length<2){
+    return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;"><text x="${w/2}" y="${h/2}" text-anchor="middle" font-size="11" fill="var(--text-soft)">${tf('sparklineNeedMore','Encore quelques carrières pour voir une tendance…')}</text></svg>`;
+  }
+  const max = Math.max(1, ...values);
+  const stepX = (w - pad*2) / (values.length - 1);
+  const points = values.map((v,i)=>{
+    const x = pad + i*stepX;
+    const y = h - pad - (v/max)*(h - pad*2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const dots = values.map((v,i)=>{
+    const x = pad + i*stepX;
+    const y = h - pad - (v/max)*(h - pad*2);
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5" fill="var(--green-dark)"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;">
+    <polyline points="${points.join(' ')}" fill="none" stroke="var(--green-dark)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+  </svg>`;
+}
+
 function renderCareerComparator(){
   const careers = CAREER_HISTORY;
   if(careers.length===0){
@@ -4594,6 +4712,65 @@ function renderCareerComparator(){
     .map(([code,count])=>({country:COUNTRIES.find(x=>x.code===code), count}))
     .sort((a,b)=>b.count-a.count);
 
+  /* Stats segmentées par style : moyennes calculées séparément pour chaque style joué,
+     plutôt qu'une seule moyenne globale qui mélange des profils très différents. */
+  const styleStatsRows = styleRows.map(x=>{
+    const subset = careers.filter(c=>c.styleId===x.s.id);
+    const sAvgWins = (subset.reduce((s,c)=>s+c.wins,0)/subset.length).toFixed(1);
+    const sAvgRep = Math.round(subset.reduce((s,c)=>s+c.finalReputation,0)/subset.length);
+    return {s:x.s, count:x.count, avgWins:sAvgWins, avgRep:sAvgRep};
+  });
+
+  const sparkValues = careers.map(c=>c.wins);
+
+  const indexed = careers.map((c,i)=>({c,i}));
+  let filtered = indexed.filter(({c})=>{
+    if(COMPARATOR_FILTER_STYLE!=='all' && c.styleId!==COMPARATOR_FILTER_STYLE) return false;
+    if(COMPARATOR_FILTER_COUNTRY!=='all' && c.countryCode!==COMPARATOR_FILTER_COUNTRY) return false;
+    return true;
+  });
+  const sorters = {
+    recent: (a,b)=>b.i-a.i,
+    wins: (a,b)=>b.c.wins-a.c.wins,
+    rep: (a,b)=>b.c.finalReputation-a.c.finalReputation,
+  };
+  filtered = filtered.slice().sort(sorters[COMPARATOR_SORT] || sorters.recent);
+
+  const sortChip = (id, label) => `<span class="chip ${COMPARATOR_SORT===id?'active':''}" onclick="setComparatorSort('${id}')">${label}</span>`;
+
+  const compareEntries = COMPARATOR_COMPARE.map(i=>careers[i]).filter(Boolean);
+  const headToHeadHTML = compareEntries.length===2 ? (()=>{
+    const [a,b] = compareEntries;
+    const ca = COUNTRIES.find(x=>x.code===a.countryCode), cb = COUNTRIES.find(x=>x.code===b.countryCode);
+    const rows = [
+      [tf('wins','victoires'), a.wins, b.wins, false],
+      [tf('podiumsShort','podiums'), a.podiums, b.podiums, false],
+      [tf('stageWins',"victoires d'étape"), a.stageWins||0, b.stageWins||0, false],
+      [tf('avgFinalRep','réputation finale'), a.finalReputation, b.finalReputation, false],
+      [tf('seasonsBareLower','saisons'), a.seasons, b.seasons, false],
+      [tf('bestRank','meilleur classement'), a.bestRank, b.bestRank, true],
+    ];
+    return `<div class="card" style="border:1.5px solid var(--green);">
+      <h3>🆚 ${tf('headToHead','Comparaison tête-à-tête')}</h3>
+      <div class="grid2" style="margin-bottom:8px;">
+        <p class="small center" style="font-weight:800;margin:0;">${ca?ca.flag:''} ${a.name}</p>
+        <p class="small center" style="font-weight:800;margin:0;">${cb?cb.flag:''} ${b.name}</p>
+      </div>
+      ${rows.map(([label,va,vb,lowerBetter])=>{
+        const aBetter = lowerBetter ? va<vb : va>vb;
+        const bBetter = lowerBetter ? vb<va : vb>va;
+        return `
+        <div class="grid2" style="align-items:center;margin-bottom:4px;">
+          <div style="text-align:right;padding-right:8px;"><strong class="${aBetter?'diff-1':''}">${va}</strong></div>
+          <div style="padding-left:8px;"><strong class="${bBetter?'diff-1':''}">${vb}</strong></div>
+        </div>
+        <p class="small center" style="margin:0 0 6px;opacity:.7;">${label}</p>
+      `;
+      }).join('')}
+      <button class="btn ghost" onclick="clearComparatorCompare()">${tf('clearSelection','Vider la sélection')}</button>
+    </div>`;
+  })() : (compareEntries.length===1 ? `<p class="small center" style="margin:0 0 10px;">${tf('pickOneMore','Sélectionne une deuxième carrière (🆚) pour comparer.')}</p>` : '');
+
   setHTML(`
     ${heroHTML('📊 '+tf('careerComparator','Comparateur de carrières'), tf('careerComparatorDesc',"Vue d'ensemble de toutes les carrières jouées depuis l'ouverture de cette partie."))}
     <div class="card">
@@ -4603,24 +4780,49 @@ function renderCareerComparator(){
         <div class="stat-tile"><span class="stat-tile-num" style="color:var(--yellow-dark);">${avgWins}</span><span class="stat-tile-label">${tf('avgWins','victoires en moyenne')}</span></div>
         <div class="stat-tile"><span class="stat-tile-num" style="color:var(--pink);">${avgRep}</span><span class="stat-tile-label">${tf('avgFinalRep','réputation moyenne')}</span></div>
       </div>
+      <h3 style="margin-top:14px;">📈 ${tf('progressionTitle','Progression (victoires par carrière)')}</h3>
+      ${sparklineSVG(sparkValues)}
     </div>
     <div class="card">
-      <h3>${tf('stylesUsed','Styles utilisés')}</h3>
-      ${styleRows.map(x=>`<div class="race-item" style="cursor:default;"><strong>${x.s.name}</strong><span class="pill">${x.count}×</span></div>`).join('')}
+      <h3>${tf('styleStatsTitle','Stats par style')}</h3>
+      ${styleStatsRows.map(x=>`<div class="race-item" style="cursor:default;">
+        <div><strong>${x.s.name}</strong><span class="pill" style="margin-left:6px;">${x.count}×</span></div>
+        <span class="pill mono">${x.avgWins}🏆 ${tf('avgAbbrev','moy.')} · ${x.avgRep}⭐</span>
+      </div>`).join('')}
     </div>
     <div class="card">
       <h3>${tf('countriesUsed','Pays essayés')}</h3>
       ${countryRows.map(x=>`<div class="race-item" style="cursor:default;"><strong>${x.country?x.country.flag+' '+x.country.name:'?'}</strong><span class="pill">${x.count}×</span></div>`).join('')}
     </div>
+    ${headToHeadHTML}
     <div class="card">
       <h3>${tf('allCareers','Toutes les carrières')}</h3>
-      ${careers.slice().reverse().map(c=>{
+      <div class="chip-row" style="margin-bottom:6px;">
+        ${sortChip('recent', tf('sortRecent','Plus récentes'))}
+        ${sortChip('wins', tf('sortWins','Victoires ↓'))}
+        ${sortChip('rep', tf('sortRep','Réputation ↓'))}
+      </div>
+      <div class="chip-row" style="margin-bottom:10px;">
+        <select onchange="setComparatorFilterStyle(this.value)" style="flex:1;">
+          <option value="all" ${COMPARATOR_FILTER_STYLE==='all'?'selected':''}>${tf('allStyles','Tous les styles')}</option>
+          ${styleRows.map(x=>`<option value="${x.s.id}" ${COMPARATOR_FILTER_STYLE===x.s.id?'selected':''}>${x.s.name}</option>`).join('')}
+        </select>
+        <select onchange="setComparatorFilterCountry(this.value)" style="flex:1;">
+          <option value="all" ${COMPARATOR_FILTER_COUNTRY==='all'?'selected':''}>${tf('allCountries','Tous les pays')}</option>
+          ${countryRows.map(x=>`<option value="${x.country?x.country.code:''}" ${COMPARATOR_FILTER_COUNTRY===(x.country?x.country.code:'')?'selected':''}>${x.country?x.country.flag+' '+x.country.name:'?'}</option>`).join('')}
+        </select>
+      </div>
+      ${filtered.length ? filtered.map(({c,i})=>{
         const country = COUNTRIES.find(x=>x.code===c.countryCode);
+        const selected = COMPARATOR_COMPARE.includes(i);
         return `<div class="race-item" style="cursor:default;">
           <div><strong>${country?country.flag:''} ${c.name}</strong><p class="small" style="margin:2px 0 0;">${STYLES.find(s=>s.id===c.styleId).name} · ${c.seasons} ${tf('seasonsBareLower','saisons')}</p></div>
-          <span class="pill mono">${c.wins}🏆 ${c.podiums}🥈</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="pill mono">${c.wins}🏆 ${c.podiums}🥈</span>
+            <button type="button" class="chip ${selected?'active':''}" style="padding:5px 9px;font-size:0.75rem;" onclick="toggleCompareCareer(${i})">🆚</button>
+          </div>
         </div>`;
-      }).join('')}
+      }).join('') : `<p class="small center" style="padding:8px;">${tf('almanacFilterEmpty','Aucune course ne correspond à ce filtre.')}</p>`}
     </div>
     <button class="btn ghost" onclick="renderMainMenu()">${tf('back','← Retour')}</button>
   `);
@@ -5040,11 +5242,12 @@ function renderSeasonSetupScreen(keepScroll){
   const _isS3 = r.season === 3;
   const _lang = SETTINGS.lang === 'en';
 
+  const _startTeamName = currentTeam(r).name;
   const s1WelcomeHTML = _isS1 ? `<div class="card" style="border-left:4px solid var(--pink);background:var(--pink-light,#FFF0F5);">
     <p style="font-weight:700;margin:0 0 6px;">${_lang ? '🚴 Your first professional season' : '🚴 Ta première saison professionnelle'}</p>
     <p class="small" style="margin:0;">${_lang
-      ? "You've just signed your first pro contract with Vélo Passion. No pressure — this season is about learning the ropes. Choose a cautious objective, build your calendar around accessible races, and see how it feels."
-      : "Tu viens de signer ton premier contrat pro avec Vélo Passion. Pas de pression — cette saison, l'essentiel est de prendre tes marques. Choisis un objectif prudent, construis ton calendrier avec des courses accessibles, et ressens comment tout ça fonctionne."
+      ? `You've just signed your first pro contract with ${_startTeamName}. No pressure — this season is about learning the ropes. Choose a cautious objective, build your calendar around accessible races, and see how it feels.`
+      : `Tu viens de signer ton premier contrat pro avec ${_startTeamName}. Pas de pression — cette saison, l'essentiel est de prendre tes marques. Choisis un objectif prudent, construis ton calendrier avec des courses accessibles, et ressens comment tout ça fonctionne.`
     }</p>
   </div>` : '';
 
@@ -7157,6 +7360,7 @@ function finalizeRace(){
   if(STATE.domestiqueBonus){ confDelta += 5; STATE.domestiqueBonus = false; }
   STATE.rider.reputation = clamp(STATE.rider.reputation + repGain, 0, 100);
   STATE.rider.palmares.push({season:STATE.rider.season, raceName:race.name, raceId:race.id, type:race.type, tier:bestTier, prestige:race.prestige});
+  recordGlobalRaceResult(race, bestTier, STATE.rider);
   updateWorldRank(STATE.rider, bestTier, race.prestige, bestPerf);
 
   /* Paiement différé d'une déclaration confiante en interview : si le résultat de
