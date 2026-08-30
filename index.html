@@ -427,7 +427,7 @@ const I18N = {
     slot:'Slot', empty:'empty', noCareer:'No career in progress.',
     yourProgress:'Your progress', careersDone:'career completed', careersDoneP:'careers completed',
     trophiesWord:'trophies', countriesTried:'countries tried', bestCareer:'Best career',
-    tagline:'Ride. Choose. Become a legend.', pill55races:'55 races', pill5styles:'5 rider profiles', pill20countries:'20 nationalities', startCareerCTA:'🚀 Start a career',
+    tagline:'Ride. Choose. Become a legend.', pill55races:'63 races', pill5styles:'5 rider profiles', pill20countries:'20 nationalities', startCareerCTA:'🚀 Start a career',
     yourSlots:'Your 3 career slots', hallOfFame:'🏆 Hall of Legends', explore:'Explore',
     howToPlay:'📖 How to play?', accessibility:'♿ Accessibility',
     yourRiderCard:'Your rider card', rerollName:'🎲 Generate another name', orEnterYourName:'Or enter your own name…', amongStyle:'among', ofCountry:'from',
@@ -504,7 +504,8 @@ const I18N = {
     objective:'Objective', jerseyResult:'Result for this jersey', basedOnWeeks:'based on week',
     and:'and', relevant:'relevant', relevantP:'relevant', outOf:'out of', week:'Week',
     finalRanking:'Final ranking', statUp:'improving', statDown:'declining',
-    reputationWord:'Reputation', confidenceWord:'Confidence', fatigueWord:'Fatigue', team:'team', prizeWord:'Prize',
+    reputationWord:'Reputation', confidenceWord:'Confidence', fatigueWord:'Fatigue', team:'team', prizeWord:'Prize', crashRiskWord:'crash risk',
+    fatigueAlert:'High fatigue — increased injury risk, consider easing off',
     roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
     roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
     arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
@@ -653,8 +654,10 @@ const I18N = {
     careerTrophies:'🏁 Career trophies', playerTrophies:'🎮 Player trophies',
     unlockedBy:'Unlocked by', unlockedSince:'unlocked since this session began.',
     legendaryTrophies:'Legendary trophies', legendaryTrophiesDesc:'The hardest to get — real career achievements.',
-    raceAlmanacTitle:'Race almanac', almanacDesc:'Your personal history across the 55 races in the game, this career.',
+    raceAlmanacTitle:'Race almanac', almanacDesc:'Your personal history across the 63 races in the game, this career.',
     raced:'raced', bestResult:'best result', neverRaced:'Never raced', backToCalendar:'← Back to calendar',
+    almanacFilterAll:'All', almanacFilterRaced:'Raced', almanacFilterUnraced:'Never raced',
+    almanacFilterEmpty:'No race matches this filter.',
     // Stats
     montagne:'Climbing', sprint:'Sprint', clm:'Time trial', classiques:'Classics / Cobbles',
     resistance:'Endurance', recuperation:'Recovery', mental:'Mental',
@@ -3819,7 +3822,7 @@ function renderMainMenu(){
       <h1 style="text-align:center;">${tf('gameTitle','LE COUP DE PÉDALE')}</h1>
       <p style="text-align:center;">${tf('tagline',"Roule. Choisis. Deviens une légende.")}</p>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:14px;">
-        <span style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:700;color:#fff;">🏁 ${tf('pill55races','55 courses')}</span>
+        <span style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:700;color:#fff;">🏁 ${tf('pill55races','63 courses')}</span>
         <span style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:700;color:#fff;">🚴 ${tf('pill5styles','5 profils de coureur')}</span>
         <span style="background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.4);border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:700;color:#fff;">🌍 ${tf('pill20countries','20 nationalités')}</span>
       </div>
@@ -4136,8 +4139,9 @@ function riderHeaderHTML(){
       return `<p class="small" style="color:${_plabel.color};margin:2px 0 4px;">🏅 ${_plabel.label}</p>`;
     })()}
     <div class="stat-row">
-      <div class="stat-label"><span>🔥 ${tf('fatigueWord','Fatigue')}</span><span>${Math.round(r.fatigue)}</span></div>
+      <div class="stat-label"><span>🔥 ${tf('fatigueWord','Fatigue')}</span><span style="${r.fatigue>70?'color:var(--red);font-weight:800;':''}">${Math.round(r.fatigue)}</span></div>
       <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.fatigue))}%;background:linear-gradient(90deg,var(--green),var(--red));"></div></div>
+      ${r.fatigue>70 ? `<p class="small" style="color:var(--red);font-weight:700;margin:4px 0 0;">⚠️ ${tf('fatigueAlert','Fatigue élevée — risque de blessure accru, envisage de lever le pied')}</p>` : ''}
     </div>
   </div>` + globalStatsPanelHTML();
 }
@@ -4439,9 +4443,12 @@ function renderHallOfFame(){
 }
 
 /* ---------- ALMANACH DES COURSES ----------
-   Historique personnel du coureur sur les 55 courses du jeu, pour la carrière en cours :
+   Historique personnel du coureur sur les 63 courses du jeu, pour la carrière en cours :
    meilleur résultat obtenu sur chaque course, ou "jamais courue" si elle n'a jamais été
    sélectionnée. */
+let ALMANAC_FILTER = 'all';
+function setAlmanacFilter(f){ ALMANAC_FILTER = f; renderRaceAlmanac(); }
+
 function renderRaceAlmanac(){
   if(STATE) STATE._screen = 'racealmanac';
   const r = STATE.rider;
@@ -4451,7 +4458,13 @@ function renderRaceAlmanac(){
     if(!bestByRace[p.raceId] || TIER_VALUE[p.tier] > TIER_VALUE[bestByRace[p.raceId].tier]) bestByRace[p.raceId] = p;
   });
   const racedCount = Object.keys(bestByRace).length;
-  const rows = races.map(race=>{
+  const filteredRaces = races.filter(race=>{
+    if(ALMANAC_FILTER==='raced') return !!bestByRace[race.id];
+    if(ALMANAC_FILTER==='unraced') return !bestByRace[race.id];
+    return true;
+  });
+  const filterChip = (id, label) => `<span class="chip ${ALMANAC_FILTER===id?'active':''}" onclick="setAlmanacFilter('${id}')">${label}</span>`;
+  const rows = filteredRaces.length ? filteredRaces.map(race=>{
     const best = bestByRace[race.id];
     return `<div class="race-item" style="cursor:default;">
       <div>
@@ -4463,10 +4476,15 @@ function renderRaceAlmanac(){
         <p class="small ${best?tierClass(best.tier):''}" style="margin:4px 0 0;font-weight:700;">${best?TIER_LABEL[best.tier]:tf('neverRaced','Jamais courue')}</p>
       </div>
     </div>`;
-  }).join('');
+  }).join('') : `<p class="small center" style="padding:8px;">${tf('almanacFilterEmpty','Aucune course ne correspond à ce filtre.')}</p>`;
   setHTML(`
-    ${heroHTML(tf('raceAlmanacTitle','Almanach des courses'), tf('almanacDesc',"Ton historique personnel sur les 55 courses du jeu, cette carrière."))}
+    ${heroHTML(tf('raceAlmanacTitle','Almanach des courses'), tf('almanacDesc',"Ton historique personnel sur les 63 courses du jeu, cette carrière."))}
     <p class="small" style="margin:-6px 0 8px;text-align:center;">${racedCount} / ${races.length} ${tf('raced','courues')}</p>
+    <div class="chip-row" style="justify-content:center;margin-bottom:10px;">
+      ${filterChip('all', tf('almanacFilterAll','Toutes'))}
+      ${filterChip('raced', tf('almanacFilterRaced','Courues'))}
+      ${filterChip('unraced', tf('almanacFilterUnraced','Jamais courues'))}
+    </div>
     <div class="card" style="padding:8px 12px;">${rows}</div>
     <button class="btn ghost" onclick="${STATE.seasonRacePool ? 'renderCalendarScreen()' : 'renderMainMenu()'}">${STATE.seasonRacePool ? tf('backToCalendar','← Retour au calendrier') : tf('back','← Retour')}</button>
   `);
@@ -6856,7 +6874,11 @@ function renderCurrentEvent(){
       ${statMatchHTML}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
       <h3>${event.title}</h3>
-      ${event.choices.map((c,i)=>`<button class="btn ${c.risk}" onclick="chooseOption(${i})">${riskIcon[c.risk]} ${c.label} <span class="mono" style="font-size:0.7rem;opacity:0.8;">(${RISK_LABEL[c.risk]})</span></button>`).join('')}
+      ${event.choices.map((c,i)=>{
+        const crashPct = Math.round(crashChanceFor(STATE.rider, race, c, event._weather)*100);
+        const crashTag = crashPct>=8 ? ` · ⚠️ ${crashPct}% ${tf('crashRiskWord','chute')}` : '';
+        return `<button class="btn ${c.risk}" onclick="chooseOption(${i})">${riskIcon[c.risk]} ${c.label} <span class="mono" style="font-size:0.7rem;opacity:0.8;">(${RISK_LABEL[c.risk]}${crashTag})</span></button>`;
+      }).join('')}
       <details style="margin-top:8px;">
         <summary class="small" style="color:var(--text-soft);cursor:pointer;list-style:none;">▸ ${SETTINGS.lang==='en'?'Event details':'Voir le détail'}</summary>
         <p style="margin:6px 0 0;color:var(--text-soft);">${event.desc}</p>
