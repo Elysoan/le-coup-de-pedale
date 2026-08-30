@@ -69,7 +69,7 @@ export default {
       const now = new Date();
       const rl = await env.DB.prepare('SELECT last_submit FROM rate_limit WHERE ip = ?').bind(ip).first();
       if (rl) {
-        const elapsedSeconds = (now - new Date(rl.last_submit)) / 1000;
+        const elapsedSeconds = (now.getTime() - new Date(rl.last_submit).getTime()) / 1000;
         if (elapsedSeconds < RATE_LIMIT_SECONDS) {
           return json({ error: 'rate_limited' }, 429);
         }
