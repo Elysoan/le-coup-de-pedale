@@ -422,7 +422,7 @@ const I18N = {
     yourProgress:'Your progress', careersDone:'career completed', careersDoneP:'careers completed',
     trophiesWord:'trophies', countriesTried:'countries tried', bestCareer:'Best career',
     tagline:'Ride. Choose. Become a legend.', pill55races:'63 races', pill5styles:'5 rider profiles', pill20countries:'20 nationalities', startCareerCTA:'🚀 Start a career',
-    yourSlots:'Your 3 career slots', hallOfFame:'🏆 Hall of Legends', explore:'Explore', riderDetails:'Rider details',
+    yourSlots:'Your 3 career slots', hallOfFame:'🏆 Hall of Legends', explore:'Explore', riderDetails:'Rider details', deleteSlot:'Delete this slot',
     howToPlay:'📖 How to play?', accessibility:'♿ Accessibility',
     yourRiderCard:'Your rider card', rerollName:'🎲 Generate another name', orEnterYourName:'Or enter your own name…', amongStyle:'among', ofCountry:'from',
     creationIntro:'Develop a road cyclist, season after season, from warm-up races to the monuments of the calendar.',
@@ -3812,7 +3812,7 @@ function renderMainMenu(){
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
           <span style="color:var(--hero);font-weight:800;font-size:0.9rem;">${r.retired?tf('view','Voir'):tf('resume','▶️ Reprendre')}</span>
-          <button class="footer-link" style="padding:0;" onclick="event.stopPropagation();confirmDeleteSlot(${i})">🗑️</button>
+          <button class="footer-link" style="padding:0;" onclick="event.stopPropagation();confirmDeleteSlot(${i})" aria-label="${tf('deleteSlot','Supprimer cet emplacement')}">🗑️</button>
         </div>
       </div>`;
     }
@@ -4020,6 +4020,16 @@ function setHTML(html, keepScroll){
     app().insertAdjacentHTML('beforeend', `<button class="footer-link" style="display:block;margin:6px auto 0;text-align:center;" onclick="renderRaceAlmanac()">${tf('raceAlmanac','📖 Almanach des courses')}</button>`);
   }
   app().insertAdjacentHTML('beforeend', `<a href="https://x.com/lecoupdepedale" target="_blank" rel="noopener" style="display:block;text-align:center;margin:14px auto 6px;font-size:0.72rem;color:var(--text-soft);text-decoration:none;opacity:0.75;">𝕏 @lecoupdepedale</a>`);
+  /* Accessibilité clavier : les éléments cliquables non-natifs (div/span avec onclick,
+     utilisés pour les cartes de sélection) doivent être atteignables au Tab et activables
+     au clavier — voir le listener keydown délégué posé une seule fois au démarrage. */
+  app().querySelectorAll('[onclick]').forEach(el=>{
+    const tag = el.tagName;
+    if(tag==='BUTTON'||tag==='A'||tag==='SELECT'||tag==='INPUT') return;
+    if(el.hasAttribute('disabled')) return;
+    if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
+    if(!el.hasAttribute('role')) el.setAttribute('role','button');
+  });
   if(!keepScroll) window.scrollTo(0,0);
   saveGame();
   const bars = app().querySelectorAll('.stat-fill.animated-fill');
@@ -4226,9 +4236,10 @@ function renderCreationScreen(keepScroll){
     <div class="step-track">${_creationSteps.map(d=>`<span class="${d?'done':''}"></span>`).join('')}</div>
     <div class="card">
       <h3>🌍 ${tf('nationality','Nationalité')}</h3>
-      <select onchange="updateCountry(this.value)">
-        ${COUNTRIES.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<option value="${c.code}" ${c.code===cr.country?'selected':''}>${c.flag} ${c.name}</option>`).join('')}
-      </select>
+      <p class="small" style="margin:0 0 8px;">${(()=>{ const _sel=COUNTRIES.find(c=>c.code===cr.country); return _sel?`${_sel.flag} <strong>${_sel.name}</strong>`:''; })()}</p>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">
+        ${COUNTRIES.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<button type="button" class="chip ${c.code===cr.country?'active':''}" style="padding:8px 0;text-align:center;font-size:1.15rem;" onclick="updateCountry('${c.code}')" title="${c.name}" aria-label="${c.name}" aria-pressed="${c.code===cr.country}">${c.flag}</button>`).join('')}
+      </div>
     </div>
     <div class="card">
       <h3>🚦 ${tf('riderStyle','Style de coureur')}</h3>
@@ -5868,7 +5879,7 @@ function toggleHelp(id){
 
 function helpBtn(id, season){
   if(season !== 1) return '';
-  return ` <button class="help-btn" onclick="toggleHelp('${id}')" title="${tf('helpTooltip','Aide')}">❓</button>`;
+  return ` <button class="help-btn" onclick="toggleHelp('${id}')" title="${tf('helpTooltip','Aide')}" aria-label="${tf('helpTooltip','Aide')}">❓</button>`;
 }
 
 function helpBox(id, textFR, textEN, season){
@@ -8159,6 +8170,14 @@ function afterSplash(){
 /* ---- Démarrage ---- */
 loadSettings();
 applySettings();
+/* Active Entrée/Espace sur les éléments cliquables non-natifs (role="button" posé par
+   setHTML) — un seul listener délégué sur #app, jamais réattaché aux re-rendus. */
+document.getElementById('app').addEventListener('keydown', function(e){
+  if((e.key==='Enter' || e.key===' ') && e.target && e.target.getAttribute && e.target.getAttribute('role')==='button'){
+    e.preventDefault();
+    e.target.click();
+  }
+});
 document.body.style.backgroundImage = `url(${BANNER_B64})`;
 document.documentElement.style.setProperty('--bike-corner-img', `url(${BIKE_CORNER_B64})`);
 document.body.style.backgroundSize = 'cover';
