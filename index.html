@@ -3501,7 +3501,7 @@ function recordGlobalRaceResult(race, tier, rider){
    la valeur ci-dessous une fois en ligne. Tant qu'elle n'est pas renseignée, toute la
    fonctionnalité (bouton de publication, écran de classement) reste masquée plutôt que
    d'afficher quelque chose de cassé. */
-const LEADERBOARD_API_URL = 'REPLACE_WITH_WORKER_URL';
+const LEADERBOARD_API_URL = 'https://coupdepedale-api.ludovic-grisanti.workers.dev';
 function leaderboardConfigured(){
   return typeof LEADERBOARD_API_URL === 'string' && /^https?:\/\//.test(LEADERBOARD_API_URL);
 }
