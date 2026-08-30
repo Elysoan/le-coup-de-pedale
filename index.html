@@ -4236,8 +4236,9 @@ function renderCreationScreen(keepScroll){
     <div class="step-track">${_creationSteps.map(d=>`<span class="${d?'done':''}"></span>`).join('')}</div>
     <div class="card">
       <h3>🌍 ${tf('nationality','Nationalité')}</h3>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-        ${COUNTRIES.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<button type="button" class="chip ${c.code===cr.country?'active':''}" style="display:flex;align-items:center;gap:6px;width:100%;text-align:left;" onclick="updateCountry('${c.code}')" aria-pressed="${c.code===cr.country}">${c.flag} ${c.name}</button>`).join('')}
+      <p class="small" style="margin:0 0 8px;">${(()=>{ const _sel=COUNTRIES.find(c=>c.code===cr.country); return _sel?`${_sel.flag} <strong>${_sel.name}</strong>`:''; })()}</p>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;">
+        ${COUNTRIES.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(c=>`<button type="button" class="chip ${c.code===cr.country?'active':''}" style="padding:8px 0;text-align:center;font-size:1.15rem;" onclick="updateCountry('${c.code}')" title="${c.name}" aria-label="${c.name}" aria-pressed="${c.code===cr.country}">${c.flag}</button>`).join('')}
       </div>
     </div>
     <div class="card">
