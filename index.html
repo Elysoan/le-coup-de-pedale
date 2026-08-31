@@ -510,6 +510,7 @@ const I18N = {
     cancelNoPenalty:'Cancel with no penalty',
     noCancelableRace:'No upcoming race you can cancel (races imposed by your team stay mandatory).',
     canceledRaceJournal:'Lighter calendar', canceledRaceJournalSuffix:'canceled to catch a breather, no penalty.',
+    formeForecast:'Projected form for',
     roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
     roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
     arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
@@ -6272,6 +6273,29 @@ function raceFocusIcons(race){
   return [...stats].map(k=>STAT_ICONS[k]||'').join(' ');
 }
 
+/* ---- Forme prévisionnelle (lecture, pas une nouvelle décision) ----
+   Le calendrier se construit entièrement en amont de la saison — pas de gestion
+   hebdomadaire possible une fois lancée. Plutôt qu'un système de forme à piloter,
+   ceci est une simple lecture calculée à partir du calendrier déjà en train d'être
+   construit : y a-t-il un vrai relâchement avant la course la plus exigeante, ou
+   est-elle abordée en plein bloc de charge ? Recalculé à chaque ajustement. */
+function calendarFormeInsight(){
+  const sel = STATE.selectedRaceIds.map(id=>STATE.seasonRacePool.find(r=>r.id===id)).filter(Boolean).sort((a,b)=>a.month-b.month);
+  if(sel.length < 2) return null;
+  const maxPrestige = Math.max(...sel.map(r=>r.prestige));
+  if(maxPrestige < 4) return null; // pas de vraie course-objectif identifiable cette saison
+  const pointRace = sel.find(r=>r.prestige===maxPrestige);
+  const idx = sel.indexOf(pointRace);
+  const prevRace = idx > 0 ? sel[idx-1] : null;
+  const gapMonths = prevRace ? (pointRace.month - prevRace.month) : (pointRace.month - 1);
+  // Charge cumulée dans les 2 mois précédant l'objectif : un bloc dense juste avant
+  // pèse sur la forme, même si un mois de repos existe plus loin en amont.
+  const loadDays = sel.filter(r=>r!==pointRace && r.month >= pointRace.month-2 && r.month < pointRace.month)
+    .reduce((s,r)=>s+r.days, 0);
+  const score = Math.round(clamp(50 + Math.min(gapMonths,3)*15 - Math.max(0, loadDays-8)*1.5, 15, 95));
+  return {pointRace, score};
+}
+
 function renderCalendarScreen(keepScroll){
   if(STATE) STATE._screen='calendar';
   const r = STATE.rider;
@@ -6362,6 +6386,9 @@ function renderCalendarScreen(keepScroll){
     ? _smartWarns.map(w=>`<p class="small" style="color:var(--blue);margin:2px 0 0;">${w}</p>`).join('')
     : '';
 
+  const _forme = calendarFormeInsight();
+  const warnForme = _forme ? `<p class="small" style="color:${_forme.score>=70?'var(--green-dark)':_forme.score>=45?'#E07B20':'var(--red)'};margin:2px 0 0;font-weight:700;">🎯 ${tf('formeForecast','Forme prévisionnelle pour')} ${_forme.pointRace.name} : ${_forme.score}/100</p>` : '';
+
   setHTML(`
     ${riderHeaderHTML()}
     ${olympicNote}
@@ -6372,7 +6399,7 @@ function renderCalendarScreen(keepScroll){
       </div>
       <div class="stat-track" style="margin-top:6px;"><div class="stat-fill" style="width:${Math.min(100, daysTotal/65*100)}%;background:${daysColor};"></div></div>
       <p class="small" style="margin:4px 0 0;">${raceCount} ${tf(raceCount>1?'racesP':'race','course'+(raceCount>1?'s':''))} · ${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+' par l\'équipe')} · ${gtSelected}/2 ${tf('grandToursAbbr','Grands Tours')}</p>
-      ${warnUnder}${warnFatigue}${warnOver}${warnSmart}
+      ${warnUnder}${warnFatigue}${warnOver}${warnForme}${warnSmart}
       <p class="small" style="margin:8px 0 4px;color:var(--text-soft);">${SETTINGS.lang==='en'?'Pre-fill your calendar automatically (optional — you can adjust after):':'Remplis automatiquement ton calendrier (facultatif — tu peux ajuster ensuite) :'}</p>
       <div style="display:flex;gap:6px;">
         <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('conservateur')" title="${SETTINGS.lang==='en'?'~40-45 days, safer races':'~40-45 j, courses plus sûres'}">🧘 ${SETTINGS.lang==='en'?'Calm':'Pépère'}</button>
