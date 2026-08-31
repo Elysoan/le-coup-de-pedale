@@ -511,6 +511,10 @@ const I18N = {
     noCancelableRace:'No upcoming race you can cancel (races imposed by your team stay mandatory).',
     canceledRaceJournal:'Lighter calendar', canceledRaceJournalSuffix:'canceled to catch a breather, no penalty.',
     formeForecast:'Projected form for',
+    rivalEliteTier:'world elite', rivalStrongTier:'solid all-rounder',
+    rivalPromiseTier:'promising talent', rivalNewcomerTier:'promising newcomer',
+    rivalRetires:'retires after a long career.', newRivalEmerges:'A new rival emerges in the peloton.',
+    headToHeadRecord:'Head-to-head record',
     roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
     roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
     arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
@@ -954,27 +958,39 @@ const TEAMMATE_EVENTS = {
   ],
 };
 
+/* Un seul rival, réutilisé à la fois pour le trio initial et pour le remplaçant généré
+   quand l'un d'eux prend sa retraite (cf. finishSeason()) — même logique de génération,
+   juste un point d'appui pour l'âge et la force de départ. */
+function makeRival(countryCode, usedNames, opts){
+  opts = opts || {};
+  let name, tries = 0;
+  do { name = generateRiderName(countryCode); tries++; } while(usedNames.has(name) && tries<30);
+  usedNames.add(name);
+  // Courses de prestige >= 3 (celles où les rivaux se montrent)
+  const prestigeRaces = RACE_DEFS().filter(r=>r.prestige>=3 && r.id!=='champnat').map(r=>r.id);
+  const rivalRaces = shuffleArr(prestigeRaces).slice(0, 4 + Math.floor(Math.random()*3));
+  return {
+    name,
+    countryCode,
+    styleId: STYLES[Math.floor(Math.random()*STYLES.length)].id,
+    strength: clamp((opts.strengthBase!=null?opts.strengthBase:42) + Math.random()*16, 25, opts.strengthMax||90),
+    raceIds: rivalRaces,
+    age: opts.age!=null ? opts.age : (19 + Math.floor(Math.random()*8)),
+  };
+}
+
 function generateRivals(rider){
   const others = COUNTRIES.filter(c=>c.code!==rider.countryCode);
   const picks = shuffleArr(others).slice(0,3);
   const usedNames = new Set([rider.name]);
-  // Courses de prestige >= 3 (celles où les rivaux se montrent)
-  const prestigeRaces = RACE_DEFS().filter(r=>r.prestige>=3 && r.id!=='champnat').map(r=>r.id);
-  return picks.map(c=>{
-    let name;
-    let tries = 0;
-    do { name = generateRiderName(c.code); tries++; } while(usedNames.has(name) && tries<30);
-    usedNames.add(name);
-    // Chaque rival a 4-6 courses de prédilection (fixes pour toute la carrière)
-    const rivalRaces = shuffleArr(prestigeRaces).slice(0, 4 + Math.floor(Math.random()*3));
-    return {
-      name,
-      countryCode: c.code,
-      styleId: STYLES[Math.floor(Math.random()*STYLES.length)].id,
-      strength: clamp(42 + Math.random()*16, 25, 90),
-      raceIds: rivalRaces,
-    };
-  });
+  return picks.map(c=>makeRival(c.code, usedNames));
+}
+
+function rivalTierLabel(strength){
+  if(strength>=75) return tf('rivalEliteTier','élite mondiale');
+  if(strength>=55) return tf('rivalStrongTier','solide généraliste');
+  if(strength>=35) return tf('rivalPromiseTier','jeune espoir');
+  return tf('rivalNewcomerTier','débutant prometteur');
 }
 
 /* ---------- VOLET FINANCIER (salaire + primes individuelles + primes d'équipe) ---------- */
@@ -5067,7 +5083,7 @@ function rivalsCardHTML(){
       return `<div class="race-item" style="cursor:default;">
         <div>
           <strong>${country?country.flag:''} ${rv.name}</strong>
-          <p class="small" style="margin:2px 0 0;">${STYLES.find(s=>s.id===rv.styleId).name}</p>
+          <p class="small" style="margin:2px 0 0;">${STYLES.find(s=>s.id===rv.styleId).name}${rv.age?` · ${rv.age} ${tf('yo','ans')}`:''} · ${rivalTierLabel(rv.strength)}</p>
         </div>
         <span class="pill mono">${rec.wins}${tf('winAbbr','V')} - ${rec.losses}${tf('lossAbbr','D')}</span>
       </div>`;
@@ -8006,7 +8022,27 @@ function finishSeason(){
     STATE.rivals.forEach(rv => {
       const _delta = (_targetStrength - rv.strength) * 0.25 + (Math.random()*4 - 2);
       rv.strength = clamp(rv.strength + _delta, 25, 85);
+      rv.age = (rv.age!=null ? rv.age : 24) + 1;
     });
+    /* Retraite des rivaux : au-delà de 34 ans, une chance croissante de raccrocher
+       chaque saison — pour qu'un rival ne reste pas indéfiniment le même sur 15
+       saisons. Un remplaçant plus jeune émerge aussitôt pour garder le trio complet. */
+    const _retiring = STATE.rivals.filter(rv => rv.age>=34 && Math.random() < clamp((rv.age-33)*0.12, 0, 0.85));
+    if(_retiring.length){
+      STATE.rivals = STATE.rivals.filter(rv => !_retiring.includes(rv));
+      STATE.rivalRetirementNotes = _retiring.map(rv=>{
+        const rec = STATE.rivalRecords[rv.name] || {wins:0, losses:0};
+        return {name: rv.name, countryCode: rv.countryCode, wins: rec.wins, losses: rec.losses};
+      });
+      const _others = COUNTRIES.filter(c=>c.code!==rider.countryCode);
+      _retiring.forEach(()=>{
+        const _usedNames = new Set(STATE.rivals.map(rv=>rv.name).concat([rider.name]));
+        const _c = _others[Math.floor(Math.random()*_others.length)];
+        const _newRival = makeRival(_c.code, _usedNames, {strengthBase:30, strengthMax:55, age:19+Math.floor(Math.random()*4)});
+        STATE.rivals.push(_newRival);
+        STATE.rivalRecords[_newRival.name] = {wins:0, losses:0};
+      });
+    }
   }
   rider.season = completedSeason + 1;
   rider.contractYearsLeft = Math.max(0, rider.contractYearsLeft - 1);
@@ -8209,6 +8245,18 @@ function renderSeasonRecap(){
       ? tf('sponsorDropped',"met fin au contrat, faute de résultats à la hauteur de ses attentes cette saison.")
       : tf('sponsorEnds',"arrive au terme de son contrat — à renouveler ou remplacer.")}</p>
   </div>` : '';
+  const rivalRetireNotes = STATE.rivalRetirementNotes || [];
+  const rivalRetireHTML = rivalRetireNotes.map(rn=>{
+    const country = COUNTRIES.find(c=>c.code===rn.countryCode);
+    const record = (rn.wins>0 || rn.losses>0)
+      ? ` ${tf('headToHeadRecord','Bilan face à toi')} : ${rn.wins}${tf('winAbbr','V')}-${rn.losses}${tf('lossAbbr','D')}.`
+      : '';
+    return `<div class="card" style="border:1.5px solid var(--purple);background:var(--purple-light);">
+      <p style="margin:0;"><strong>🏁 ${country?country.flag+' ':''}${rn.name}</strong> ${tf('rivalRetires','prend sa retraite après une longue carrière.')}${record}</p>
+      <p class="small" style="margin:4px 0 0;">${tf('newRivalEmerges','Un nouveau rival émerge dans le peloton.')}</p>
+    </div>`;
+  }).join('');
+  STATE.rivalRetirementNotes = null;
   const objNote = STATE.objectiveNote;
   const objNoteHTML = objNote ? `<div class="card" style="border:1.5px solid ${objNote.ok?'var(--green)':'var(--red)'};background:${objNote.ok?'var(--green-light)':'#FDF1EF'};">
     <p style="margin:0;"><strong>${objNote.ok?tf('objectiveMet','🎯 Objectif tenu — '):tf('objectiveMissed','🎯 Objectif manqué — ')}</strong>${objNote.text}</p>
@@ -8236,6 +8284,7 @@ function renderSeasonRecap(){
     ${chNoteHTML}
     ${capNoteHTML}
     ${sponsorNoteHTML}
+    ${rivalRetireHTML}
     <div class="card">
       <h3>${tf('seasonResults','Résultats de la saison')}</h3>
       <div class="grid3">
@@ -8604,11 +8653,13 @@ function careerHighlights(r){
   if(r.olympicGold) highlights.push(`🥇 ${tf('olympicChampion','Champion olympique')} — ${tf('rareAchievement','un accomplissement rarissime, gravé pour toujours dans la carrière.')}`);
   else if(r.olympicSilver || r.olympicBronze) highlights.push(`🎽 ${tf('olympicMedalWon','Une médaille olympique décrochée en cours de carrière — un souvenir impérissable.')}`);
 
-  if(STATE.rivals && STATE.rivalRecords){
+  if(STATE.rivalRecords){
+    // Parcourt tous les rivaux jamais affrontés (y compris ceux déjà partis à la
+    // retraite en cours de carrière), pas seulement le trio encore actif à la fin.
     let best = null;
-    STATE.rivals.forEach(rv=>{
-      const rec = STATE.rivalRecords[rv.name] || {wins:0, losses:0};
-      if(rec.wins>=3 && (!best || (rec.wins-rec.losses) > (best.rec.wins-best.rec.losses))) best = {name:rv.name, rec};
+    Object.keys(STATE.rivalRecords).forEach(name=>{
+      const rec = STATE.rivalRecords[name] || {wins:0, losses:0};
+      if(rec.wins>=3 && (!best || (rec.wins-rec.losses) > (best.rec.wins-best.rec.losses))) best = {name, rec};
     });
     if(best) highlights.push(`⚔️ ${tf('notableRivalry','Une rivalité marquante avec')} ${best.name} — ${best.rec.wins} ${tf(best.rec.wins>1?'winsAgainstP':'winAgainst','victoire'+(best.rec.wins>1?'s':''))} ${tf('againstHim','contre lui au fil des saisons.')}`);
   }
