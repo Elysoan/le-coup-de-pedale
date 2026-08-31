@@ -503,6 +503,13 @@ const I18N = {
     finalRanking:'Final ranking', statUp:'improving', statDown:'declining',
     reputationWord:'Reputation', confidenceWord:'Confidence', fatigueWord:'Fatigue', team:'team', prizeWord:'Prize', crashRiskWord:'crash risk',
     fatigueAlert:'High fatigue — increased injury risk, consider easing off',
+    manageCalendar:'Manage my calendar',
+    manageCalendarTitle:'Manage my calendar',
+    manageCalendarDesc:"Your fatigue is high. You can cancel an upcoming race with no penalty (no DNS, no reputation loss) to catch your breath before the rest of the season.",
+    cancelsLeft:'free cancellation left', cancelsLeftP:'free cancellations left', thisSeason:'this season',
+    cancelNoPenalty:'Cancel with no penalty',
+    noCancelableRace:'No upcoming race you can cancel (races imposed by your team stay mandatory).',
+    canceledRaceJournal:'Lighter calendar', canceledRaceJournalSuffix:'canceled to catch a breather, no penalty.',
     roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
     roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
     arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
@@ -825,6 +832,7 @@ function rerenderCurrentScreenForLang(){
   else if(screen==='seasonrecap' && STATE.seasonRecapData) renderSeasonRecap();
   else if(screen==='contractscreen') renderContractScreen();
   else if(screen==='personalevent' && STATE.pendingPersonalEvent) renderPersonalEvent();
+  else if(screen==='cancelrace') renderCancelRaceScreen();
   else if(STATE.runQueue && STATE.runQueue.length) renderCalendarScreen();
   else renderSeasonSetupScreen();
 }
@@ -3934,6 +3942,7 @@ function resumeSlot(i){
   else if(screen==='seasonrecap' && STATE.seasonRecapData) renderSeasonRecap();
   else if(screen==='contractscreen') renderContractScreen();
   else if(screen==='personalevent' && STATE.pendingPersonalEvent) renderPersonalEvent();
+  else if(screen==='cancelrace') renderCancelRaceScreen();
   else if(STATE.runQueue && STATE.runQueue.length) renderCalendarScreen();
   else renderSeasonSetupScreen();
 }
@@ -4379,6 +4388,9 @@ function riderHeaderHTML(){
       <div class="stat-label"><span>🔥 ${tf('fatigueWord','Fatigue')}</span><span style="${r.fatigue>70?'color:var(--red);font-weight:800;':''}">${Math.round(r.fatigue)}</span></div>
       <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.fatigue))}%;background:linear-gradient(90deg,var(--green),var(--red));"></div></div>
       ${r.fatigue>70 ? `<p class="small" style="color:var(--red);font-weight:700;margin:4px 0 0;">⚠️ ${tf('fatigueAlert','Fatigue élevée — risque de blessure accru, envisage de lever le pied')}</p>` : ''}
+      ${(r.fatigue>70 && STATE.runQueue && (STATE.freeCancelsRemaining||0)>0 && STATE.runQueue.slice(STATE.runRaceIdx||0).some(rc=>!STATE.imposedRaceIds.includes(rc.id)))
+        ? `<button class="btn ghost" style="margin-top:6px;font-size:0.78rem;padding:6px 10px;" onclick="renderCancelRaceScreen()">🩹 ${tf('manageCalendar','Gérer mon calendrier')} (${STATE.freeCancelsRemaining})</button>`
+        : ''}
     </div>
   </div>` + globalStatsPanelHTML();
 }
@@ -6572,10 +6584,53 @@ function confirmCalendar(){
   STATE.runQueue = STATE.selectedRaceIds.map(id=>all.find(r=>r.id===id)).filter(Boolean).sort((a,b)=>a.month-b.month);
   STATE.seasonTotalDays = STATE.runQueue.reduce((sum,r)=>sum+r.days,0);
   STATE.cumulativeDaysRaced = 0;
+  /* Filet de rattrapage : si la fatigue grimpe trop malgré le calendrier choisi, le
+     coureur peut annuler jusqu'à 2 courses à venir (hors imposées) sans pénalité —
+     voir riderHeaderHTML() et renderCancelRaceScreen(). */
+  STATE.freeCancelsRemaining = 2;
   STATE.seasonSummary = {repStart: STATE.rider.reputation, rankStart: STATE.rider.worldRank, ratingStart: globalRiderRating(STATE.rider.stats), statsStart: {...STATE.rider.stats}, results:[]};
   STATE.runRaceIdx = 0;
   STATE.lastRacedMonth = 0;
   beginRace();
+}
+
+/* ---- Annulation de course sans pénalité (fatigue élevée) ----
+   Accessible dès que la fatigue dépasse 70 (même seuil que l'alerte déjà affichée dans
+   riderHeaderHTML) : jusqu'à 2 courses à venir non imposées peuvent être retirées du
+   calendrier sans forfait ni perte de réputation, pour souffler avant la suite de la
+   saison sans passer par tout un système de gestion de forme. */
+function renderCancelRaceScreen(){
+  if(STATE) STATE._screen = 'cancelrace';
+  const upcoming = (STATE.runQueue||[]).slice(STATE.runRaceIdx||0).filter(rc=>!STATE.imposedRaceIds.includes(rc.id));
+  const remaining = STATE.freeCancelsRemaining || 0;
+  setHTML(`
+    ${heroHTML('🩹 '+tf('manageCalendarTitle','Gérer mon calendrier'), tf('manageCalendarDesc',"Ta fatigue est élevée. Tu peux annuler une course à venir sans pénalité (aucun forfait, aucune perte de réputation) pour souffler avant la suite de la saison."))}
+    <p class="small center" style="margin:-6px 0 10px;">${remaining} ${tf(remaining>1?'cancelsLeftP':'cancelsLeft','annulation'+(remaining>1?'s':'')+' sans pénalité restante'+(remaining>1?'s':''))} ${tf('thisSeason','cette saison')}</p>
+    <div class="card" style="padding:8px 12px;">
+      ${upcoming.length ? upcoming.map(race=>`
+        <div class="race-item" style="cursor:default;">
+          <div><strong>${race.flag?race.flag+' ':''}${race.name}</strong><p class="small" style="margin:2px 0 0;">${MONTHS[race.month]} · ${race.days} ${tf('daysAbbr','j')}</p></div>
+          ${remaining>0 ? `<button class="btn ghost" style="font-size:0.78rem;padding:6px 10px;" onclick="cancelUpcomingRace('${race.id}')">${tf('cancelNoPenalty','Annuler sans pénalité')}</button>` : ''}
+        </div>
+      `).join('') : `<p class="small center" style="padding:8px;">${tf('noCancelableRace',"Aucune course à venir que tu puisses annuler (les courses imposées par l'équipe restent obligatoires).")}</p>`}
+    </div>
+    <button class="btn ghost" onclick="${STATE.seasonRacePool ? 'renderCalendarScreen()' : 'renderMainMenu()'}">${tf('back','← Retour')}</button>
+  `);
+}
+
+function cancelUpcomingRace(raceId){
+  if((STATE.freeCancelsRemaining||0) <= 0) return;
+  if(STATE.imposedRaceIds.includes(raceId)) return;
+  const idx = STATE.runQueue.findIndex(rc=>rc.id===raceId);
+  if(idx < (STATE.runRaceIdx||0)) return; // déjà courue ou en cours, rien à annuler
+  const race = STATE.runQueue[idx];
+  STATE.runQueue.splice(idx, 1);
+  STATE.seasonTotalDays = Math.max(0, (STATE.seasonTotalDays||0) - race.days);
+  const si = STATE.selectedRaceIds.indexOf(raceId);
+  if(si>=0) STATE.selectedRaceIds.splice(si,1);
+  STATE.freeCancelsRemaining--;
+  addJournalEntry(STATE.rider, `🩹 ${tf('canceledRaceJournal','Calendrier allégé')} — "${race.name}" ${tf('canceledRaceJournalSuffix','annulée pour souffler, sans pénalité.')}`);
+  renderCancelRaceScreen();
 }
 
 /* ---- Déroulé des courses ---- */
