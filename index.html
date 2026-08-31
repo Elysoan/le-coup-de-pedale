@@ -7454,8 +7454,10 @@ function finalizeRace(){
 
   /* Compteur de victoires d'étape en carrière : une semaine de grand tour remportée
      compte comme une victoire d'étape, tout comme un "Jour X : Victoire d'étape" du
-     résumé synthétique ci-dessus — indépendant du résultat global de la course. */
-  if(STATE.runRaceAccum.length > 1){
+     résumé synthétique ci-dessus — indépendant du résultat global de la course. Une
+     phase bonus gagnée sur une course d'un seul jour (classique, critérium...) ne
+     compte PAS comme victoire d'étape : il n'y a pas d'étape sur une course d'un jour. */
+  if(race.days > 1 && STATE.runRaceAccum.length > 1){
     STATE.rider.stageWins += STATE.runRaceAccum.filter(e=>e.tier==='victoire').reduce((sum,e)=>sum + (e.perf>=105 ? 2 : 1), 0);
   } else if(STATE.pendingStageSummary){
     STATE.rider.stageWins += STATE.pendingStageSummary.filter(l=>l.result==="Victoire d'étape").length;
