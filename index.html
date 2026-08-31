@@ -503,6 +503,14 @@ const I18N = {
     finalRanking:'Final ranking', statUp:'improving', statDown:'declining',
     reputationWord:'Reputation', confidenceWord:'Confidence', fatigueWord:'Fatigue', team:'team', prizeWord:'Prize', crashRiskWord:'crash risk',
     fatigueAlert:'High fatigue — increased injury risk, consider easing off',
+    manageCalendar:'Manage my calendar',
+    manageCalendarTitle:'Manage my calendar',
+    manageCalendarDesc:"Your fatigue is high. You can cancel an upcoming race with no penalty (no DNS, no reputation loss) to catch your breath before the rest of the season.",
+    cancelsLeft:'free cancellation left', cancelsLeftP:'free cancellations left', thisSeason:'this season',
+    cancelNoPenalty:'Cancel with no penalty',
+    noCancelableRace:'No upcoming race you can cancel (races imposed by your team stay mandatory).',
+    canceledRaceJournal:'Lighter calendar', canceledRaceJournalSuffix:'canceled to catch a breather, no penalty.',
+    formeForecast:'Projected form for',
     roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
     roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
     arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
@@ -825,6 +833,7 @@ function rerenderCurrentScreenForLang(){
   else if(screen==='seasonrecap' && STATE.seasonRecapData) renderSeasonRecap();
   else if(screen==='contractscreen') renderContractScreen();
   else if(screen==='personalevent' && STATE.pendingPersonalEvent) renderPersonalEvent();
+  else if(screen==='cancelrace') renderCancelRaceScreen();
   else if(STATE.runQueue && STATE.runQueue.length) renderCalendarScreen();
   else renderSeasonSetupScreen();
 }
@@ -3217,7 +3226,12 @@ function applyFatigue(rider, race, choice, weatherId){
   if(_wm.globalFatigueBoost) worldFatMult *= _wm.globalFatigueBoost;
   if(_wm.julyFatigue && race.month === 7) worldFatMult *= _wm.julyFatigue;
   if(_wm.springFatigue && race.month >= 3 && race.month <= 4 && (race.type === 'monument' || race.type === 'classique')) worldFatMult *= _wm.springFatigue;
-  const canonicalEvents = (race._baseEventCount) || (race.events && race.events.length) || 1;
+  /* Important : diviser par le nombre RÉEL d'events de cette course (canoniques +
+     phases bonus + event rival), pas seulement les canoniques (_baseEventCount, qui
+     sert uniquement à l'affichage du compteur de jours). Sinon les phases bonus/rival
+     ajoutent un coût de fatigue plein sans être comptées dans le diviseur, et la
+     fatigue totale de la course dépasse largement son fatCost prévu. */
+  const canonicalEvents = (race.events && race.events.length) || race._baseEventCount || 1;
   const cost = (race.fatCost / canonicalEvents) * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult;
   rider.fatigue = clamp(rider.fatigue + cost, 0, 100);
   /* Tracker le pic de fatigue saisonnière pour le défi fatigue-maitrisee */
@@ -3934,6 +3948,7 @@ function resumeSlot(i){
   else if(screen==='seasonrecap' && STATE.seasonRecapData) renderSeasonRecap();
   else if(screen==='contractscreen') renderContractScreen();
   else if(screen==='personalevent' && STATE.pendingPersonalEvent) renderPersonalEvent();
+  else if(screen==='cancelrace') renderCancelRaceScreen();
   else if(STATE.runQueue && STATE.runQueue.length) renderCalendarScreen();
   else renderSeasonSetupScreen();
 }
@@ -4379,6 +4394,9 @@ function riderHeaderHTML(){
       <div class="stat-label"><span>🔥 ${tf('fatigueWord','Fatigue')}</span><span style="${r.fatigue>70?'color:var(--red);font-weight:800;':''}">${Math.round(r.fatigue)}</span></div>
       <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.fatigue))}%;background:linear-gradient(90deg,var(--green),var(--red));"></div></div>
       ${r.fatigue>70 ? `<p class="small" style="color:var(--red);font-weight:700;margin:4px 0 0;">⚠️ ${tf('fatigueAlert','Fatigue élevée — risque de blessure accru, envisage de lever le pied')}</p>` : ''}
+      ${(r.fatigue>70 && STATE.runQueue && (STATE.freeCancelsRemaining||0)>0 && STATE.runQueue.slice(STATE.runRaceIdx||0).some(rc=>!STATE.imposedRaceIds.includes(rc.id)))
+        ? `<button class="btn ghost" style="margin-top:6px;font-size:0.78rem;padding:6px 10px;" onclick="renderCancelRaceScreen()">🩹 ${tf('manageCalendar','Gérer mon calendrier')} (${STATE.freeCancelsRemaining})</button>`
+        : ''}
     </div>
   </div>` + globalStatsPanelHTML();
 }
@@ -6260,6 +6278,29 @@ function raceFocusIcons(race){
   return [...stats].map(k=>STAT_ICONS[k]||'').join(' ');
 }
 
+/* ---- Forme prévisionnelle (lecture, pas une nouvelle décision) ----
+   Le calendrier se construit entièrement en amont de la saison — pas de gestion
+   hebdomadaire possible une fois lancée. Plutôt qu'un système de forme à piloter,
+   ceci est une simple lecture calculée à partir du calendrier déjà en train d'être
+   construit : y a-t-il un vrai relâchement avant la course la plus exigeante, ou
+   est-elle abordée en plein bloc de charge ? Recalculé à chaque ajustement. */
+function calendarFormeInsight(){
+  const sel = STATE.selectedRaceIds.map(id=>STATE.seasonRacePool.find(r=>r.id===id)).filter(Boolean).sort((a,b)=>a.month-b.month);
+  if(sel.length < 2) return null;
+  const maxPrestige = Math.max(...sel.map(r=>r.prestige));
+  if(maxPrestige < 4) return null; // pas de vraie course-objectif identifiable cette saison
+  const pointRace = sel.find(r=>r.prestige===maxPrestige);
+  const idx = sel.indexOf(pointRace);
+  const prevRace = idx > 0 ? sel[idx-1] : null;
+  const gapMonths = prevRace ? (pointRace.month - prevRace.month) : (pointRace.month - 1);
+  // Charge cumulée dans les 2 mois précédant l'objectif : un bloc dense juste avant
+  // pèse sur la forme, même si un mois de repos existe plus loin en amont.
+  const loadDays = sel.filter(r=>r!==pointRace && r.month >= pointRace.month-2 && r.month < pointRace.month)
+    .reduce((s,r)=>s+r.days, 0);
+  const score = Math.round(clamp(50 + Math.min(gapMonths,3)*15 - Math.max(0, loadDays-8)*1.5, 15, 95));
+  return {pointRace, score};
+}
+
 function renderCalendarScreen(keepScroll){
   if(STATE) STATE._screen='calendar';
   const r = STATE.rider;
@@ -6350,6 +6391,9 @@ function renderCalendarScreen(keepScroll){
     ? _smartWarns.map(w=>`<p class="small" style="color:var(--blue);margin:2px 0 0;">${w}</p>`).join('')
     : '';
 
+  const _forme = calendarFormeInsight();
+  const warnForme = _forme ? `<p class="small" style="color:${_forme.score>=70?'var(--green-dark)':_forme.score>=45?'#E07B20':'var(--red)'};margin:2px 0 0;font-weight:700;">🎯 ${tf('formeForecast','Forme prévisionnelle pour')} ${_forme.pointRace.name} : ${_forme.score}/100</p>` : '';
+
   setHTML(`
     ${riderHeaderHTML()}
     ${olympicNote}
@@ -6360,7 +6404,7 @@ function renderCalendarScreen(keepScroll){
       </div>
       <div class="stat-track" style="margin-top:6px;"><div class="stat-fill" style="width:${Math.min(100, daysTotal/65*100)}%;background:${daysColor};"></div></div>
       <p class="small" style="margin:4px 0 0;">${raceCount} ${tf(raceCount>1?'racesP':'race','course'+(raceCount>1?'s':''))} · ${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+' par l\'équipe')} · ${gtSelected}/2 ${tf('grandToursAbbr','Grands Tours')}</p>
-      ${warnUnder}${warnFatigue}${warnOver}${warnSmart}
+      ${warnUnder}${warnFatigue}${warnOver}${warnForme}${warnSmart}
       <p class="small" style="margin:8px 0 4px;color:var(--text-soft);">${SETTINGS.lang==='en'?'Pre-fill your calendar automatically (optional — you can adjust after):':'Remplis automatiquement ton calendrier (facultatif — tu peux ajuster ensuite) :'}</p>
       <div style="display:flex;gap:6px;">
         <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('conservateur')" title="${SETTINGS.lang==='en'?'~40-45 days, safer races':'~40-45 j, courses plus sûres'}">🧘 ${SETTINGS.lang==='en'?'Calm':'Pépère'}</button>
@@ -6572,10 +6616,53 @@ function confirmCalendar(){
   STATE.runQueue = STATE.selectedRaceIds.map(id=>all.find(r=>r.id===id)).filter(Boolean).sort((a,b)=>a.month-b.month);
   STATE.seasonTotalDays = STATE.runQueue.reduce((sum,r)=>sum+r.days,0);
   STATE.cumulativeDaysRaced = 0;
+  /* Filet de rattrapage : si la fatigue grimpe trop malgré le calendrier choisi, le
+     coureur peut annuler jusqu'à 2 courses à venir (hors imposées) sans pénalité —
+     voir riderHeaderHTML() et renderCancelRaceScreen(). */
+  STATE.freeCancelsRemaining = 2;
   STATE.seasonSummary = {repStart: STATE.rider.reputation, rankStart: STATE.rider.worldRank, ratingStart: globalRiderRating(STATE.rider.stats), statsStart: {...STATE.rider.stats}, results:[]};
   STATE.runRaceIdx = 0;
   STATE.lastRacedMonth = 0;
   beginRace();
+}
+
+/* ---- Annulation de course sans pénalité (fatigue élevée) ----
+   Accessible dès que la fatigue dépasse 70 (même seuil que l'alerte déjà affichée dans
+   riderHeaderHTML) : jusqu'à 2 courses à venir non imposées peuvent être retirées du
+   calendrier sans forfait ni perte de réputation, pour souffler avant la suite de la
+   saison sans passer par tout un système de gestion de forme. */
+function renderCancelRaceScreen(){
+  if(STATE) STATE._screen = 'cancelrace';
+  const upcoming = (STATE.runQueue||[]).slice(STATE.runRaceIdx||0).filter(rc=>!STATE.imposedRaceIds.includes(rc.id));
+  const remaining = STATE.freeCancelsRemaining || 0;
+  setHTML(`
+    ${heroHTML('🩹 '+tf('manageCalendarTitle','Gérer mon calendrier'), tf('manageCalendarDesc',"Ta fatigue est élevée. Tu peux annuler une course à venir sans pénalité (aucun forfait, aucune perte de réputation) pour souffler avant la suite de la saison."))}
+    <p class="small center" style="margin:-6px 0 10px;">${remaining} ${tf(remaining>1?'cancelsLeftP':'cancelsLeft','annulation'+(remaining>1?'s':'')+' sans pénalité restante'+(remaining>1?'s':''))} ${tf('thisSeason','cette saison')}</p>
+    <div class="card" style="padding:8px 12px;">
+      ${upcoming.length ? upcoming.map(race=>`
+        <div class="race-item" style="cursor:default;">
+          <div><strong>${race.flag?race.flag+' ':''}${race.name}</strong><p class="small" style="margin:2px 0 0;">${MONTHS[race.month]} · ${race.days} ${tf('daysAbbr','j')}</p></div>
+          ${remaining>0 ? `<button class="btn ghost" style="font-size:0.78rem;padding:6px 10px;" onclick="cancelUpcomingRace('${race.id}')">${tf('cancelNoPenalty','Annuler sans pénalité')}</button>` : ''}
+        </div>
+      `).join('') : `<p class="small center" style="padding:8px;">${tf('noCancelableRace',"Aucune course à venir que tu puisses annuler (les courses imposées par l'équipe restent obligatoires).")}</p>`}
+    </div>
+    <button class="btn ghost" onclick="${STATE.seasonRacePool ? 'renderCalendarScreen()' : 'renderMainMenu()'}">${tf('back','← Retour')}</button>
+  `);
+}
+
+function cancelUpcomingRace(raceId){
+  if((STATE.freeCancelsRemaining||0) <= 0) return;
+  if(STATE.imposedRaceIds.includes(raceId)) return;
+  const idx = STATE.runQueue.findIndex(rc=>rc.id===raceId);
+  if(idx < (STATE.runRaceIdx||0)) return; // déjà courue ou en cours, rien à annuler
+  const race = STATE.runQueue[idx];
+  STATE.runQueue.splice(idx, 1);
+  STATE.seasonTotalDays = Math.max(0, (STATE.seasonTotalDays||0) - race.days);
+  const si = STATE.selectedRaceIds.indexOf(raceId);
+  if(si>=0) STATE.selectedRaceIds.splice(si,1);
+  STATE.freeCancelsRemaining--;
+  addJournalEntry(STATE.rider, `🩹 ${tf('canceledRaceJournal','Calendrier allégé')} — "${race.name}" ${tf('canceledRaceJournalSuffix','annulée pour souffler, sans pénalité.')}`);
+  renderCancelRaceScreen();
 }
 
 /* ---- Déroulé des courses ---- */
