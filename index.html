@@ -329,6 +329,9 @@ html.high-contrast .small{ color:var(--text-soft) !important; }
 .help-btn:hover{opacity:1;}
 .help-box{display:none;margin:6px 0 2px;padding:8px 10px;background:rgba(59,130,246,0.08);border-left:3px solid var(--blue);border-radius:6px;font-size:0.82rem;color:var(--text-soft);line-height:1.45;}
 .help-box.open{display:block;}
+.tip-box{position:relative;margin:6px 0 8px;padding:8px 34px 8px 10px;background:rgba(59,130,246,0.08);border-left:3px solid var(--blue);border-radius:6px;font-size:0.82rem;color:var(--text-soft);line-height:1.45;}
+.tip-dismiss-btn{position:absolute;top:4px;right:4px;background:none;border:none;font-size:1rem;line-height:1;color:var(--text-soft);cursor:pointer;padding:4px 6px;}
+.tip-dismiss-btn:hover{color:var(--text);}
 
 .screen-hero{
   background:linear-gradient(135deg,var(--hero),var(--hero-dark));
@@ -517,6 +520,13 @@ const I18N = {
     headToHeadRecord:'Head-to-head record',
     buzzRaceTooltip:'Hyped race: reputation gained or lost is amplified',
     buzzCalendarNote:'This season, one or more races are heavily hyped (🔥): reputation swings are amplified, for better or worse.',
+    gotIt:'Got it',
+    tipRivalCalendar:'The 🥊 badge marks a race where one of your rivals shows up: beat them to fuel your rivalry over the seasons.',
+    tipBuzzCalendar:'The 🔥 badge marks a heavily hyped race this season: your reputation swings are amplified there, for better or worse.',
+    tipFormeCalendar:'"Projected form" estimates how fresh you\'ll be for your most prestigious race, based on the calendar you\'re building — adjust it to improve the score.',
+    tipFreeCancel:'Above 70 fatigue, you can cancel up to 2 upcoming races per season with no penalty — no DNS, no reputation loss — to catch your breath.',
+    tipRiskLevels:'Each choice carries a risk level: safer options are steadier but score lower, bolder ones can pay off big or backfire. Watch the ⚠️ crash-risk warning too.',
+    tipSeasonRecap:'Reputation and team confidence (shown at the top) are your two key gauges: reputation opens better teams, confidence protects your contract even in a rough season.',
     roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
     roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
     arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
@@ -4458,9 +4468,12 @@ function riderHeaderHTML(){
       <div class="stat-label"><span>🔥 ${tf('fatigueWord','Fatigue')}</span><span style="${r.fatigue>70?'color:var(--red);font-weight:800;':''}">${Math.round(r.fatigue)}</span></div>
       <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.fatigue))}%;background:linear-gradient(90deg,var(--green),var(--red));"></div></div>
       ${r.fatigue>70 ? `<p class="small" style="color:var(--red);font-weight:700;margin:4px 0 0;">⚠️ ${tf('fatigueAlert','Fatigue élevée — risque de blessure accru, envisage de lever le pied')}</p>` : ''}
-      ${(r.fatigue>70 && STATE.runQueue && (STATE.freeCancelsRemaining||0)>0 && STATE.runQueue.slice(STATE.runRaceIdx||0).some(rc=>!STATE.imposedRaceIds.includes(rc.id)))
-        ? `<button class="btn ghost" style="margin-top:6px;font-size:0.78rem;padding:6px 10px;" onclick="renderCancelRaceScreen()">🩹 ${tf('manageCalendar','Gérer mon calendrier')} (${STATE.freeCancelsRemaining})</button>`
-        : ''}
+      ${(()=>{
+        const canCancel = r.fatigue>70 && STATE.runQueue && (STATE.freeCancelsRemaining||0)>0 && STATE.runQueue.slice(STATE.runRaceIdx||0).some(rc=>!STATE.imposedRaceIds.includes(rc.id));
+        if(!canCancel) return '';
+        return `<button class="btn ghost" style="margin-top:6px;font-size:0.78rem;padding:6px 10px;" onclick="renderCancelRaceScreen()">🩹 ${tf('manageCalendar','Gérer mon calendrier')} (${STATE.freeCancelsRemaining})</button>`
+          + tipBox('free-cancel', "Au-delà de 70 de fatigue, tu peux annuler jusqu'à 2 courses à venir par saison sans pénalité — aucun forfait, aucune perte de réputation — pour souffler.", tf('tipFreeCancel'));
+      })()}
     </div>
   </div>` + globalStatsPanelHTML();
 }
@@ -6339,6 +6352,23 @@ function helpBox(id, textFR, textEN, season){
   return `<div class="help-box" id="${id}">${txt}</div>`;
 }
 
+/* ---- Tips contextuels "vus une fois" ----
+   Contrairement à helpBox/helpBtn ci-dessus (aide de référence, disponible sur simple clic
+   pendant toute la saison 1 seulement), ces tips s'affichent automatiquement la toute
+   première fois qu'une mécanique se présente au joueur — quelle que soit la saison ou la
+   carrière — puis disparaissent pour de bon une fois fermés (SESSION.tipsShown, persisté). */
+function tipBox(id, textFR, textEN){
+  if(SESSION.tipsShown[id]) return '';
+  const txt = SETTINGS.lang==='en' ? textEN : textFR;
+  return `<div class="tip-box" id="tip-${id}">💡 ${txt}<button class="tip-dismiss-btn" onclick="dismissTip('${id}')" title="${tf('gotIt','Compris')}" aria-label="${tf('gotIt','Compris')}">✕</button></div>`;
+}
+function dismissTip(id){
+  SESSION.tipsShown[id] = true;
+  saveGame();
+  const el = document.getElementById('tip-'+id);
+  if(el) el.remove();
+}
+
 function raceFocusIcons(race){
   const stats = new Set();
   race.events.forEach(e=>{ e.focus.forEach(f=>stats.add(f)); });
@@ -6463,6 +6493,10 @@ function renderCalendarScreen(keepScroll){
   const warnForme = _forme ? `<p class="small" style="color:${_forme.score>=70?'var(--green-dark)':_forme.score>=45?'#E07B20':'var(--red)'};margin:2px 0 0;font-weight:700;">🎯 ${tf('formeForecast','Forme prévisionnelle pour')} ${_forme.pointRace.name} : ${_forme.score}/100</p>` : '';
   const hasBuzzRace = STATE.seasonRacePool.some(rc=>rc.buzz);
   const warnBuzz = hasBuzzRace ? `<p class="small" style="color:#E07B20;margin:2px 0 0;">🔥 ${tf('buzzCalendarNote','Cette saison, une ou plusieurs courses sont très suivies (🔥) : réputation amplifiée, en bien comme en mal.')}</p>` : '';
+  const hasRivalRace = (STATE.rivals||[]).length>0 && STATE.seasonRacePool.some(rc=>(STATE.rivals||[]).some(rv=>(rv.raceIds||[]).includes(rc.id)));
+  const tipRival = hasRivalRace ? tipBox('rival-calendar', "Le badge 🥊 signale une course où un de tes rivaux est présent : bats-le pour alimenter votre rivalité au fil des saisons.", tf('tipRivalCalendar')) : '';
+  const tipBuzz = hasBuzzRace ? tipBox('buzz-calendar', "Le badge 🔥 signale une course très suivie cette saison : ta réputation y est amplifiée, en bien comme en mal.", tf('tipBuzzCalendar')) : '';
+  const tipForme = _forme ? tipBox('forme-calendar', "La \"forme prévisionnelle\" estime ta fraîcheur pour ta course la plus prestigieuse, en fonction du calendrier que tu es en train de construire — ajuste-le pour l'améliorer.", tf('tipFormeCalendar')) : '';
 
   setHTML(`
     ${riderHeaderHTML()}
@@ -6482,6 +6516,7 @@ function renderCalendarScreen(keepScroll){
         <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('ambitieux')" title="${SETTINGS.lang==='en'?'~55-63 days, high prestige':'~55-63 j, haut prestige'}">🔥 ${SETTINGS.lang==='en'?'Ambitious':'Ambitieux'}</button>
       </div>
     </div>
+    ${tipRival}${tipBuzz}${tipForme}
     <div class="card" style="padding:8px 12px;">${rows}</div>
     <button class="btn" ${(over65||under40)?'disabled':''} onclick="confirmCalendar()">🚀 ${tf('startSeason','Lancer la saison')}</button>
     <button class="btn ghost" onclick="renderRaceAlmanac()">${tf('raceAlmanac','📖 Almanach des courses')}</button>
@@ -7445,6 +7480,7 @@ function renderCurrentEvent(){
       ${statMatchHTML}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
       <h3>${event.title}</h3>
+      ${tipBox('risk-levels', "Chaque choix a un niveau de risque : les options prudentes sont plus régulières mais rapportent moins, les audacieuses peuvent rapporter gros ou se retourner contre toi. Surveille aussi l'avertissement ⚠️ de risque de chute.", tf('tipRiskLevels'))}
       ${event.choices.map((c,i)=>{
         const crashPct = Math.round(crashChanceFor(STATE.rider, race, c, event._weather)*100);
         const crashTag = crashPct>=8 ? ` · ⚠️ ${crashPct}% ${tf('crashRiskWord','chute')}` : '';
@@ -8343,6 +8379,7 @@ function renderSeasonRecap(){
     </div>
     ${riderHeaderHTML()}
     ${trophyBannerHTML()}
+    ${tipBox('season-recap', "Réputation et confiance d'équipe (en haut) sont tes deux jauges clés : la réputation t'ouvre les meilleures équipes, la confiance protège ton contrat même après une saison difficile.", tf('tipSeasonRecap'))}
     ${objNoteHTML}
     ${chNoteHTML}
     ${capNoteHTML}
