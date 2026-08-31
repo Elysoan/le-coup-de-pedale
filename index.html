@@ -515,6 +515,8 @@ const I18N = {
     rivalPromiseTier:'promising talent', rivalNewcomerTier:'promising newcomer',
     rivalRetires:'retires after a long career.', newRivalEmerges:'A new rival emerges in the peloton.',
     headToHeadRecord:'Head-to-head record',
+    buzzRaceTooltip:'Hyped race: reputation gained or lost is amplified',
+    buzzCalendarNote:'This season, one or more races are heavily hyped (🔥): reputation swings are amplified, for better or worse.',
     roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
     roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
     arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
@@ -991,6 +993,31 @@ function rivalTierLabel(strength){
   if(strength>=55) return tf('rivalStrongTier','solide généraliste');
   if(strength>=35) return tf('rivalPromiseTier','jeune espoir');
   return tf('rivalNewcomerTier','débutant prometteur');
+}
+
+/* IA des rivaux réactive : quand plusieurs rivaux sont présents dans la même course,
+   celui qui se présente vraiment au joueur (duel direct ou simple confrontation aux
+   résultats) n'est plus tiré uniformément — un rival plus fort a davantage de chances
+   d'être celui qui se manifeste, comme s'il cherchait le joueur plus activement. */
+function pickReactiveRival(candidates){
+  if(!candidates || candidates.length===0) return null;
+  if(candidates.length===1) return candidates[0];
+  const weights = candidates.map(rv=>Math.pow(Math.max(1, rv.strength||1), 1.6));
+  const total = weights.reduce((a,b)=>a+b, 0);
+  let roll = Math.random()*total;
+  for(let i=0;i<candidates.length;i++){
+    roll -= weights[i];
+    if(roll<=0) return candidates[i];
+  }
+  return candidates[candidates.length-1];
+}
+
+/* Seuil de performance à atteindre pour l'emporter dans un duel/confrontation face à un
+   rival donné, désormais fonction de sa force réelle plutôt qu'un seuil fixe de 65 pour
+   tout le monde : un débutant prometteur (force ~30) se bat plus facilement, une pointure
+   mondiale (force ~85) exige une bien meilleure performance pour être battue. */
+function rivalDuelThreshold(strength){
+  return clamp(50 + ((strength!=null?strength:50) - 50) * 0.4, 38, 68);
 }
 
 /* ---------- VOLET FINANCIER (salaire + primes individuelles + primes d'équipe) ---------- */
@@ -2997,6 +3024,23 @@ function pickRaceOffers(){
   return offered.sort((a,b)=>a.month-b.month);
 }
 
+/* Calendrier du buzz : chaque saison, quelques courses (rarement plus de 3, plus
+   probable sur les grosses épreuves) sont marquées comme très suivies — un risque et
+   une récompense de réputation amplifiés (cf. repGainFor), pour donner un intérêt
+   stratégique de plus au choix du calendrier au-delà du seul prestige fixe des courses. */
+const BUZZ_CHANCE_BY_PRESTIGE = {1:0.03, 2:0.08, 3:0.16, 4:0.28, 5:0.42};
+function assignSeasonBuzz(pool){
+  pool.forEach(race=>{ race.buzz = false; });
+  const eligible = pool
+    .filter(race=>!race.locked)
+    .map(race=>({race, roll:Math.random()}))
+    .filter(({race, roll})=>roll < (BUZZ_CHANCE_BY_PRESTIGE[race.prestige]||0.03));
+  eligible
+    .sort((a,b)=>(b.race.prestige-a.race.prestige) || (b.roll-a.roll))
+    .slice(0,3)
+    .forEach(({race})=>{ race.buzz = true; });
+}
+
 function statFocusAverage(rider, focus){
   const vals = focus.map(k=>rider.stats[k]);
   return vals.reduce((a,b)=>a+b,0)/vals.length;
@@ -3383,8 +3427,11 @@ function pickImposedRaces(rider, trainingFocus, pool){
    sommet et y rester doit rester rare, réservé aux plus grandes carrières. */
 function repGainFor(race, bestTier, currentRep, rider){
   const rep = currentRep==null ? 50 : currentRep;
-  if(bestTier === 'abandon') return -Math.round(race.prestige * 1.1);
-  if(bestTier === 'forfait') return -Math.round(race.prestige * 0.5); // forfait = moins grave qu'un abandon
+  /* Calendrier du buzz : une course très suivie amplifie la réputation en jeu, dans les
+     deux sens — un pari qui rapporte plus si le coureur brille, coûte plus s'il déçoit. */
+  const buzzMult = race.buzz ? 1.4 : 1;
+  if(bestTier === 'abandon') return -Math.round(race.prestige * 1.1 * buzzMult);
+  if(bestTier === 'forfait') return -Math.round(race.prestige * 0.5 * buzzMult); // forfait = moins grave qu'un abandon
   const tv = TIER_VALUE[bestTier]; // 0..4
   let raw = (tv - 1) * race.prestige * 0.9;
   if(raw > 0){
@@ -3437,6 +3484,7 @@ function repGainFor(race, bestTier, currentRep, rider){
       // pas via la réputation — rien à faire ici
     }
   }
+  raw *= buzzMult;
   return Math.round(raw);
 }
 
@@ -5354,6 +5402,8 @@ const SIDE_CHALLENGES = [
   {id:'zero-abandon', icon:'🛡️', label:"Termine toutes tes courses sans abandon ni forfait", labelEN:"Finish every race without abandonment or withdrawal", check:(results)=>!results.some(x=>x.bestTier==='abandon'||x.bestTier==='forfait'), reward:{reputation:2, money:500}},
   {id:'victoire-semitour', icon:'🚵', label:"Remporte un semi-tour cette saison", labelEN:"Win a semi-tour this season", check:(results)=>results.some(x=>x.type==='semitour' && x.bestTier==='victoire'), reward:{money:1500, reputation:2}},
   {id:'deux-victoires', icon:'🎯', label:"Remporte au moins 2 courses cette saison", labelEN:"Win at least 2 races this season", check:(results)=>results.filter(x=>x.bestTier==='victoire').length>=2, reward:{reputation:3, money:1000}},
+  {id:'defi-rival', icon:'⚔️', label:"Bats un de tes rivaux au moins une fois cette saison", labelEN:"Beat one of your rivals at least once this season", check:(results)=>results.some(x=>x.rivalBeat), reward:{reputation:3, money:800}},
+  {id:'defi-buzz', icon:'🔥', label:"Monte sur le podium d'une course très suivie (🔥)", labelEN:"Reach the podium of a hyped race (🔥)", check:(results)=>results.some(x=>x.buzz && ['victoire','podium'].includes(x.bestTier)), reward:{reputation:3, money:1200}},
 ];
 
 /* ---------- STAGE DE PRÉPARATION ----------
@@ -5567,6 +5617,7 @@ function confirmSeasonSetup(){
   STATE.pendingSetup = null;
 
   STATE.seasonRacePool = pickRaceOffers();
+  assignSeasonBuzz(STATE.seasonRacePool);
   const imposed = pickImposedRaces(r, STATE.trainingFocus, STATE.seasonRacePool);
   STATE.imposedRaceIds = imposed;
   STATE.selectedRaceIds = imposed.slice();
@@ -6369,9 +6420,10 @@ function renderCalendarScreen(keepScroll){
       const styleBadge = styleMatch ? ` <span style="color:var(--green-dark);font-size:0.85em;">⭐</span>` : '';
       const isSignature = r.signatureRaceId && race.id === r.signatureRaceId;
       const signatureBadge = isSignature ? ` <span style="color:var(--pink);font-size:0.85em;">❤️</span>` : '';
+      const buzzBadge = race.buzz ? ` <span title="${tf('buzzRaceTooltip','Course très suivie : réputation gagnée ou perdue amplifiée')}" style="color:#E07B20;font-size:0.85em;">🔥</span>` : '';
       const clickable = !isImposed && !race.locked;
       const opacity = race.locked ? 'opacity:0.45;' : '';
-      return `<div class="race-item" style="cursor:${clickable?'pointer':'default'};${borderStyle}${opacity}" ${clickable?`onclick="toggleRace('${race.id}')"`:''}><div style="flex:1;"><strong>${race.flag?race.flag+' ':''}${race.name}</strong>${styleBadge}${signatureBadge}${rivalBadge}<p class="small" style="margin:2px 0 0;">${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)} ${imposedBadge}${lockInfo}</p></div><div style="text-align:right;min-width:70px;">${badgeHTML(race.type)}<p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p></div></div>`;
+      return `<div class="race-item" style="cursor:${clickable?'pointer':'default'};${borderStyle}${opacity}" ${clickable?`onclick="toggleRace('${race.id}')"`:''}><div style="flex:1;"><strong>${race.flag?race.flag+' ':''}${race.name}</strong>${styleBadge}${signatureBadge}${buzzBadge}${rivalBadge}<p class="small" style="margin:2px 0 0;">${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)} ${imposedBadge}${lockInfo}</p></div><div style="text-align:right;min-width:70px;">${badgeHTML(race.type)}<p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p></div></div>`;
     }).join('');
 
     return monthHeader + raceItems;
@@ -6409,6 +6461,8 @@ function renderCalendarScreen(keepScroll){
 
   const _forme = calendarFormeInsight();
   const warnForme = _forme ? `<p class="small" style="color:${_forme.score>=70?'var(--green-dark)':_forme.score>=45?'#E07B20':'var(--red)'};margin:2px 0 0;font-weight:700;">🎯 ${tf('formeForecast','Forme prévisionnelle pour')} ${_forme.pointRace.name} : ${_forme.score}/100</p>` : '';
+  const hasBuzzRace = STATE.seasonRacePool.some(rc=>rc.buzz);
+  const warnBuzz = hasBuzzRace ? `<p class="small" style="color:#E07B20;margin:2px 0 0;">🔥 ${tf('buzzCalendarNote','Cette saison, une ou plusieurs courses sont très suivies (🔥) : réputation amplifiée, en bien comme en mal.')}</p>` : '';
 
   setHTML(`
     ${riderHeaderHTML()}
@@ -6420,7 +6474,7 @@ function renderCalendarScreen(keepScroll){
       </div>
       <div class="stat-track" style="margin-top:6px;"><div class="stat-fill" style="width:${Math.min(100, daysTotal/65*100)}%;background:${daysColor};"></div></div>
       <p class="small" style="margin:4px 0 0;">${raceCount} ${tf(raceCount>1?'racesP':'race','course'+(raceCount>1?'s':''))} · ${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+' par l\'équipe')} · ${gtSelected}/2 ${tf('grandToursAbbr','Grands Tours')}</p>
-      ${warnUnder}${warnFatigue}${warnOver}${warnForme}${warnSmart}
+      ${warnUnder}${warnFatigue}${warnOver}${warnForme}${warnBuzz}${warnSmart}
       <p class="small" style="margin:8px 0 4px;color:var(--text-soft);">${SETTINGS.lang==='en'?'Pre-fill your calendar automatically (optional — you can adjust after):':'Remplis automatiquement ton calendrier (facultatif — tu peux ajuster ensuite) :'}</p>
       <div style="display:flex;gap:6px;">
         <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('conservateur')" title="${SETTINGS.lang==='en'?'~40-45 days, safer races':'~40-45 j, courses plus sûres'}">🧘 ${SETTINGS.lang==='en'?'Calm':'Pépère'}</button>
@@ -6991,7 +7045,7 @@ function rollRivalRaceEvent(race, rivals){
   // Vérifier si un rival est présent dans cette course
   const presentRivals = (rivals||[]).filter(rv => (rv.raceIds||[]).includes(race.id));
   if(presentRivals.length === 0) return null;
-  const rival = presentRivals[Math.floor(Math.random() * presentRivals.length)];
+  const rival = pickReactiveRival(presentRivals);
 
   // Choisir un event rival adapté au type de course
   const typeToFocus = {
@@ -7012,7 +7066,7 @@ function rollRivalRaceEvent(race, rivals){
   const v = def.variants[Math.floor(Math.random() * def.variants.length)];
   const name = rival.name;
 
-  const event = {focus: def.focus, _isBonus: true, _isRivalEvent: true};
+  const event = {focus: def.focus, _isBonus: true, _isRivalEvent: true, _rivalName: name};
   Object.defineProperty(event, 'title', {enumerable:true, get(){
     const t = (SETTINGS.lang==='en' && v.titleEN) ? v.titleEN : v.title;
     return t.replace(/\{name\}/g, name);
@@ -7422,7 +7476,7 @@ function chooseOption(i){
   const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
   const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace, isSignatureRace, race.type);
   applyFatigue(STATE.rider, race, choice, weatherId);
-  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained, isRivalEvent:!!event._isRivalEvent});
+  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained, isRivalEvent:!!event._isRivalEvent, rivalName:event._rivalName||null});
   STATE.runEventIdx++;
   /* Sur une course à plusieurs semaines (grand tour), abandonner une semaine met fin à
      toute la course : impossible de repartir la semaine suivante, comme dans la réalité. */
@@ -7430,9 +7484,13 @@ function chooseOption(i){
 
   /* Feedback narratif immédiat après un event rival */
   if(event._isRivalEvent){
+    /* Le rival crédité du duel doit être celui réellement nommé dans l'event (event._rivalName),
+       pas un tirage indépendant — sinon avec plusieurs rivaux présents dans la même course, le
+       nom affiché dans le récit pourrait ne pas correspondre au rival dont la force détermine
+       le seuil de victoire, ni à celui crédité plus tard dans checkRivalAppearance(). */
     const presentRivals = (STATE.rivals||[]).filter(rv=>(rv.raceIds||[]).includes(race.id));
-    const rival = presentRivals[0] || {name:'ton rival'};
-    const isGood = result.perf >= 65;
+    const rival = presentRivals.find(rv=>rv.name===event._rivalName) || presentRivals[0] || {name:'ton rival', strength:50};
+    const isGood = result.perf >= rivalDuelThreshold(rival.strength);
     STATE._pendingRivalDuelFeedback = {
       good: isGood,
       risk: choice.risk,
@@ -7687,7 +7745,8 @@ function finalizeRace(){
     else if(jerseyResult.type==='jeune') unlockTrophy('maillot-blanc');
   }
   checkRivalAppearance(race, bestTier);
-  STATE.seasonSummary.results.push({raceName:race.name, type:race.type, prestige:race.prestige, bestTier, repGain, events:STATE.runRaceAccum.slice()});
+  const rivalBeat = (STATE.pendingRivalNote && STATE.pendingRivalNote.won) ? STATE.pendingRivalNote.rivalName : null;
+  STATE.seasonSummary.results.push({raceName:race.name, type:race.type, prestige:race.prestige, bestTier, repGain, buzz:!!race.buzz, rivalBeat, events:STATE.runRaceAccum.slice()});
   STATE.pendingBestPerf = bestPerf;
   renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize);
 }
@@ -7699,14 +7758,18 @@ function checkRivalAppearance(race, bestTier){
   if(!STATE.rivals || STATE.rivals.length===0) return;
   const assignedRivals = STATE.rivals.filter(rv=>(rv.raceIds||[]).includes(race.id));
   if(assignedRivals.length === 0) return;
-  const rival = assignedRivals[Math.floor(Math.random()*assignedRivals.length)];
-  /* Priorité : utiliser la perf de la phase rival si elle existe dans runRaceAccum.
-     Cela garantit la cohérence avec le feedback narratif intermédiaire (seuil 65).
-     Fallback : meilleure perf globale vs tirage aléatoire sur la force du rival. */
+  /* Priorité : utiliser la perf de la phase rival si elle existe dans runRaceAccum, et
+     créditer le MÊME rival que celui nommé dans ce duel (rivalEntry.rivalName) — sinon,
+     avec plusieurs rivaux présents dans la course, un tirage indépendant pourrait créditer
+     un rival différent de celui réellement affronté dans le récit.
+     Fallback (pas de duel direct) : tirage réactif favorisant le rival le plus fort, comparé
+     à la meilleure perf globale du coureur. */
   const rivalEntry = STATE.runRaceAccum.find(e=>e.isRivalEvent);
+  const rival = (rivalEntry && assignedRivals.find(rv=>rv.name===rivalEntry.rivalName))
+    || pickReactiveRival(assignedRivals);
   let won;
   if(rivalEntry){
-    won = rivalEntry.perf >= 65;
+    won = rivalEntry.perf >= rivalDuelThreshold(rival.strength);
   } else {
     const rivalPerf = clamp(rival.strength + (Math.random()*30-15) + race.prestige*2, 0, 100);
     const playerPerf = Math.max(...STATE.runRaceAccum.map(e=>e.perf||0));
