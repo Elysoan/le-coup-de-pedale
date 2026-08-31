@@ -3226,7 +3226,12 @@ function applyFatigue(rider, race, choice, weatherId){
   if(_wm.globalFatigueBoost) worldFatMult *= _wm.globalFatigueBoost;
   if(_wm.julyFatigue && race.month === 7) worldFatMult *= _wm.julyFatigue;
   if(_wm.springFatigue && race.month >= 3 && race.month <= 4 && (race.type === 'monument' || race.type === 'classique')) worldFatMult *= _wm.springFatigue;
-  const canonicalEvents = (race._baseEventCount) || (race.events && race.events.length) || 1;
+  /* Important : diviser par le nombre RÉEL d'events de cette course (canoniques +
+     phases bonus + event rival), pas seulement les canoniques (_baseEventCount, qui
+     sert uniquement à l'affichage du compteur de jours). Sinon les phases bonus/rival
+     ajoutent un coût de fatigue plein sans être comptées dans le diviseur, et la
+     fatigue totale de la course dépasse largement son fatCost prévu. */
+  const canonicalEvents = (race.events && race.events.length) || race._baseEventCount || 1;
   const cost = (race.fatCost / canonicalEvents) * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult;
   rider.fatigue = clamp(rider.fatigue + cost, 0, 100);
   /* Tracker le pic de fatigue saisonnière pour le défi fatigue-maitrisee */
