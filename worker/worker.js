@@ -50,13 +50,23 @@ export default {
       const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10) || 50));
       const styleParam = url.searchParams.get('style');
       const style = ALLOWED_STYLES.includes(styleParam) ? styleParam : null;
-      const baseSelect = `SELECT rider_name, style_id, country_code, wins, podiums, stage_wins,
+      const countryParam = url.searchParams.get('country');
+      const country = (typeof countryParam === 'string' && /^[A-Za-z]{2}$/.test(countryParam))
+        ? countryParam.toUpperCase() : null;
+
+      // Filtres combinables : style et pays peuvent s'appliquer ensemble (ex. grimpeurs français).
+      const conditions = [];
+      const params = [];
+      if (style) { conditions.push('style_id = ?'); params.push(style); }
+      if (country) { conditions.push('country_code = ?'); params.push(country); }
+      const whereClause = conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '';
+      params.push(limit);
+
+      const { results } = await env.DB.prepare(
+        `SELECT rider_name, style_id, country_code, wins, podiums, stage_wins,
                 final_reputation, seasons, best_rank, score, submitted_at
-         FROM leaderboard`;
-      const stmt = style
-        ? env.DB.prepare(`${baseSelect} WHERE style_id = ? ORDER BY score DESC LIMIT ?`).bind(style, limit)
-        : env.DB.prepare(`${baseSelect} ORDER BY score DESC LIMIT ?`).bind(limit);
-      const { results } = await stmt.all();
+         FROM leaderboard${whereClause} ORDER BY score DESC LIMIT ?`
+      ).bind(...params).all();
       return json({ entries: results });
     }
 
