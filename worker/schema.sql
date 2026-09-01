@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS leaderboard (
 
 CREATE INDEX IF NOT EXISTS idx_leaderboard_score ON leaderboard(score DESC);
 CREATE INDEX IF NOT EXISTS idx_leaderboard_style_score ON leaderboard(style_id, score DESC);
+CREATE INDEX IF NOT EXISTS idx_leaderboard_country_score ON leaderboard(country_code, score DESC);
 
 CREATE TABLE IF NOT EXISTS rate_limit (
   ip TEXT PRIMARY KEY,

@@ -4,10 +4,12 @@ Petite API sans serveur à gérer, sur le plan gratuit de Cloudflare, qui stocke
 scores publiés depuis le jeu et sert le top N.
 
 - `POST /submit` : enregistre le score d'une carrière terminée.
-- `GET /leaderboard?limit=50&style=grimpeur` : renvoie les meilleurs scores. Le
-  paramètre `style` est optionnel (valeurs possibles : `grimpeur`, `sprinteur`,
-  `rouleur`, `puncheur`, `polyvalent`) et filtre le classement sur ce style de
-  coureur ; omis ou invalide, il renvoie le classement tous styles confondus.
+- `GET /leaderboard?limit=50&style=grimpeur&country=FR` : renvoie les meilleurs
+  scores. Deux paramètres optionnels, combinables : `style` (valeurs possibles :
+  `grimpeur`, `sprinteur`, `rouleur`, `puncheur`, `polyvalent`) et `country`
+  (code pays à 2 lettres, ex. `FR`, `BE`, `IT`). Omis ou invalide, chaque
+  paramètre est simplement ignoré — le classement reste alors non filtré sur
+  cette dimension.
 
 Aucun compte joueur, aucune authentification — juste une validation de plausibilité
 des valeurs reçues et une limite d'une soumission par minute et par IP.

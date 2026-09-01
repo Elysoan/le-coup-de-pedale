@@ -608,7 +608,7 @@ const I18N = {
     globalLeaderboard:'🌍 Global leaderboard', globalLeaderboardDesc:'The best careers published by every player of Le Coup de Pédale.',
     loading:'Loading…', leaderboardUnavailable:'Leaderboard unavailable right now.',
     leaderboardEmpty:'No score published yet — be the first!',
-    leaderboardEmptyFiltered:'No score published for this style yet.',
+    leaderboardEmptyFiltered:'No score published for this filter yet.',
     leaderboardRankPrefix:'Your world rank:', leaderboardOutsideTop50:'outside the displayed top 50',
     leaderboardYourLastRank:'Your last published score',
     challengeTutoTitle:'Challenge mode',
@@ -3609,9 +3609,11 @@ function recordGlobalRaceResult(race, tier, rider){
    fonctionnalité (bouton de publication, écran de classement) reste masquée plutôt que
    d'afficher quelque chose de cassé. */
 const LEADERBOARD_API_URL = 'https://coupdepedale-api.ludovic-grisanti.workers.dev';
-/* Filtre par style affiché sur l'écran de classement mondial (null = tous styles
-   confondus) — volatile, pas persisté d'une session à l'autre. */
-let LEADERBOARD_STYLE_FILTER = null;
+/* Filtres (style, pays) affichés sur l'écran de classement mondial, combinables
+   ('all' = pas de filtre sur cette dimension) — volatiles, pas persistés d'une
+   session à l'autre. Même convention que COMPARATOR_FILTER_STYLE/COUNTRY. */
+let LEADERBOARD_STYLE_FILTER = 'all';
+let LEADERBOARD_COUNTRY_FILTER = 'all';
 function leaderboardConfigured(){
   return typeof LEADERBOARD_API_URL === 'string' && /^https?:\/\//.test(LEADERBOARD_API_URL);
 }
@@ -3642,11 +3644,12 @@ async function submitToLeaderboard(entry){
     return {ok:true, rank: data.rank || null};
   } catch(e){ return {ok:false}; }
 }
-async function fetchLeaderboard(styleId){
+async function fetchLeaderboard(styleId, countryCode){
   if(!leaderboardConfigured()) return null;
   try{
-    const styleQuery = styleId ? `&style=${encodeURIComponent(styleId)}` : '';
-    const res = await fetch(LEADERBOARD_API_URL + '/leaderboard?limit=50' + styleQuery);
+    const styleQuery = (styleId && styleId!=='all') ? `&style=${encodeURIComponent(styleId)}` : '';
+    const countryQuery = (countryCode && countryCode!=='all') ? `&country=${encodeURIComponent(countryCode)}` : '';
+    const res = await fetch(LEADERBOARD_API_URL + '/leaderboard?limit=50' + styleQuery + countryQuery);
     if(!res.ok) return null;
     const data = await res.json();
     return Array.isArray(data.entries) ? data.entries : [];
@@ -3684,15 +3687,19 @@ function leaderboardCardHTML(){
 function renderGlobalLeaderboard(){
   if(STATE) STATE._screen = 'globalleaderboard';
   const lang = SETTINGS.lang === 'en';
-  const filterPills = [{id:null, icon:'🌍', name: lang?'All':'Tous'}].concat(STYLES).map(s=>{
-    const active = LEADERBOARD_STYLE_FILTER === s.id;
-    const label = s.id===null ? s.name : ((lang && s.nameEN) ? s.nameEN : s.name);
-    return `<button class="btn ${active?'':'ghost'}" style="flex:1 1 30%;min-width:96px;font-size:0.74rem;padding:8px 4px;border-radius:14px;" onclick="setLeaderboardStyleFilter(${s.id?`'${s.id}'`:'null'})">${s.icon} ${label}</button>`;
-  }).join('');
+  const styleOptions = `<option value="all" ${LEADERBOARD_STYLE_FILTER==='all'?'selected':''}>${tf('allStyles','Tous les styles')}</option>`
+    + STYLES.map(s=>`<option value="${s.id}" ${LEADERBOARD_STYLE_FILTER===s.id?'selected':''}>${s.icon} ${(lang&&s.nameEN)?s.nameEN:s.name}</option>`).join('');
+  const countryOptions = `<option value="all" ${LEADERBOARD_COUNTRY_FILTER==='all'?'selected':''}>${tf('allCountries','Tous les pays')}</option>`
+    + COUNTRIES.map(c=>`<option value="${c.code}" ${LEADERBOARD_COUNTRY_FILTER===c.code?'selected':''}>${c.flag} ${c.name}</option>`).join('');
   setHTML(`
     ${heroHTML('🌍 '+tf('globalLeaderboard','Classement mondial'), tf('globalLeaderboardDesc',"Les meilleures carrières publiées par tous les joueurs du Coup de Pédale."))}
     ${STATE && STATE.leaderboardRank ? `<p class="small center" style="margin:-6px 0 8px;">${tf('leaderboardYourLastRank','Ton dernier score publié')} : <strong>#${STATE.leaderboardRank}</strong></p>` : ''}
-    <div class="card" style="padding:8px;display:flex;flex-wrap:wrap;gap:6px;">${filterPills}</div>
+    <div class="card" style="padding:10px;">
+      <div class="chip-row">
+        <select onchange="setLeaderboardStyleFilter(this.value)" style="flex:1;">${styleOptions}</select>
+        <select onchange="setLeaderboardCountryFilter(this.value)" style="flex:1;">${countryOptions}</select>
+      </div>
+    </div>
     <div class="card center" id="leaderboard-loading"><p>${tf('loading','Chargement…')}</p></div>
     <div id="leaderboard-rows"></div>
     <button class="btn ghost" onclick="${STATE&&STATE.rider?'renderCareerEnd()':'renderMainMenu()'}">${tf('back','← Retour')}</button>
@@ -3703,8 +3710,12 @@ function setLeaderboardStyleFilter(styleId){
   LEADERBOARD_STYLE_FILTER = styleId;
   renderGlobalLeaderboard();
 }
+function setLeaderboardCountryFilter(countryCode){
+  LEADERBOARD_COUNTRY_FILTER = countryCode;
+  renderGlobalLeaderboard();
+}
 async function loadGlobalLeaderboard(){
-  const entries = await fetchLeaderboard(LEADERBOARD_STYLE_FILTER);
+  const entries = await fetchLeaderboard(LEADERBOARD_STYLE_FILTER, LEADERBOARD_COUNTRY_FILTER);
   const loadingEl = document.getElementById('leaderboard-loading');
   const rowsEl = document.getElementById('leaderboard-rows');
   if(!loadingEl || !rowsEl) return; // écran quitté entretemps
@@ -3714,7 +3725,8 @@ async function loadGlobalLeaderboard(){
   }
   loadingEl.remove();
   if(entries.length === 0){
-    rowsEl.innerHTML = `<p class="small center" style="padding:8px;">${LEADERBOARD_STYLE_FILTER ? tf('leaderboardEmptyFiltered','Aucun score publié pour ce style pour le moment.') : tf('leaderboardEmpty','Aucun score publié pour le moment — sois le premier !')}</p>`;
+    const hasFilter = LEADERBOARD_STYLE_FILTER!=='all' || LEADERBOARD_COUNTRY_FILTER!=='all';
+    rowsEl.innerHTML = `<p class="small center" style="padding:8px;">${hasFilter ? tf('leaderboardEmptyFiltered','Aucun score publié pour ce filtre pour le moment.') : tf('leaderboardEmpty','Aucun score publié pour le moment — sois le premier !')}</p>`;
     return;
   }
   rowsEl.innerHTML = `<div class="card">${entries.map((e,i)=>{
