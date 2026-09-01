@@ -596,7 +596,7 @@ const I18N = {
     progressionTitle:'Progression (wins per career)',
     styleStatsTitle:'Stats by style', avgAbbrev:'avg.',
     sortRecent:'Most recent', sortWins:'Wins ↓', sortRep:'Reputation ↓',
-    allStyles:'All styles', allCountries:'All countries',
+    allStyles:'All styles', allCountries:'All countries', resetFilters:'Reset filters',
     headToHead:'Head-to-head comparison', clearSelection:'Clear selection',
     pickOneMore:'Pick a second career (🆚) to compare.',
     podiumsShort:'podiums', bestRank:'best world ranking', wins:'wins',
@@ -3614,6 +3614,12 @@ const LEADERBOARD_API_URL = 'https://coupdepedale-api.ludovic-grisanti.workers.d
    session à l'autre. Même convention que COMPARATOR_FILTER_STYLE/COUNTRY. */
 let LEADERBOARD_STYLE_FILTER = 'all';
 let LEADERBOARD_COUNTRY_FILTER = 'all';
+/* Les <select> natifs s'ouvrent en plein écran sur mobile (Android notamment), au style
+   du système plutôt que du jeu — remplacés par des panneaux dépliables inline (même
+   principe que les mois du calendrier ou le détail du coureur), qui restent dans le flux
+   de la page et gardent l'habillage visuel du jeu. Un seul panneau ouvert à la fois. */
+let LEADERBOARD_STYLE_PANEL_OPEN = false;
+let LEADERBOARD_COUNTRY_PANEL_OPEN = false;
 function leaderboardConfigured(){
   return typeof LEADERBOARD_API_URL === 'string' && /^https?:\/\//.test(LEADERBOARD_API_URL);
 }
@@ -3687,18 +3693,35 @@ function leaderboardCardHTML(){
 function renderGlobalLeaderboard(){
   if(STATE) STATE._screen = 'globalleaderboard';
   const lang = SETTINGS.lang === 'en';
-  const styleOptions = `<option value="all" ${LEADERBOARD_STYLE_FILTER==='all'?'selected':''}>${tf('allStyles','Tous les styles')}</option>`
-    + STYLES.map(s=>`<option value="${s.id}" ${LEADERBOARD_STYLE_FILTER===s.id?'selected':''}>${s.icon} ${(lang&&s.nameEN)?s.nameEN:s.name}</option>`).join('');
-  const countryOptions = `<option value="all" ${LEADERBOARD_COUNTRY_FILTER==='all'?'selected':''}>${tf('allCountries','Tous les pays')}</option>`
-    + COUNTRIES.map(c=>`<option value="${c.code}" ${LEADERBOARD_COUNTRY_FILTER===c.code?'selected':''}>${c.flag} ${c.name}</option>`).join('');
+  const styleChoices = [{id:'all', icon:'🌍', label:tf('allStyles','Tous les styles')}]
+    .concat(STYLES.map(s=>({id:s.id, icon:s.icon, label:(lang&&s.nameEN)?s.nameEN:s.name})));
+  /* Tri alphabétique sur le nom affiché (pas l'ordre d'insertion de COUNTRIES, qui ne suit
+     aucun ordre lisible) — nécessaire pour retrouver rapidement un pays dans une liste de 20,
+     contrairement au style (5 options, l'ordre existant reste lisible tel quel). */
+  const countriesSorted = COUNTRIES.slice().sort((a,b)=>a.name.localeCompare(b.name, lang?'en':'fr'));
+  const countryChoices = [{code:'all', flag:'🌍', label:tf('allCountries','Tous les pays')}]
+    .concat(countriesSorted.map(c=>({code:c.code, flag:c.flag, label:c.name})));
+  const currentStyle = styleChoices.find(s=>s.id===LEADERBOARD_STYLE_FILTER) || styleChoices[0];
+  const currentCountry = countryChoices.find(c=>(c.code||'all')===LEADERBOARD_COUNTRY_FILTER) || countryChoices[0];
+  const hasActiveFilter = LEADERBOARD_STYLE_FILTER!=='all' || LEADERBOARD_COUNTRY_FILTER!=='all';
+  const filterToggleBtn = (label, icon, open, onclick) => `<button class="btn ghost" style="flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:0.82rem;padding:10px 10px;" onclick="${onclick}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${icon} ${label}</span><span>${open?'▲':'▼'}</span></button>`;
+  const stylePanel = LEADERBOARD_STYLE_PANEL_OPEN ? `<div style="max-height:280px;overflow-y:auto;margin-top:6px;">${styleChoices.map(s=>
+    `<div class="row-item ${LEADERBOARD_STYLE_FILTER===s.id?'active':''}" onclick="setLeaderboardStyleFilter('${s.id}')"><span>${s.icon} ${s.label}</span></div>`
+  ).join('')}</div>` : '';
+  const countryPanel = LEADERBOARD_COUNTRY_PANEL_OPEN ? `<div style="max-height:280px;overflow-y:auto;margin-top:6px;">${countryChoices.map(c=>
+    `<div class="row-item ${LEADERBOARD_COUNTRY_FILTER===(c.code||'all')?'active':''}" onclick="setLeaderboardCountryFilter('${c.code||'all'}')"><span>${c.flag} ${c.label}</span></div>`
+  ).join('')}</div>` : '';
   setHTML(`
     ${heroHTML('🌍 '+tf('globalLeaderboard','Classement mondial'), tf('globalLeaderboardDesc',"Les meilleures carrières publiées par tous les joueurs du Coup de Pédale."))}
     ${STATE && STATE.leaderboardRank ? `<p class="small center" style="margin:-6px 0 8px;">${tf('leaderboardYourLastRank','Ton dernier score publié')} : <strong>#${STATE.leaderboardRank}</strong></p>` : ''}
     <div class="card" style="padding:10px;">
-      <div class="chip-row">
-        <select onchange="setLeaderboardStyleFilter(this.value)" style="flex:1;">${styleOptions}</select>
-        <select onchange="setLeaderboardCountryFilter(this.value)" style="flex:1;">${countryOptions}</select>
+      <div class="chip-row" style="margin-top:0;">
+        ${filterToggleBtn(currentStyle.label, currentStyle.icon, LEADERBOARD_STYLE_PANEL_OPEN, 'toggleLeaderboardStylePanel()')}
+        ${filterToggleBtn(currentCountry.label, currentCountry.flag, LEADERBOARD_COUNTRY_PANEL_OPEN, 'toggleLeaderboardCountryPanel()')}
       </div>
+      ${stylePanel}
+      ${countryPanel}
+      ${hasActiveFilter ? `<button class="btn ghost" style="margin-top:8px;font-size:0.82rem;padding:8px 4px;" onclick="resetLeaderboardFilters()">✕ ${tf('resetFilters','Réinitialiser les filtres')}</button>` : ''}
     </div>
     <div class="card center" id="leaderboard-loading"><p>${tf('loading','Chargement…')}</p></div>
     <div id="leaderboard-rows"></div>
@@ -3706,12 +3729,31 @@ function renderGlobalLeaderboard(){
   `, true);
   loadGlobalLeaderboard();
 }
+function toggleLeaderboardStylePanel(){
+  LEADERBOARD_STYLE_PANEL_OPEN = !LEADERBOARD_STYLE_PANEL_OPEN;
+  LEADERBOARD_COUNTRY_PANEL_OPEN = false;
+  renderGlobalLeaderboard();
+}
+function toggleLeaderboardCountryPanel(){
+  LEADERBOARD_COUNTRY_PANEL_OPEN = !LEADERBOARD_COUNTRY_PANEL_OPEN;
+  LEADERBOARD_STYLE_PANEL_OPEN = false;
+  renderGlobalLeaderboard();
+}
+function resetLeaderboardFilters(){
+  LEADERBOARD_STYLE_FILTER = 'all';
+  LEADERBOARD_COUNTRY_FILTER = 'all';
+  LEADERBOARD_STYLE_PANEL_OPEN = false;
+  LEADERBOARD_COUNTRY_PANEL_OPEN = false;
+  renderGlobalLeaderboard();
+}
 function setLeaderboardStyleFilter(styleId){
   LEADERBOARD_STYLE_FILTER = styleId;
+  LEADERBOARD_STYLE_PANEL_OPEN = false;
   renderGlobalLeaderboard();
 }
 function setLeaderboardCountryFilter(countryCode){
   LEADERBOARD_COUNTRY_FILTER = countryCode;
+  LEADERBOARD_COUNTRY_PANEL_OPEN = false;
   renderGlobalLeaderboard();
 }
 async function loadGlobalLeaderboard(){
