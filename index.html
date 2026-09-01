@@ -3704,7 +3704,7 @@ function renderGlobalLeaderboard(){
   const currentStyle = styleChoices.find(s=>s.id===LEADERBOARD_STYLE_FILTER) || styleChoices[0];
   const currentCountry = countryChoices.find(c=>(c.code||'all')===LEADERBOARD_COUNTRY_FILTER) || countryChoices[0];
   const hasActiveFilter = LEADERBOARD_STYLE_FILTER!=='all' || LEADERBOARD_COUNTRY_FILTER!=='all';
-  const filterToggleBtn = (label, icon, open, onclick) => `<button class="btn ghost" style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;" onclick="${onclick}"><span>${icon} ${label}</span><span>${open?'▲':'▼'}</span></button>`;
+  const filterToggleBtn = (label, icon, open, onclick) => `<button class="btn ghost" style="flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:0.82rem;padding:10px 10px;" onclick="${onclick}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${icon} ${label}</span><span>${open?'▲':'▼'}</span></button>`;
   const stylePanel = LEADERBOARD_STYLE_PANEL_OPEN ? `<div style="max-height:280px;overflow-y:auto;margin-top:6px;">${styleChoices.map(s=>
     `<div class="row-item ${LEADERBOARD_STYLE_FILTER===s.id?'active':''}" onclick="setLeaderboardStyleFilter('${s.id}')"><span>${s.icon} ${s.label}</span></div>`
   ).join('')}</div>` : '';
@@ -3715,9 +3715,11 @@ function renderGlobalLeaderboard(){
     ${heroHTML('🌍 '+tf('globalLeaderboard','Classement mondial'), tf('globalLeaderboardDesc',"Les meilleures carrières publiées par tous les joueurs du Coup de Pédale."))}
     ${STATE && STATE.leaderboardRank ? `<p class="small center" style="margin:-6px 0 8px;">${tf('leaderboardYourLastRank','Ton dernier score publié')} : <strong>#${STATE.leaderboardRank}</strong></p>` : ''}
     <div class="card" style="padding:10px;">
-      ${filterToggleBtn(currentStyle.label, currentStyle.icon, LEADERBOARD_STYLE_PANEL_OPEN, 'toggleLeaderboardStylePanel()')}
+      <div class="chip-row" style="margin-top:0;">
+        ${filterToggleBtn(currentStyle.label, currentStyle.icon, LEADERBOARD_STYLE_PANEL_OPEN, 'toggleLeaderboardStylePanel()')}
+        ${filterToggleBtn(currentCountry.label, currentCountry.flag, LEADERBOARD_COUNTRY_PANEL_OPEN, 'toggleLeaderboardCountryPanel()')}
+      </div>
       ${stylePanel}
-      ${filterToggleBtn(currentCountry.label, currentCountry.flag, LEADERBOARD_COUNTRY_PANEL_OPEN, 'toggleLeaderboardCountryPanel()')}
       ${countryPanel}
       ${hasActiveFilter ? `<button class="btn ghost" style="margin-top:8px;font-size:0.82rem;padding:8px 4px;" onclick="resetLeaderboardFilters()">✕ ${tf('resetFilters','Réinitialiser les filtres')}</button>` : ''}
     </div>
