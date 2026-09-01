@@ -639,6 +639,8 @@ const I18N = {
     progressVsLastSeason:'Progress since last season', worldRankProgress:'ranking spots', overallRatingProgress:'overall rating',
     careerCapActive:'Ongoing career milestone', deadlineBy:'to reach by the end of season',
     careerCapTitle:'Career milestone', careerCapDesc:'Set yourself an ambitious multi-season goal — rewarded with a real reputation bonus if reached in time.',
+    confirmCapTitle:'Confirm your commitment', confirmCapDesc:'This milestone will follow you across several seasons, until reached or its deadline passes: ',
+    confirmAndStartSeason:'Confirm milestone and start season',
     noCareerCap:'No milestone for now',
     careerCapAchievedSuffix:'career milestone reached! (+8 reputation)',
     careerCapMissedSuffix:'career milestone missed, the deadline has passed.',
@@ -5640,6 +5642,7 @@ function renderSeasonSetupScreen(keepScroll){
   if(!STATE.pendingSetup){
     const _isS1 = r.season === 1;
     STATE.pendingSetup = {focus:null, stage:'aucun', objective:_isS1?'survive':'aucun', sponsorIdx:'skip', challengeAccept:!_isS1, careerCapChoice:null};
+    STATE._capConfirmed = false;
   }
   const setup = STATE.pendingSetup;
   const hasSponsor = !!r.sponsor;
@@ -5755,7 +5758,7 @@ function renderSeasonSetupScreen(keepScroll){
       </div>
       <div class="row-item ${!setup.challengeAccept?'active':''}" onclick="setSeasonSetup('challengeAccept',false)"><span>${tf('ignoreChallenge','Ignorer ce défi')}</span></div>
     </div>
-    ${r.careerCap ? `<div class="card" style="border:1.5px solid var(--yellow);background:var(--yellow-light,#FFF8E1);">
+    ${r.careerCap ? `<div class="card" style="border:1.5px solid var(--yellow);background:var(--yellow-light);">
       <h3>🚩 ${tf('careerCapActive','Cap de carrière en cours')}</h3>
       <p class="small">${CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).icon} ${(lang==='en' && CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).labelEN) ? CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).labelEN : CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).label} — ${tf('deadlineBy','à atteindre avant la fin de la saison')} ${r.careerCap.deadlineSeason}</p>
     </div>` : (!_isS1 && !_isS2) ? `<div class="card">
@@ -5767,13 +5770,22 @@ function renderSeasonSetupScreen(keepScroll){
       </div>`).join('')}
       <div class="row-item ${!setup.careerCapChoice?'active':''}" onclick="setSeasonSetup('careerCapChoice',null)"><span>${tf('noCareerCap',"Pas de cap pour l'instant")}</span></div>
     </div>` : ''}
+    ${(!r.careerCap && setup.careerCapChoice && STATE._capConfirmed) ? (()=>{
+      const capDef = CAREER_CAP_TYPES.find(c=>c.id===setup.careerCapChoice);
+      const capLabel = (lang==='en' && capDef.labelEN) ? capDef.labelEN : capDef.label;
+      return `<div class="card" style="border:1.5px solid var(--yellow);background:var(--yellow-light);">
+        <h3>🚩 ${tf('confirmCapTitle','Confirme ton engagement')}</h3>
+        <p class="small">${tf('confirmCapDesc','Ce cap te suivra sur plusieurs saisons, jusqu\'à sa réussite ou sa date limite : ')}<strong>${capDef.icon} ${capLabel} — ${capDef.years} ${tf('seasonsBareLower','saisons')}</strong>.</p>
+      </div>`;
+    })() : ''}
     ${rivalsCardHTML()}
-    <button class="btn" ${setup.focus?'':'disabled'} onclick="confirmSeasonSetup()">✅ ${tf('validateStartSeason','Valider et débuter la saison')}</button>
+    <button class="btn" ${setup.focus?'':'disabled'} onclick="confirmSeasonSetup()">${(!r.careerCap && setup.careerCapChoice && STATE._capConfirmed) ? `🚩 ${tf('confirmAndStartSeason','Confirmer le cap et débuter la saison')}` : `✅ ${tf('validateStartSeason','Valider et débuter la saison')}`}</button>
   `, keepScroll);
 }
 
 function setSeasonSetup(field, value){
   STATE.pendingSetup[field] = value;
+  if(field==='careerCapChoice') STATE._capConfirmed = false;
   renderSeasonSetupScreen(true);
 }
 
@@ -5781,6 +5793,20 @@ function confirmSeasonSetup(){
   const setup = STATE.pendingSetup;
   if(!setup.focus) return;
   const r = STATE.rider;
+
+  /* Un cap de carrière engage plusieurs saisons (3 à 5) une fois choisi — contrairement
+     aux autres réglages de ce même écran, qui ne portent que sur la saison en cours. Plutôt
+     qu'une confirm() native (bloquante, hors-style, et qui coince l'automatisation/le clavier
+     comme les <select> système corrigés plus tôt), le bouton de validation devient un second
+     bouton dédié tant que ce choix précis n'a pas été explicitement reconfirmé — cf.
+     renderSeasonSetupScreen(). setSeasonSetup() réinitialise cette confirmation dès que le
+     choix de cap change, pour ne jamais valider un cap différent de celui vraiment relu. */
+  if(!r.careerCap && setup.careerCapChoice && !STATE._capConfirmed){
+    STATE._capConfirmed = true;
+    renderSeasonSetupScreen(true);
+    return;
+  }
+  STATE._capConfirmed = false;
 
   STATE.trainingFocus = setup.focus;
 
