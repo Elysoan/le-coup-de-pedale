@@ -4,7 +4,10 @@ Petite API sans serveur à gérer, sur le plan gratuit de Cloudflare, qui stocke
 scores publiés depuis le jeu et sert le top N.
 
 - `POST /submit` : enregistre le score d'une carrière terminée.
-- `GET /leaderboard?limit=50` : renvoie les meilleurs scores.
+- `GET /leaderboard?limit=50&style=grimpeur` : renvoie les meilleurs scores. Le
+  paramètre `style` est optionnel (valeurs possibles : `grimpeur`, `sprinteur`,
+  `rouleur`, `puncheur`, `polyvalent`) et filtre le classement sur ce style de
+  coureur ; omis ou invalide, il renvoie le classement tous styles confondus.
 
 Aucun compte joueur, aucune authentification — juste une validation de plausibilité
 des valeurs reçues et une limite d'une soumission par minute et par IP.
@@ -58,3 +61,18 @@ plus tard sans rien changer au code.
 - Pas de serveur à surveiller ni à mettre à jour.
 - Pour voir le contenu de la base : `wrangler d1 execute coupdepedale --remote --command="SELECT * FROM leaderboard ORDER BY score DESC LIMIT 20;"`
 - Pour modérer/supprimer une entrée : `wrangler d1 execute coupdepedale --remote --command="DELETE FROM leaderboard WHERE id = <id>;"`
+
+## Mettre à jour un Worker déjà déployé
+
+Après toute modification de `worker.js` ou `schema.sql` (par exemple le filtre par
+style), redéployer depuis `worker/` :
+
+```bash
+wrangler d1 execute coupdepedale --remote --file=./schema.sql   # ré-applique le schéma (sans danger, IF NOT EXISTS)
+wrangler deploy                                                  # publie la nouvelle version du Worker
+```
+
+Tant que ce redéploiement n'a pas été fait, `index.html` continue de fonctionner
+normalement : le paramètre `style` est simplement ignoré côté serveur (le
+classement affiché reste "tous styles confondus" même après avoir cliqué sur un
+filtre) — aucune régression, juste la fonctionnalité de filtre inactive.

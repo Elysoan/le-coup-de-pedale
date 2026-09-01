@@ -48,11 +48,15 @@ export default {
 
     if (url.pathname === '/leaderboard' && request.method === 'GET') {
       const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10) || 50));
-      const { results } = await env.DB.prepare(
-        `SELECT rider_name, style_id, country_code, wins, podiums, stage_wins,
+      const styleParam = url.searchParams.get('style');
+      const style = ALLOWED_STYLES.includes(styleParam) ? styleParam : null;
+      const baseSelect = `SELECT rider_name, style_id, country_code, wins, podiums, stage_wins,
                 final_reputation, seasons, best_rank, score, submitted_at
-         FROM leaderboard ORDER BY score DESC LIMIT ?`
-      ).bind(limit).all();
+         FROM leaderboard`;
+      const stmt = style
+        ? env.DB.prepare(`${baseSelect} WHERE style_id = ? ORDER BY score DESC LIMIT ?`).bind(style, limit)
+        : env.DB.prepare(`${baseSelect} ORDER BY score DESC LIMIT ?`).bind(limit);
+      const { results } = await stmt.all();
       return json({ entries: results });
     }
 
