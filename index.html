@@ -63,7 +63,6 @@
   --avatar-bg:#FBD9C9;
   --radius-lg:26px;
   --radius-md:18px;
-  --radius-sm:14px;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
@@ -76,7 +75,7 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 #app{max-width:720px;margin:0 auto;padding:22px 16px 60px;}
-h1,h2,.disp{font-family:'Nunito',sans-serif;font-weight:900;letter-spacing:-0.01em;margin:0;}
+h1,h2{font-family:'Nunito',sans-serif;font-weight:900;letter-spacing:-0.01em;margin:0;}
 h3{font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-soft);margin:0 0 10px;}
 h1{font-size:1.7rem;color:var(--green-dark);}
 h2{font-size:1.15rem;color:var(--text);font-weight:800;}
@@ -199,19 +198,10 @@ select{
   transition:border-color .12s ease, background .12s ease;
 }
 .opt-card.selected{border-color:var(--green);background:var(--green-light);}
-.opt-icon{
-  flex:0 0 auto; width:40px; height:40px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center; font-size:1.2rem;
-  background:var(--orange-light);
-}
 .style-badge{
   flex:0 0 auto; width:48px; height:48px; border-radius:14px;
   display:flex; align-items:center; justify-content:center; color:#fff;
   box-shadow:0 3px 8px -3px rgba(43,36,24,0.35);
-}
-.hero-banner{
-  padding:18px 16px 8px; margin-bottom:6px;
-  display:flex; align-items:center; justify-content:center; gap:10px;
 }
 .splash-screen{
   min-height:calc(80vh + 22px); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:3vh;
@@ -220,7 +210,6 @@ select{
   background-size:cover; background-position:center top; background-repeat:no-repeat;
 }
 @keyframes splashFade{0%{opacity:1;}80%{opacity:1;}100%{opacity:0;}}
-.hero-wordmark{width:auto;height:52px;max-width:80%;object-fit:contain;}
 .badge{
   font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;
   padding:5px 11px;border-radius:20px;white-space:nowrap;
@@ -5396,14 +5385,6 @@ function computeOfferedRole(rider, team){
     return RIDER_ROLES.find(r=>r.id==='leader-gc');
   }
   return RIDER_ROLES.find(r=>r.id==='leader-gc');
-}
-
-/* Indique si une course est recommandée pour le rôle actuel */
-function isRoleRecommendedRace(race, rider){
-  if(!rider.role) return false;
-  const types = ROLE_RECOMMENDED_TYPES[rider.role] || [];
-  if(types.length===0) return false;
-  return types.includes(race.type);
 }
 
 const SEASON_OBJECTIVES = [
