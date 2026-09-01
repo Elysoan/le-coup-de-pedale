@@ -596,7 +596,7 @@ const I18N = {
     progressionTitle:'Progression (wins per career)',
     styleStatsTitle:'Stats by style', avgAbbrev:'avg.',
     sortRecent:'Most recent', sortWins:'Wins ↓', sortRep:'Reputation ↓',
-    allStyles:'All styles', allCountries:'All countries',
+    allStyles:'All styles', allCountries:'All countries', resetFilters:'Reset filters',
     headToHead:'Head-to-head comparison', clearSelection:'Clear selection',
     pickOneMore:'Pick a second career (🆚) to compare.',
     podiumsShort:'podiums', bestRank:'best world ranking', wins:'wins',
@@ -3689,8 +3689,13 @@ function renderGlobalLeaderboard(){
   const lang = SETTINGS.lang === 'en';
   const styleOptions = `<option value="all" ${LEADERBOARD_STYLE_FILTER==='all'?'selected':''}>${tf('allStyles','Tous les styles')}</option>`
     + STYLES.map(s=>`<option value="${s.id}" ${LEADERBOARD_STYLE_FILTER===s.id?'selected':''}>${s.icon} ${(lang&&s.nameEN)?s.nameEN:s.name}</option>`).join('');
+  /* Tri alphabétique sur le nom affiché (pas l'ordre d'insertion de COUNTRIES, qui ne suit
+     aucun ordre lisible) — nécessaire pour retrouver rapidement un pays dans une liste de 20,
+     contrairement au style (5 options, l'ordre existant reste lisible tel quel). */
+  const countriesSorted = COUNTRIES.slice().sort((a,b)=>a.name.localeCompare(b.name, lang?'en':'fr'));
   const countryOptions = `<option value="all" ${LEADERBOARD_COUNTRY_FILTER==='all'?'selected':''}>${tf('allCountries','Tous les pays')}</option>`
-    + COUNTRIES.map(c=>`<option value="${c.code}" ${LEADERBOARD_COUNTRY_FILTER===c.code?'selected':''}>${c.flag} ${c.name}</option>`).join('');
+    + countriesSorted.map(c=>`<option value="${c.code}" ${LEADERBOARD_COUNTRY_FILTER===c.code?'selected':''}>${c.flag} ${c.name}</option>`).join('');
+  const hasActiveFilter = LEADERBOARD_STYLE_FILTER!=='all' || LEADERBOARD_COUNTRY_FILTER!=='all';
   setHTML(`
     ${heroHTML('🌍 '+tf('globalLeaderboard','Classement mondial'), tf('globalLeaderboardDesc',"Les meilleures carrières publiées par tous les joueurs du Coup de Pédale."))}
     ${STATE && STATE.leaderboardRank ? `<p class="small center" style="margin:-6px 0 8px;">${tf('leaderboardYourLastRank','Ton dernier score publié')} : <strong>#${STATE.leaderboardRank}</strong></p>` : ''}
@@ -3699,12 +3704,18 @@ function renderGlobalLeaderboard(){
         <select onchange="setLeaderboardStyleFilter(this.value)" style="flex:1;">${styleOptions}</select>
         <select onchange="setLeaderboardCountryFilter(this.value)" style="flex:1;">${countryOptions}</select>
       </div>
+      ${hasActiveFilter ? `<button class="btn ghost" style="margin-top:8px;font-size:0.82rem;padding:8px 4px;" onclick="resetLeaderboardFilters()">✕ ${tf('resetFilters','Réinitialiser les filtres')}</button>` : ''}
     </div>
     <div class="card center" id="leaderboard-loading"><p>${tf('loading','Chargement…')}</p></div>
     <div id="leaderboard-rows"></div>
     <button class="btn ghost" onclick="${STATE&&STATE.rider?'renderCareerEnd()':'renderMainMenu()'}">${tf('back','← Retour')}</button>
   `, true);
   loadGlobalLeaderboard();
+}
+function resetLeaderboardFilters(){
+  LEADERBOARD_STYLE_FILTER = 'all';
+  LEADERBOARD_COUNTRY_FILTER = 'all';
+  renderGlobalLeaderboard();
 }
 function setLeaderboardStyleFilter(styleId){
   LEADERBOARD_STYLE_FILTER = styleId;
