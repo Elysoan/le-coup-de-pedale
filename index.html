@@ -576,7 +576,7 @@ const I18N = {
     chasingJersey:'Chasing the', noSuitableStage:'No stage suited to this objective was on the programme this year — result based on the general classification by default.',
     objective:'Objective', jerseyResult:'Result for this jersey', basedOnWeeks:'based on week',
     and:'and', relevant:'relevant', relevantP:'relevant', outOf:'out of', week:'Week',
-    phaseByPhase:'Phase-by-phase breakdown:', mainPhase:'Main phase',
+    raceMoments:'Highlights of the race:', mainPhase:'Main phase',
     finalRanking:'Final ranking', statUp:'improving', statDown:'declining',
     reputationWord:'Reputation', confidenceWord:'Confidence', fatigueWord:'Fatigue', team:'team', prizeWord:'Prize', crashRiskWord:'crash risk',
     fatigueAlert:'High fatigue — increased injury risk, consider easing off',
@@ -7722,16 +7722,13 @@ function renderCurrentEvent(){
       ${statMatchHTML}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
       <h3>${event.title}</h3>
+      <p class="narrative-text" style="margin:4px 0 10px;">${event.desc}</p>
       ${tipBox('risk-levels', "Chaque choix a un niveau de risque : les options prudentes sont plus régulières mais rapportent moins, les audacieuses peuvent rapporter gros ou se retourner contre toi. Surveille aussi l'avertissement ⚠️ de risque de chute.", tf('tipRiskLevels'))}
       ${event.choices.map((c,i)=>{
         const crashPct = Math.round(crashChanceFor(STATE.rider, race, c, event._weather)*100);
         const crashTag = crashPct>=8 ? ` · ⚠️ ${crashPct}% ${tf('crashRiskWord','chute')}` : '';
         return `<button class="btn ${c.risk}" onclick="chooseOption(${i})">${riskIcon[c.risk]} ${c.label} <span class="mono" style="font-size:0.7rem;opacity:0.8;">(${RISK_LABEL[c.risk]}${crashTag})</span></button>`;
       }).join('')}
-      <details style="margin-top:8px;">
-        <summary class="small" style="color:var(--text-soft);cursor:pointer;list-style:none;">▸ ${SETTINGS.lang==='en'?'Event details':'Voir le détail'}</summary>
-        <p style="margin:6px 0 0;color:var(--text-soft);">${event.desc}</p>
-      </details>
     </div>
   `, true);
 }
@@ -7754,7 +7751,7 @@ function chooseOption(i){
   const isSignatureRace = STATE.rider.signatureRaceId && STATE.rider.signatureRaceId === race.id;
   const result = resolveEvent(STATE.rider, event, choice, weatherId, race.prestige, race.type==='grandtour', isHomeRace, isSignatureRace, race.type);
   applyFatigue(STATE.rider, race, choice, weatherId);
-  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained, isRivalEvent:!!event._isRivalEvent, rivalName:event._rivalName||null});
+  STATE.runRaceAccum.push({title:event.title, choiceLabel:choice.label, risk:choice.risk, tier:result.tier, perf:result.perf, trained:result.trained, detrained:result.detrained, isRivalEvent:!!event._isRivalEvent, rivalName:event._rivalName||null, isBonus:!!event._isBonus, focus:event.focus||null});
   STATE.runEventIdx++;
   /* Sur une course à plusieurs semaines (grand tour), abandonner une semaine met fin à
      toute la course : impossible de repartir la semaine suivante, comme dans la réalité. */
@@ -7885,10 +7882,13 @@ function finalizeRace(){
     bestTier = STATE.runRaceAccum[0] ? STATE.runRaceAccum[0].tier : 'jourssans';
   }
 
-  /* Résumé jour par jour, uniquement pour les courses à un seul évènement mais qui
-     durent plusieurs jours (les grands tours ont déjà leurs propres semaines réelles). */
-  STATE.pendingStageSummary = (STATE.runRaceAccum.length === 1 && race.events && race.events[0])
-    ? synthesizeStageSummary(race, race.events[0].focus, bestTier)
+  /* Résumé jour par jour, uniquement pour les courses à un seul évènement RÉEL mais qui
+     durent plusieurs jours (les grands tours ont déjà leurs propres semaines réelles) —
+     qu'il y ait eu ou non des phases bonus/rival injectées autour de cet unique évènement
+     (sans ce filtre, leur seule présence supprimait à tort ce résumé "Jour X"). */
+  const realEntries = STATE.runRaceAccum.filter(e=>!e.isBonus && !e.isRivalEvent);
+  STATE.pendingStageSummary = (realEntries.length === 1)
+    ? synthesizeStageSummary(race, realEntries[0].focus, bestTier)
     : null;
 
   /* Compteur de victoires d'étape en carrière : une semaine de grand tour remportée
@@ -8166,17 +8166,22 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
 
   const trainedList = STATE.runRaceAccum.filter(x=>x.trained).map(x=>x.trained);
   const detrainedList = STATE.runRaceAccum.filter(x=>x.detrained).map(x=>x.detrained);
-  // weeklyRecap uniquement pour les grands tours (qui ont de vraies semaines à étapes)
-  const weeklyRecap = (race.type==='grandtour' && STATE.runRaceAccum.length>1) ? `<div class="small" style="margin:6px 0;">
-      ${STATE.runRaceAccum.filter(x=>!x._isBonus).map((x,idx)=>`${tf('week','Semaine')} ${idx+1} : <span class="${tierClass(x.tier)}">${TIER_LABEL[x.tier]}</span>`).join(' · ')}
+  // weeklyRecap uniquement pour les grands tours (qui ont de vraies semaines à étapes) —
+  // on exclut les phases bonus/rival injectées, qui ne sont pas des semaines à part entière.
+  const gtRealWeeks = STATE.runRaceAccum.filter(x=>!x.isBonus && !x.isRivalEvent);
+  const weeklyRecap = (race.type==='grandtour' && gtRealWeeks.length>1) ? `<div class="small" style="margin:6px 0;">
+      ${gtRealWeeks.map((x,idx)=>`${tf('week','Semaine')} ${idx+1} : <span class="${tierClass(x.tier)}">${TIER_LABEL[x.tier]}</span>`).join(' · ')}
     </div>` : '';
-  /* Pour les autres courses à plusieurs phases (phases bonus, rencontre avec un rival...),
-     le classement final est une médiane qui peut masquer un bon résultat isolé — par
-     exemple une victoire d'étape sur une phase bonus alors que le classement général
-     n'est qu'un top 10. On détaille chaque phase pour que ça reste compréhensible. */
-  const phaseRecap = (race.type!=='grandtour' && STATE.runRaceAccum.length>1) ? `<div class="small" style="margin:6px 0;">
-      <strong>📋 ${tf('phaseByPhase','Détail des phases de course :')}</strong>
-      ${STATE.runRaceAccum.map(x=>`<div class="log-line">${x.title||tf('mainPhase','Phase principale')} : <span class="${tierClass(x.tier)}">${TIER_LABEL[x.tier]}</span></div>`).join('')}
+  /* Les phases bonus/rival sont des moments tactiques DANS le même jour/évènement réel —
+     pas des résultats séparés. Leur donner un badge de classement (Podium, Peloton...)
+     n'aurait aucun sens : on ne peut pas être "sur le podium" pendant l'échauffement, et sur
+     une course d'un jour il ne peut y avoir qu'un seul résultat final (déjà affiché plus
+     haut). Elles influencent bien le score global (cf. bestTier), mais ici on se contente de
+     rappeler narrativement le choix fait à chaque moment, sans classement par moment. */
+  const bonusMoments = STATE.runRaceAccum.filter(x=>x.isBonus || x.isRivalEvent);
+  const phaseRecap = (race.type!=='grandtour' && bonusMoments.length>0) ? `<div class="small" style="margin:6px 0;">
+      <strong>📋 ${tf('raceMoments','Temps forts de la course :')}</strong>
+      ${bonusMoments.map(x=>`<div class="log-line">${x.title||tf('mainPhase','Phase principale')} — ${x.choiceLabel}</div>`).join('')}
     </div>` : '';
   const cardClass = bestTier==='victoire' ? 'tier-win' : (bestTier==='podium' ? 'tier-podium-card' : '');
   const tierPopClass = (bestTier==='victoire' || bestTier==='podium') ? 'pop' : '';
