@@ -1,0 +1,14 @@
+{
+  "name": "coupdepedale-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Suite de tests du jeu (lint statique + simulation de carrières via Playwright).",
+  "scripts": {
+    "lint": "node lint-source.js",
+    "simulate": "node simulate.js",
+    "test": "npm run lint && npm run simulate"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}
