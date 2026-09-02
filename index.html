@@ -58,25 +58,101 @@
   --pink:#FF5C8A;
   --pink-light:#FFE5EC;
   --red:#F0433A;
+  --red-light:#FDF1EF;
+  --warn:#E07B20;
+  --blue-dark:#1F5FC4;
+  --pink-dark:#D6285A;
   --hero:#E8600A;
   --hero-dark:#C6500A;
   --avatar-bg:#FBD9C9;
   --radius-lg:26px;
   --radius-md:18px;
-  --radius-sm:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#211B12;
+    --surface:#2B2419;
+    --surface-alt:#332B1D;
+    --line:#463B27;
+    --text:#F2ECDD;
+    --text-soft:#B3A78A;
+    --green:#4CCB8E;
+    --green-dark:#3AAE79;
+    --green-light:#1E3A2C;
+    --yellow:#FFC761;
+    --yellow-dark:#F2B84E;
+    --yellow-light:#3D3018;
+    --orange:#FF9A5C;
+    --orange-light:#3E2A18;
+    --blue:#6BA6FF;
+    --blue-light:#1D2E4D;
+    --purple:#B18CFF;
+    --purple-light:#2E2447;
+    --pink:#FF83A8;
+    --pink-light:#3D2230;
+    --red:#FF6B60;
+    --red-light:#3E2420;
+    --warn:#F2A552;
+    --blue-dark:#7FB2FF;
+    --pink-dark:#FF8FAE;
+    --hero:#FF8A45;
+    --hero-dark:#FFA766;
+    --avatar-bg:#4A3A2C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#211B12;
+  --surface:#2B2419;
+  --surface-alt:#332B1D;
+  --line:#463B27;
+  --text:#F2ECDD;
+  --text-soft:#B3A78A;
+  --green:#4CCB8E;
+  --green-dark:#3AAE79;
+  --green-light:#1E3A2C;
+  --yellow:#FFC761;
+  --yellow-dark:#F2B84E;
+  --yellow-light:#3D3018;
+  --orange:#FF9A5C;
+  --orange-light:#3E2A18;
+  --blue:#6BA6FF;
+  --blue-light:#1D2E4D;
+  --purple:#B18CFF;
+  --purple-light:#2E2447;
+  --pink:#FF83A8;
+  --pink-light:#3D2230;
+  --red:#FF6B60;
+  --red-light:#3E2420;
+  --warn:#F2A552;
+  --blue-dark:#7FB2FF;
+  --pink-dark:#FF8FAE;
+  --hero:#FF8A45;
+  --hero-dark:#FFA766;
+  --avatar-bg:#4A3A2C;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
   background:var(--bg);
+  background-blend-mode:normal;
   color:var(--text);
   font-family:'Nunito',sans-serif;
   font-weight:600;
   min-height:100vh;
   -webkit-font-smoothing:antialiased;
 }
+/* Le fond décoratif (texture route/vélo) est posé en JS via une image opaque
+   (body.style.backgroundImage), au-dessus de la couleur --bg définie ici en CSS —
+   les deux se cumulent normalement (l'image, claire, masque presque entièrement
+   la couleur en-dessous). En thème sombre, ce blend-mode "multiply" fait fusionner
+   l'image avec le --bg sombre au lieu de rester une image claire plaquée sur fond
+   sombre : le motif reste visible mais assombri, cohérent avec le reste du thème. */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) body{ background-blend-mode:multiply; }
+}
+:root[data-theme="dark"] body{ background-blend-mode:multiply; }
 #app{max-width:720px;margin:0 auto;padding:22px 16px 60px;}
-h1,h2,.disp{font-family:'Nunito',sans-serif;font-weight:900;letter-spacing:-0.01em;margin:0;}
+h1,h2{font-family:'Nunito',sans-serif;font-weight:900;letter-spacing:-0.01em;margin:0;}
 h3{font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-soft);margin:0 0 10px;}
 h1{font-size:1.7rem;color:var(--green-dark);}
 h2{font-size:1.15rem;color:var(--text);font-weight:800;}
@@ -125,9 +201,9 @@ p{line-height:1.5;color:var(--text-soft);margin:6px 0;font-weight:600;font-size:
 }
 .btn.ghost{ background:var(--surface); color:var(--yellow-dark); border:2.5px solid var(--yellow); box-shadow:0 4px 0 var(--yellow-light); }
 .btn.subtle{ background:var(--yellow-light); color:var(--yellow-dark); border:none; box-shadow:none; }
-.btn.audacieux{background:var(--pink-light);color:#D6285A;border:2.5px solid var(--pink);box-shadow:0 4px 0 #FFD1DF;}
+.btn.audacieux{background:var(--pink-light);color:var(--pink-dark);border:2.5px solid var(--pink);box-shadow:0 4px 0 #FFD1DF;}
 .btn.loufoque{background:var(--purple-light);color:#6B3FD1;border:2.5px dashed var(--purple);box-shadow:0 4px 0 #E0D1FF;}
-.btn.equilibre{background:var(--blue-light);color:#1F5FC4;border:2.5px solid var(--blue);box-shadow:0 4px 0 #C9E0FE;}
+.btn.equilibre{background:var(--blue-light);color:var(--blue-dark);border:2.5px solid var(--blue);box-shadow:0 4px 0 #C9E0FE;}
 .btn.sur{background:var(--green-light);color:var(--green-dark);border:2.5px solid var(--green);box-shadow:0 4px 0 #C7EDD9;}
 .pill{display:inline-block;font-family:'Nunito',sans-serif;font-weight:800;font-size:0.72rem;padding:5px 12px;border-radius:20px;background:var(--yellow-light);border:none;color:#8A5A00;margin-right:6px;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
@@ -199,19 +275,10 @@ select{
   transition:border-color .12s ease, background .12s ease;
 }
 .opt-card.selected{border-color:var(--green);background:var(--green-light);}
-.opt-icon{
-  flex:0 0 auto; width:40px; height:40px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center; font-size:1.2rem;
-  background:var(--orange-light);
-}
 .style-badge{
   flex:0 0 auto; width:48px; height:48px; border-radius:14px;
   display:flex; align-items:center; justify-content:center; color:#fff;
   box-shadow:0 3px 8px -3px rgba(43,36,24,0.35);
-}
-.hero-banner{
-  padding:18px 16px 8px; margin-bottom:6px;
-  display:flex; align-items:center; justify-content:center; gap:10px;
 }
 .splash-screen{
   min-height:calc(80vh + 22px); display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding-top:3vh;
@@ -220,16 +287,15 @@ select{
   background-size:cover; background-position:center top; background-repeat:no-repeat;
 }
 @keyframes splashFade{0%{opacity:1;}80%{opacity:1;}100%{opacity:0;}}
-.hero-wordmark{width:auto;height:52px;max-width:80%;object-fit:contain;}
 .badge{
   font-family:'Nunito',sans-serif;font-weight:800;font-size:0.7rem;
   padding:5px 11px;border-radius:20px;white-space:nowrap;
 }
 .badge{background:var(--surface);border:1.5px solid currentColor;}
 .badge.grandtour{color:var(--yellow-dark);}
-.badge.monument{color:#D6285A;}
+.badge.monument{color:var(--pink-dark);}
 .badge.classique{color:var(--blue);}
-.badge.semitour{color:#1F5FC4;}
+.badge.semitour{color:var(--blue-dark);}
 .badge.champ{color:var(--green-dark);}
 .badge.crit{color:var(--text-soft);}
 .race-item{
@@ -244,16 +310,16 @@ select{
 .race-item.locked{opacity:0.4;}
 .race-item.imposed{border-color:var(--pink);background:var(--pink-light);}
 .diff-1{color:var(--green-dark);}
-.diff-2{color:#1F5FC4;}
+.diff-2{color:var(--blue-dark);}
 .diff-3{color:#B5790A;}
-.diff-4{color:#D6285A;}
+.diff-4{color:var(--pink-dark);}
 .diff-5{color:var(--red);}
 .counter{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0;}
 .flag{font-size:1.3rem;margin-right:6px;}
 .result-tier{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.25rem;}
 .tier-victoire{color:#C4890A;}
-.tier-podium{color:#D6285A;}
-.tier-top10{color:#1F5FC4;}
+.tier-podium{color:var(--pink-dark);}
+.tier-top10{color:var(--blue-dark);}
 .tier-peloton{color:var(--text-soft);}
 .tier-jourssans{color:#a89b7d;}
 .tier-abandon{color:var(--red);}
@@ -288,19 +354,27 @@ select{
 .result-card{ position:relative; overflow:hidden; }
 .result-card.tier-win{
   border:2px solid var(--yellow);
-  background:linear-gradient(135deg, #FFF6DD, var(--surface) 60%);
+  background:linear-gradient(135deg, var(--yellow-light), var(--surface) 60%);
 }
 .result-card.tier-podium-card{
   border:2px solid var(--pink);
-  background:linear-gradient(135deg, #FFE9EF, var(--surface) 60%);
+  background:linear-gradient(135deg, var(--pink-light), var(--surface) 60%);
 }
 .result-tier{ display:inline-block; }
 .result-tier.pop{ animation:popIn 0.55s cubic-bezier(.36,1.4,.4,1); }
 .confetti-row{ font-size:1.3rem; letter-spacing:4px; animation:confettiFloat 1.4s ease-in-out infinite alternate; }
 .trophy-shimmer{
-  background:linear-gradient(90deg, #FFF8E2 25%, #FFE9A8 50%, #FFF8E2 75%);
+  background:linear-gradient(90deg, var(--yellow-light) 25%, #FFE9A8 50%, var(--yellow-light) 75%);
   background-size:200% 100%;
   animation:shimmer 1.8s ease-in-out infinite, popIn 0.5s cubic-bezier(.36,1.4,.4,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .trophy-shimmer{
+    background:linear-gradient(90deg, var(--yellow-light) 25%, #6B5220 50%, var(--yellow-light) 75%);
+  }
+}
+:root[data-theme="dark"] .trophy-shimmer{
+  background:linear-gradient(90deg, var(--yellow-light) 25%, #6B5220 50%, var(--yellow-light) 75%);
 }
 @media (prefers-reduced-motion: reduce){
   *{transition:none !important;}
@@ -565,6 +639,8 @@ const I18N = {
     progressVsLastSeason:'Progress since last season', worldRankProgress:'ranking spots', overallRatingProgress:'overall rating',
     careerCapActive:'Ongoing career milestone', deadlineBy:'to reach by the end of season',
     careerCapTitle:'Career milestone', careerCapDesc:'Set yourself an ambitious multi-season goal — rewarded with a real reputation bonus if reached in time.',
+    confirmCapTitle:'Confirm your commitment', confirmCapDesc:'This milestone will follow you across several seasons, until reached or its deadline passes: ',
+    confirmAndStartSeason:'Confirm milestone and start season',
     noCareerCap:'No milestone for now',
     careerCapAchievedSuffix:'career milestone reached! (+8 reputation)',
     careerCapMissedSuffix:'career milestone missed, the deadline has passed.',
@@ -597,6 +673,7 @@ const I18N = {
     styleStatsTitle:'Stats by style', avgAbbrev:'avg.',
     sortRecent:'Most recent', sortWins:'Wins ↓', sortRep:'Reputation ↓',
     allStyles:'All styles', allCountries:'All countries', resetFilters:'Reset filters',
+    expandAllMonths:'Expand all', collapseAllMonths:'Collapse all',
     headToHead:'Head-to-head comparison', clearSelection:'Clear selection',
     pickOneMore:'Pick a second career (🆚) to compare.',
     podiumsShort:'podiums', bestRank:'best world ranking', wins:'wins',
@@ -688,6 +765,8 @@ const I18N = {
     shareCareer:'📤 Share my career', download:'⬇️ Download image', shareNative:'📤 Share directly',
     textSize:'Text size', normal:'Normal', large:'Large', xlarge:'Extra large',
     highContrast:'High contrast', highContrastDesc:'Darker text and stronger borders, for better readability.',
+    themeTitle:'Theme', themeDesc:"Choose the game's appearance, or let it follow your phone/computer setting.",
+    themeAuto:'Auto', themeLight:'Light', themeDark:'Dark',
     enabled:'✅ Enabled', disabled:'Disabled', reduceMotion:'Reduce animations',
     reduceMotionDesc:"Disables transitions, confetti and appearance effects, on top of your operating system's own setting if already enabled.",
     howToPlayTitle:'How to play', theConcept:'The basics',
@@ -1806,8 +1885,8 @@ STYLES.forEach(s=>{
 const STYLE_BADGE_COLORS = {
   grimpeur: ['var(--green)','var(--green-dark)'],
   sprinteur: ['var(--yellow)','var(--yellow-dark)'],
-  rouleur: ['var(--blue)','#1F5FC4'],
-  puncheur: ['var(--pink)','#D6285A'],
+  rouleur: ['var(--blue)','var(--blue-dark)'],
+  puncheur: ['var(--pink)','var(--pink-dark)'],
   polyvalent: ['var(--hero)','var(--hero-dark)'],
 };
 const STYLE_BADGE_ICONS = {
@@ -3913,7 +3992,7 @@ let CURRENT_SLOT = null;
 
 /* ---------- ACCESSIBILITÉ ---------- */
 const SETTINGS_KEY = 'coupDePedale_settings_v1';
-let SETTINGS = {fontSize:'normal', highContrast:false, reduceMotion:false, lang:'fr'};
+let SETTINGS = {fontSize:'normal', highContrast:false, reduceMotion:false, lang:'fr', theme:'auto'};
 
 function loadSettings(){
   try{
@@ -3932,11 +4011,14 @@ function applySettings(){
   document.documentElement.classList.toggle('high-contrast', !!SETTINGS.highContrast);
   document.documentElement.classList.toggle('reduce-motion', !!SETTINGS.reduceMotion);
   if(document.documentElement.setAttribute) document.documentElement.setAttribute('lang', SETTINGS.lang==='en' ? 'en' : 'fr');
+  if(SETTINGS.theme==='dark' || SETTINGS.theme==='light') document.documentElement.setAttribute('data-theme', SETTINGS.theme);
+  else document.documentElement.removeAttribute('data-theme');
 }
 
 function setFontSize(size){ SETTINGS.fontSize = size; applySettings(); saveSettings(); renderSettingsScreen(true); }
 function toggleHighContrast(){ SETTINGS.highContrast = !SETTINGS.highContrast; applySettings(); saveSettings(); renderSettingsScreen(true); }
 function toggleReduceMotion(){ SETTINGS.reduceMotion = !SETTINGS.reduceMotion; applySettings(); saveSettings(); renderSettingsScreen(true); }
+function setTheme(mode){ SETTINGS.theme = mode; applySettings(); saveSettings(); renderSettingsScreen(true); }
 
 function renderSettingsScreen(keepScroll){
   setHTML(`
@@ -3947,6 +4029,15 @@ function renderSettingsScreen(keepScroll){
         <button class="btn ${SETTINGS.fontSize==='normal'?'':'ghost'}" onclick="setFontSize('normal')">${tf('normal','Normal')}</button>
         <button class="btn ${SETTINGS.fontSize==='large'?'':'ghost'}" onclick="setFontSize('large')">${tf('large','Grand')}</button>
         <button class="btn ${SETTINGS.fontSize==='xlarge'?'':'ghost'}" onclick="setFontSize('xlarge')">${tf('xlarge','Très grand')}</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>🎨 ${tf('themeTitle','Thème')}</h3>
+      <p class="small">${tf('themeDesc',"Choisis l'apparence du jeu, ou laisse-le suivre le réglage de ton téléphone/ordinateur.")}</p>
+      <div class="grid3">
+        <button class="btn ${SETTINGS.theme==='auto'?'':'ghost'}" onclick="setTheme('auto')">${tf('themeAuto','Auto')}</button>
+        <button class="btn ${SETTINGS.theme==='light'?'':'ghost'}" onclick="setTheme('light')">☀️ ${tf('themeLight','Clair')}</button>
+        <button class="btn ${SETTINGS.theme==='dark'?'':'ghost'}" onclick="setTheme('dark')">🌙 ${tf('themeDark','Sombre')}</button>
       </div>
     </div>
     <div class="card">
@@ -4615,14 +4706,21 @@ function renderCreationScreen(keepScroll){
       `;
       }).join('')}
     </div>
-    ${cr.style ? `<div class="card">
-      <h3>❤️ ${tf('signatureRaceTitle','Course de cœur')} <span class="small">(${tf('optional','optionnel')})</span></h3>
-      <p class="small">${tf('signatureRaceDesc',"Choisis une classique ou un monument qui te tient particulièrement à cœur — tu y bénéficieras toujours d'un léger supplément d'envie.")}</p>
-      <select onchange="updateSignatureRace(this.value)">
-        <option value="">${tf('noneChoice','Aucune')}</option>
-        ${RACES_DATA().filter(r=>r.type==='classique'||r.type==='monument').map(r=>`<option value="${r.id}" ${r.id===cr.signatureRaceId?'selected':''}>${r.flag?r.flag+' ':''}${r.name}</option>`).join('')}
-      </select>
-    </div>` : ''}
+    ${cr.style ? (()=>{
+      const raceChoices = [{id:'', flag:'', name:tf('noneChoice','Aucune')}].concat(
+        RACES_DATA().filter(r=>r.type==='classique'||r.type==='monument').map(r=>({id:r.id, flag:r.flag, name:r.name}))
+      );
+      const current = raceChoices.find(x=>x.id===(cr.signatureRaceId||'')) || raceChoices[0];
+      const panel = SIGNATURE_RACE_PANEL_OPEN ? `<div style="max-height:280px;overflow-y:auto;margin-top:6px;">${raceChoices.map(x=>
+        `<div class="row-item ${(cr.signatureRaceId||'')===x.id?'active':''}" onclick="updateSignatureRace('${x.id}')"><span>${x.flag?x.flag+' ':''}${x.name}</span></div>`
+      ).join('')}</div>` : '';
+      return `<div class="card">
+        <h3>❤️ ${tf('signatureRaceTitle','Course de cœur')} <span class="small">(${tf('optional','optionnel')})</span></h3>
+        <p class="small">${tf('signatureRaceDesc',"Choisis une classique ou un monument qui te tient particulièrement à cœur — tu y bénéficieras toujours d'un léger supplément d'envie.")}</p>
+        <button class="btn ghost" style="display:flex;justify-content:space-between;align-items:center;" onclick="toggleSignatureRacePanel()"><span>${current.flag?current.flag+' ':''}${current.name}</span><span>${SIGNATURE_RACE_PANEL_OPEN?'▲':'▼'}</span></button>
+        ${panel}
+      </div>`;
+    })() : ''}
     ${nameBlock}
     <button class="btn" ${cr.style?'':'disabled'} onclick="confirmCreation()">${tf('startCareer','🚀 Débuter la carrière')}</button>
     <button class="btn ghost" onclick="renderMainMenu()">${tf('backToMenu','← Retour au menu principal')}</button>
@@ -4633,8 +4731,14 @@ function renderCreationScreen(keepScroll){
   `, keepScroll);
 }
 
+let SIGNATURE_RACE_PANEL_OPEN = false;
+function toggleSignatureRacePanel(){
+  SIGNATURE_RACE_PANEL_OPEN = !SIGNATURE_RACE_PANEL_OPEN;
+  renderCreationScreen(true);
+}
 function updateSignatureRace(id){
   window._creation.signatureRaceId = id || null;
+  SIGNATURE_RACE_PANEL_OPEN = false;
   renderCreationScreen(true);
 }
 
@@ -4978,9 +5082,13 @@ let COMPARATOR_SORT = 'recent';
 let COMPARATOR_FILTER_STYLE = 'all';
 let COMPARATOR_FILTER_COUNTRY = 'all';
 let COMPARATOR_COMPARE = [];
+let COMPARATOR_STYLE_PANEL_OPEN = false;
+let COMPARATOR_COUNTRY_PANEL_OPEN = false;
 function setComparatorSort(v){ COMPARATOR_SORT = v; renderCareerComparator(); }
-function setComparatorFilterStyle(v){ COMPARATOR_FILTER_STYLE = v; renderCareerComparator(); }
-function setComparatorFilterCountry(v){ COMPARATOR_FILTER_COUNTRY = v; renderCareerComparator(); }
+function setComparatorFilterStyle(v){ COMPARATOR_FILTER_STYLE = v; COMPARATOR_STYLE_PANEL_OPEN = false; renderCareerComparator(); }
+function setComparatorFilterCountry(v){ COMPARATOR_FILTER_COUNTRY = v; COMPARATOR_COUNTRY_PANEL_OPEN = false; renderCareerComparator(); }
+function toggleComparatorStylePanel(){ COMPARATOR_STYLE_PANEL_OPEN = !COMPARATOR_STYLE_PANEL_OPEN; COMPARATOR_COUNTRY_PANEL_OPEN = false; renderCareerComparator(); }
+function toggleComparatorCountryPanel(){ COMPARATOR_COUNTRY_PANEL_OPEN = !COMPARATOR_COUNTRY_PANEL_OPEN; COMPARATOR_STYLE_PANEL_OPEN = false; renderCareerComparator(); }
 function toggleCompareCareer(i){
   const idx = COMPARATOR_COMPARE.indexOf(i);
   if(idx>=0){ COMPARATOR_COMPARE.splice(idx,1); }
@@ -5130,16 +5238,29 @@ function renderCareerComparator(){
         ${sortChip('wins', tf('sortWins','Victoires ↓'))}
         ${sortChip('rep', tf('sortRep','Réputation ↓'))}
       </div>
-      <div class="chip-row" style="margin-bottom:10px;">
-        <select onchange="setComparatorFilterStyle(this.value)" style="flex:1;">
-          <option value="all" ${COMPARATOR_FILTER_STYLE==='all'?'selected':''}>${tf('allStyles','Tous les styles')}</option>
-          ${styleRows.map(x=>`<option value="${x.s.id}" ${COMPARATOR_FILTER_STYLE===x.s.id?'selected':''}>${x.s.name}</option>`).join('')}
-        </select>
-        <select onchange="setComparatorFilterCountry(this.value)" style="flex:1;">
-          <option value="all" ${COMPARATOR_FILTER_COUNTRY==='all'?'selected':''}>${tf('allCountries','Tous les pays')}</option>
-          ${countryRows.map(x=>`<option value="${x.country?x.country.code:''}" ${COMPARATOR_FILTER_COUNTRY===(x.country?x.country.code:'')?'selected':''}>${x.country?x.country.flag+' '+x.country.name:'?'}</option>`).join('')}
-        </select>
-      </div>
+      ${(()=>{
+        const styleChoices = [{id:'all', icon:'🌍', label:tf('allStyles','Tous les styles')}]
+          .concat(styleRows.map(x=>({id:x.s.id, icon:x.s.icon, label:x.s.name})));
+        const countryChoices = [{code:'all', flag:'🌍', label:tf('allCountries','Tous les pays')}]
+          .concat(countryRows.map(x=>({code:x.country?x.country.code:'', flag:x.country?x.country.flag:'', label:x.country?x.country.name:'?'})));
+        const curStyle = styleChoices.find(s=>s.id===COMPARATOR_FILTER_STYLE) || styleChoices[0];
+        const curCountry = countryChoices.find(c=>c.code===COMPARATOR_FILTER_COUNTRY) || countryChoices[0];
+        const toggleBtn = (label, icon, open, onclick) => `<button class="btn ghost" style="flex:1;min-width:0;display:flex;justify-content:space-between;align-items:center;gap:4px;font-size:0.82rem;padding:10px 10px;" onclick="${onclick}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${icon} ${label}</span><span>${open?'▲':'▼'}</span></button>`;
+        const stylePanel = COMPARATOR_STYLE_PANEL_OPEN ? `<div style="max-height:280px;overflow-y:auto;margin-top:6px;">${styleChoices.map(s=>
+          `<div class="row-item ${COMPARATOR_FILTER_STYLE===s.id?'active':''}" onclick="setComparatorFilterStyle('${s.id}')"><span>${s.icon} ${s.label}</span></div>`
+        ).join('')}</div>` : '';
+        const countryPanel = COMPARATOR_COUNTRY_PANEL_OPEN ? `<div style="max-height:280px;overflow-y:auto;margin-top:6px;">${countryChoices.map(c=>
+          `<div class="row-item ${COMPARATOR_FILTER_COUNTRY===c.code?'active':''}" onclick="setComparatorFilterCountry('${c.code}')"><span>${c.flag} ${c.label}</span></div>`
+        ).join('')}</div>` : '';
+        return `<div style="margin-bottom:10px;">
+          <div class="chip-row" style="margin-top:0;">
+            ${toggleBtn(curStyle.label, curStyle.icon, COMPARATOR_STYLE_PANEL_OPEN, 'toggleComparatorStylePanel()')}
+            ${toggleBtn(curCountry.label, curCountry.flag, COMPARATOR_COUNTRY_PANEL_OPEN, 'toggleComparatorCountryPanel()')}
+          </div>
+          ${stylePanel}
+          ${countryPanel}
+        </div>`;
+      })()}
       ${filtered.length ? filtered.map(({c,i})=>{
         const country = COUNTRIES.find(x=>x.code===c.countryCode);
         const selected = COMPARATOR_COMPARE.includes(i);
@@ -5398,14 +5519,6 @@ function computeOfferedRole(rider, team){
   return RIDER_ROLES.find(r=>r.id==='leader-gc');
 }
 
-/* Indique si une course est recommandée pour le rôle actuel */
-function isRoleRecommendedRace(race, rider){
-  if(!rider.role) return false;
-  const types = ROLE_RECOMMENDED_TYPES[rider.role] || [];
-  if(types.length===0) return false;
-  return types.includes(race.type);
-}
-
 const SEASON_OBJECTIVES = [
   /* id, sévérité (1=mineur, 2=intermédiaire, 3=majeur)
      minRep/maxRep : fourchette de réputation
@@ -5529,6 +5642,7 @@ function renderSeasonSetupScreen(keepScroll){
   if(!STATE.pendingSetup){
     const _isS1 = r.season === 1;
     STATE.pendingSetup = {focus:null, stage:'aucun', objective:_isS1?'survive':'aucun', sponsorIdx:'skip', challengeAccept:!_isS1, careerCapChoice:null};
+    STATE._capConfirmed = false;
   }
   const setup = STATE.pendingSetup;
   const hasSponsor = !!r.sponsor;
@@ -5581,7 +5695,7 @@ function renderSeasonSetupScreen(keepScroll){
     }</p>
   </div>` : '';
 
-  const s2StageIntroHTML = _isS2 ? `<div class="card" style="border-left:4px solid var(--blue);background:var(--blue-light,#EFF6FF);margin-bottom:0;">
+  const s2StageIntroHTML = _isS2 ? `<div class="card" style="border-left:4px solid var(--blue);background:var(--blue-light);margin-bottom:0;">
     <p style="font-weight:700;margin:0 0 4px;">🏕️ ${_lang ? 'New this season: training camp' : 'Nouveau cette saison : le stage de préparation'}</p>
     <p class="small" style="margin:0;">${_lang
       ? "After a full season, you know your strengths. A training camp lets you sharpen one quality before the season starts — at the cost of a slight dip in another."
@@ -5589,7 +5703,7 @@ function renderSeasonSetupScreen(keepScroll){
     }</p>
   </div>` : '';
 
-  const s2SponsorIntroHTML = _isS2 ? `<div class="card" style="border-left:4px solid var(--yellow);background:#FFFBEB;margin-bottom:0;">
+  const s2SponsorIntroHTML = _isS2 ? `<div class="card" style="border-left:4px solid var(--yellow);background:var(--yellow-light);margin-bottom:0;">
     <p style="font-weight:700;margin:0 0 4px;">🤝 ${_lang ? 'New this season: personal sponsor' : 'Nouveau cette saison : le sponsor personnel'}</p>
     <p class="small" style="margin:0;">${_lang
       ? "Your first results have attracted attention. Brands are now approaching you for sponsorship deals — extra income on top of your team salary. The demanding sponsor pays more, but drops you without at least one podium."
@@ -5597,7 +5711,7 @@ function renderSeasonSetupScreen(keepScroll){
     }</p>
   </div>` : '';
 
-  const s3CapIntroHTML = _isS3 && !r.careerCap ? `<div class="card" style="border-left:4px solid var(--yellow);background:#FFFBEB;margin-bottom:0;">
+  const s3CapIntroHTML = _isS3 && !r.careerCap ? `<div class="card" style="border-left:4px solid var(--yellow);background:var(--yellow-light);margin-bottom:0;">
     <p style="font-weight:700;margin:0 0 4px;">🚩 ${_lang ? 'New this season: career milestone' : 'Nouveau cette saison : le cap de carrière'}</p>
     <p class="small" style="margin:0;">${_lang
       ? "Two seasons in, you have a clearer picture of where you're heading. Set yourself an ambitious multi-season goal — if you hit it in time, you earn a real reputation bonus. Totally optional."
@@ -5605,7 +5719,7 @@ function renderSeasonSetupScreen(keepScroll){
     }</p>
   </div>` : '';
 
-  const calendarS1TipHTML = _isS1 ? `<div style="background:var(--blue-light,#EFF6FF);border-radius:8px;padding:8px 12px;margin-bottom:8px;">
+  const calendarS1TipHTML = _isS1 ? `<div style="background:var(--blue-light);border-radius:8px;padding:8px 12px;margin-bottom:8px;">
     <p class="small" style="margin:0;color:var(--blue);">💡 ${_lang
       ? "Tip: start with 3–4 accessible races (green/yellow difficulty). The 🧘 Calm automatic calendar is a good starting point."
       : "Astuce : commence par 3-4 courses accessibles (difficulté vert/jaune). Le calendrier automatique 🧘 Pépère est une bonne base de départ."
@@ -5644,7 +5758,7 @@ function renderSeasonSetupScreen(keepScroll){
       </div>
       <div class="row-item ${!setup.challengeAccept?'active':''}" onclick="setSeasonSetup('challengeAccept',false)"><span>${tf('ignoreChallenge','Ignorer ce défi')}</span></div>
     </div>
-    ${r.careerCap ? `<div class="card" style="border:1.5px solid var(--yellow);background:var(--yellow-light,#FFF8E1);">
+    ${r.careerCap ? `<div class="card" style="border:1.5px solid var(--yellow);background:var(--yellow-light);">
       <h3>🚩 ${tf('careerCapActive','Cap de carrière en cours')}</h3>
       <p class="small">${CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).icon} ${(lang==='en' && CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).labelEN) ? CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).labelEN : CAREER_CAP_TYPES.find(c=>c.id===r.careerCap.type).label} — ${tf('deadlineBy','à atteindre avant la fin de la saison')} ${r.careerCap.deadlineSeason}</p>
     </div>` : (!_isS1 && !_isS2) ? `<div class="card">
@@ -5656,13 +5770,22 @@ function renderSeasonSetupScreen(keepScroll){
       </div>`).join('')}
       <div class="row-item ${!setup.careerCapChoice?'active':''}" onclick="setSeasonSetup('careerCapChoice',null)"><span>${tf('noCareerCap',"Pas de cap pour l'instant")}</span></div>
     </div>` : ''}
+    ${(!r.careerCap && setup.careerCapChoice && STATE._capConfirmed) ? (()=>{
+      const capDef = CAREER_CAP_TYPES.find(c=>c.id===setup.careerCapChoice);
+      const capLabel = (lang==='en' && capDef.labelEN) ? capDef.labelEN : capDef.label;
+      return `<div class="card" style="border:1.5px solid var(--yellow);background:var(--yellow-light);">
+        <h3>🚩 ${tf('confirmCapTitle','Confirme ton engagement')}</h3>
+        <p class="small">${tf('confirmCapDesc','Ce cap te suivra sur plusieurs saisons, jusqu\'à sa réussite ou sa date limite : ')}<strong>${capDef.icon} ${capLabel} — ${capDef.years} ${tf('seasonsBareLower','saisons')}</strong>.</p>
+      </div>`;
+    })() : ''}
     ${rivalsCardHTML()}
-    <button class="btn" ${setup.focus?'':'disabled'} onclick="confirmSeasonSetup()">✅ ${tf('validateStartSeason','Valider et débuter la saison')}</button>
+    <button class="btn" ${setup.focus?'':'disabled'} onclick="confirmSeasonSetup()">${(!r.careerCap && setup.careerCapChoice && STATE._capConfirmed) ? `🚩 ${tf('confirmAndStartSeason','Confirmer le cap et débuter la saison')}` : `✅ ${tf('validateStartSeason','Valider et débuter la saison')}`}</button>
   `, keepScroll);
 }
 
 function setSeasonSetup(field, value){
   STATE.pendingSetup[field] = value;
+  if(field==='careerCapChoice') STATE._capConfirmed = false;
   renderSeasonSetupScreen(true);
 }
 
@@ -5670,6 +5793,20 @@ function confirmSeasonSetup(){
   const setup = STATE.pendingSetup;
   if(!setup.focus) return;
   const r = STATE.rider;
+
+  /* Un cap de carrière engage plusieurs saisons (3 à 5) une fois choisi — contrairement
+     aux autres réglages de ce même écran, qui ne portent que sur la saison en cours. Plutôt
+     qu'une confirm() native (bloquante, hors-style, et qui coince l'automatisation/le clavier
+     comme les <select> système corrigés plus tôt), le bouton de validation devient un second
+     bouton dédié tant que ce choix précis n'a pas été explicitement reconfirmé — cf.
+     renderSeasonSetupScreen(). setSeasonSetup() réinitialise cette confirmation dès que le
+     choix de cap change, pour ne jamais valider un cap différent de celui vraiment relu. */
+  if(!r.careerCap && setup.careerCapChoice && !STATE._capConfirmed){
+    STATE._capConfirmed = true;
+    renderSeasonSetupScreen(true);
+    return;
+  }
+  STATE._capConfirmed = false;
 
   STATE.trainingFocus = setup.focus;
 
@@ -5704,6 +5841,7 @@ function confirmSeasonSetup(){
   const imposed = pickImposedRaces(r, STATE.trainingFocus, STATE.seasonRacePool);
   STATE.imposedRaceIds = imposed;
   STATE.selectedRaceIds = imposed.slice();
+  STATE._calManualToggle = null; // repli du calendrier repart sur le défaut réactif chaque saison
   /* Tirer et appliquer les world events APRÈS la constitution du pool (certains events
      modifient le pool lui-même, ex. course_annulee) */
   STATE._worldEventCancelledRace = null;
@@ -6473,7 +6611,7 @@ function renderCalendarScreen(keepScroll){
   const r = STATE.rider;
   const olympicNote = isOlympicSeason(r)
     ? (STATE.seasonRacePool.some(race=>race.olympic)
-        ? `<div class="card" style="border:1.5px solid var(--yellow);background:#FFF8E2;"><p style="margin:0;"><strong>🥇 ${tf('olympicSelected','Sélectionné aux Jeux Panhelléniques !')}</strong> ${tf('olympicSelectedDesc',"Ta fédération t'a retenu parmi les rares dossards disponibles cette saison — un vrai accomplissement.")}</p></div>`
+        ? `<div class="card" style="border:1.5px solid var(--yellow);background:var(--yellow-light);"><p style="margin:0;"><strong>🥇 ${tf('olympicSelected','Sélectionné aux Jeux Panhelléniques !')}</strong> ${tf('olympicSelectedDesc',"Ta fédération t'a retenu parmi les rares dossards disponibles cette saison — un vrai accomplissement.")}</p></div>`
         : `<div class="card"><p style="margin:0;" class="small">🥇 ${tf('olympicNotSelected',"Année olympique, mais ta fédération ne t'a pas retenu cette fois")} (${tf('currentRep','réputation actuelle')} : ${Math.round(r.reputation)}${(r.olympicSelections||0)===0?tf('firstSelectionHard',', et une première sélection est particulièrement exigeante'):''}). ${tf('maybeIn4Years','Peut-être dans 4 ans.')}</p></div>`)
     : '';
 
@@ -6483,10 +6621,9 @@ function renderCalendarScreen(keepScroll){
   const under40 = daysTotal < 40;
   const over45 = daysTotal > 45;
   const over65 = daysTotal > 65;
-  const daysColor = over65 ? 'var(--red)' : under40 ? 'var(--red)' : over45 ? '#E07B20' : 'var(--green-dark)';
+  const daysColor = over65 ? 'var(--red)' : under40 ? 'var(--red)' : over45 ? 'var(--warn)' : 'var(--green-dark)';
   const gtSelected = STATE.selectedRaceIds.filter(id=>{ const rc=STATE.seasonRacePool.find(r=>r.id===id); return rc&&rc.type==='grandtour'; }).length;
 
-  if(!STATE._calCollapsed) STATE._calCollapsed = new Set();
   const pool = STATE.seasonRacePool.slice().sort((a,b)=>a.month-b.month);
 
   // Grouper par mois
@@ -6496,12 +6633,21 @@ function renderCalendarScreen(keepScroll){
     byMonth[race.month].push(race);
   });
 
+  /* Repli par défaut : un mois sans aucune course sélectionnée (ni imposée) reste replié
+     à l'ouverture de l'écran, pour limiter le défilement initial sur une saison à 12 mois —
+     chaque en-tête reste visible avec son compte X/Y, un clic suffit à déplier. Ce défaut est
+     réactif (recalculé à chaque rendu à partir des sélections réelles), pas figé une fois pour
+     toutes : un mois nouvellement rempli via le remplissage automatique s'ouvre tout seul.
+     _calManualToggle ne mémorise que les mois où le joueur a explicitement inversé ce défaut. */
+  const defaultCollapsedMonths = calendarDefaultCollapsedMonths();
+  if(!STATE._calManualToggle) STATE._calManualToggle = new Set();
+
   const rows = Object.keys(byMonth).map(m=>{
     m = parseInt(m);
     const monthRaces = byMonth[m];
     const selInMonth = monthRaces.filter(rc=>STATE.selectedRaceIds.includes(rc.id)).length;
     const totalInMonth = monthRaces.filter(rc=>!rc.locked).length;
-    const isCollapsed = STATE._calCollapsed.has(m);
+    const isCollapsed = STATE._calManualToggle.has(m) ? !defaultCollapsedMonths.has(m) : defaultCollapsedMonths.has(m);
 
     const monthHeader = `<div onclick="toggleCalMonth(${m})" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:8px 4px 4px;"><p class="small" style="font-weight:700;margin:0;color:var(--text-soft);">${MONTHS[m].toUpperCase()}</p><span class="small" style="color:var(--text-soft);">${selInMonth}/${totalInMonth} ${isCollapsed?'▶':'▼'}</span></div>`;
 
@@ -6520,7 +6666,7 @@ function renderCalendarScreen(keepScroll){
       const styleBadge = styleMatch ? ` <span style="color:var(--green-dark);font-size:0.85em;">⭐</span>` : '';
       const isSignature = r.signatureRaceId && race.id === r.signatureRaceId;
       const signatureBadge = isSignature ? ` <span style="color:var(--pink);font-size:0.85em;">❤️</span>` : '';
-      const buzzBadge = race.buzz ? ` <span title="${tf('buzzRaceTooltip','Course très suivie : réputation gagnée ou perdue amplifiée')}" style="color:#E07B20;font-size:0.85em;">🔥</span>` : '';
+      const buzzBadge = race.buzz ? ` <span title="${tf('buzzRaceTooltip','Course très suivie : réputation gagnée ou perdue amplifiée')}" style="color:var(--warn);font-size:0.85em;">🔥</span>` : '';
       const clickable = !isImposed && !race.locked;
       const opacity = race.locked ? 'opacity:0.45;' : '';
       return `<div class="race-item" style="cursor:${clickable?'pointer':'default'};${borderStyle}${opacity}" ${clickable?`onclick="toggleRace('${race.id}')"`:''}><div style="flex:1;"><strong>${race.flag?race.flag+' ':''}${race.name}</strong>${styleBadge}${signatureBadge}${buzzBadge}${rivalBadge}<p class="small" style="margin:2px 0 0;">${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)} ${imposedBadge}${lockInfo}</p></div><div style="text-align:right;min-width:70px;">${badgeHTML(race.type)}<p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p></div></div>`;
@@ -6530,7 +6676,7 @@ function renderCalendarScreen(keepScroll){
   }).join('');
 
   const warnUnder = under40 ? `<p class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('minDays40','Minimum 40 jours de course requis.')}</p>` : '';
-  const warnFatigue = over45 && !over65 ? `<p class="small" style="color:#E07B20;margin:2px 0 0;">⚠️ ${tf('fatigueWarning','Au-delà de 45 jours, la fatigue s\'accumule nettement plus vite sur le reste de la saison.')}</p>` : '';
+  const warnFatigue = over45 && !over65 ? `<p class="small" style="color:var(--warn);margin:2px 0 0;">⚠️ ${tf('fatigueWarning','Au-delà de 45 jours, la fatigue s\'accumule nettement plus vite sur le reste de la saison.')}</p>` : '';
   const warnOver = over65 ? `<p class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('exceeds65','Dépasse 65 j')}</p>` : '';
 
   /* ---- Alerte calendrier intelligente ---- */
@@ -6560,9 +6706,9 @@ function renderCalendarScreen(keepScroll){
     : '';
 
   const _forme = calendarFormeInsight();
-  const warnForme = _forme ? `<p class="small" style="color:${_forme.score>=70?'var(--green-dark)':_forme.score>=45?'#E07B20':'var(--red)'};margin:2px 0 0;font-weight:700;">🎯 ${tf('formeForecast','Forme prévisionnelle pour')} ${_forme.pointRace.name} : ${_forme.score}/100</p>` : '';
+  const warnForme = _forme ? `<p class="small" style="color:${_forme.score>=70?'var(--green-dark)':_forme.score>=45?'var(--warn)':'var(--red)'};margin:2px 0 0;font-weight:700;">🎯 ${tf('formeForecast','Forme prévisionnelle pour')} ${_forme.pointRace.name} : ${_forme.score}/100</p>` : '';
   const hasBuzzRace = STATE.seasonRacePool.some(rc=>rc.buzz);
-  const warnBuzz = hasBuzzRace ? `<p class="small" style="color:#E07B20;margin:2px 0 0;">🔥 ${tf('buzzCalendarNote','Cette saison, une ou plusieurs courses sont très suivies (🔥) : réputation amplifiée, en bien comme en mal.')}</p>` : '';
+  const warnBuzz = hasBuzzRace ? `<p class="small" style="color:var(--warn);margin:2px 0 0;">🔥 ${tf('buzzCalendarNote','Cette saison, une ou plusieurs courses sont très suivies (🔥) : réputation amplifiée, en bien comme en mal.')}</p>` : '';
   const hasRivalRace = (STATE.rivals||[]).length>0 && STATE.seasonRacePool.some(rc=>(STATE.rivals||[]).some(rv=>(rv.raceIds||[]).includes(rc.id)));
   const tipRival = hasRivalRace ? tipBox('rival-calendar', "Le badge 🥊 signale une course où un de tes rivaux est présent : bats-le pour alimenter votre rivalité au fil des saisons.", tf('tipRivalCalendar')) : '';
   const tipBuzz = hasBuzzRace ? tipBox('buzz-calendar', "Le badge 🔥 signale une course très suivie cette saison : ta réputation y est amplifiée, en bien comme en mal.", tf('tipBuzzCalendar')) : '';
@@ -6587,16 +6733,35 @@ function renderCalendarScreen(keepScroll){
       </div>
     </div>
     ${tipRival}${tipBuzz}${tipForme}
+    <div style="display:flex;gap:6px;margin:8px 0 4px;">
+      <button class="btn ghost" style="flex:1;font-size:0.78rem;padding:6px 4px;" onclick="expandAllCalMonths()">▼ ${tf('expandAllMonths','Tout déplier')}</button>
+      <button class="btn ghost" style="flex:1;font-size:0.78rem;padding:6px 4px;" onclick="collapseAllCalMonths()">▲ ${tf('collapseAllMonths','Tout replier')}</button>
+    </div>
     <div class="card" style="padding:8px 12px;">${rows}</div>
     <button class="btn" ${(over65||under40)?'disabled':''} onclick="confirmCalendar()">🚀 ${tf('startSeason','Lancer la saison')}</button>
     <button class="btn ghost" onclick="renderRaceAlmanac()">${tf('raceAlmanac','📖 Almanach des courses')}</button>
     ${(STATE.rider.seasonHistory&&STATE.rider.seasonHistory.length>0)?`<button class="btn ghost" onclick="renderSeasonHistory()">📜 ${SETTINGS.lang==='en'?'Season history':'Historique des saisons'}</button>`:''}
   `, keepScroll);
 }
+function calendarDefaultCollapsedMonths(){
+  const byMonth = {};
+  (STATE.seasonRacePool||[]).forEach(race=>{ (byMonth[race.month]=byMonth[race.month]||[]).push(race); });
+  return new Set(Object.keys(byMonth).map(Number).filter(m=>!byMonth[m].some(rc=>STATE.selectedRaceIds.includes(rc.id))));
+}
 function toggleCalMonth(m){
-  if(!STATE._calCollapsed) STATE._calCollapsed = new Set();
-  if(STATE._calCollapsed.has(m)) STATE._calCollapsed.delete(m);
-  else STATE._calCollapsed.add(m);
+  if(!STATE._calManualToggle) STATE._calManualToggle = new Set();
+  if(STATE._calManualToggle.has(m)) STATE._calManualToggle.delete(m);
+  else STATE._calManualToggle.add(m);
+  renderCalendarScreen(true);
+}
+function expandAllCalMonths(){
+  STATE._calManualToggle = calendarDefaultCollapsedMonths();
+  renderCalendarScreen(true);
+}
+function collapseAllCalMonths(){
+  const allMonths = new Set((STATE.seasonRacePool||[]).map(r=>r.month));
+  const def = calendarDefaultCollapsedMonths();
+  STATE._calManualToggle = new Set([...allMonths].filter(m=>!def.has(m)));
   renderCalendarScreen(true);
 }
 
@@ -7109,7 +7274,7 @@ function renderRivalDuelFeedback(){
   const raw = pool[Math.floor(Math.random()*pool.length)];
   const msg = (lang ? raw.en : raw.fr).replace(/\{name\}/g, fd.rivalName);
   const color = isGood ? 'var(--green)' : 'var(--red)';
-  const bgColor = isGood ? 'var(--green-light)' : '#FDF1EF';
+  const bgColor = isGood ? 'var(--green-light)' : 'var(--red-light)';
   const icon = isGood ? '✅' : '❌';
   const riskIcon = {sur:'🛡️', equilibre:'⚖️', audacieux:'🎲', loufoque:'🤪'}[fd.risk] || '⚡';
   const tierLabel = {
@@ -7508,7 +7673,7 @@ function renderCurrentEvent(){
   const _tierColor = {victoire:'var(--green-dark)', podium:'var(--green-dark)', top10:'var(--blue)', peloton:'var(--text-soft)', jourssans:'var(--red)', abandon:'var(--red)'};
   const _tierIcon  = {victoire:'🏆', podium:'🥈', top10:'👍', peloton:'🚴', jourssans:'😓', abandon:'❌'};
   const _lang = SETTINGS.lang === 'en';
-  const lastPhaseHTML = _lpr ? `<div style="background:${_lpr.tier==='victoire'||_lpr.tier==='podium'?'var(--green-light)':_lpr.tier==='abandon'||_lpr.tier==='jourssans'?'#FDF1EF':'var(--surface-alt)'};border:2px solid ${_tierColor[_lpr.tier]||'var(--line)'};border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+  const lastPhaseHTML = _lpr ? `<div style="background:${_lpr.tier==='victoire'||_lpr.tier==='podium'?'var(--green-light)':_lpr.tier==='abandon'||_lpr.tier==='jourssans'?'var(--red-light)':'var(--surface-alt)'};border:2px solid ${_tierColor[_lpr.tier]||'var(--line)'};border-radius:10px;padding:8px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;">
     <span style="font-size:1.4em;line-height:1;">${_tierIcon[_lpr.tier]||'📋'}</span>
     <div>
       <p class="small" style="margin:0;font-weight:700;color:${_tierColor[_lpr.tier]||'var(--text)'};">${tierNarrative(_lpr.tier)}</p>
@@ -7926,7 +8091,7 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
 
   if(injury){
     if(injury.severity==='legere'){
-      injuryBanner = `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;">
+      injuryBanner = `<div class="card" style="border:1.5px solid var(--red);background:var(--red-light);">
         <p><strong>🩹 ${causeLabelFor(injury.cause)} — ${tf('minorInjury','blessure légère')}.</strong></p>
         <p class="small" style="font-style:italic;">${injuryReason(injury.cause)}</p>
         <p class="small">${tf('canRestartNext','Le coureur peut repartir dès la prochaine course du calendrier.')}</p>
@@ -7934,13 +8099,13 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
     } else if(injury.severity==='moderee'){
       const missCount = 1 + Math.floor(Math.random()*3);
       STATE.injuryAbsenceRemaining = missCount;
-      injuryBanner = `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;">
+      injuryBanner = `<div class="card" style="border:1.5px solid var(--red);background:var(--red-light);">
         <p><strong>🚑 ${causeLabelFor(injury.cause)} — ${tf('seriousInjury','blessure plus sérieuse')}.</strong></p>
         <p class="small" style="font-style:italic;">${injuryReason(injury.cause)}</p>
         <p class="small">${tf('convalescenceNote','Convalescence : absence prévue sur les')} ${missCount} ${tf(missCount>1?'nextRacesP':'nextRace','prochaine'+(missCount>1?'s':'')+' course'+(missCount>1?'s':'')+' du calendrier.')}</p>
       </div>`;
     } else {
-      injuryBanner = `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;">
+      injuryBanner = `<div class="card" style="border:1.5px solid var(--red);background:var(--red-light);">
         <p><strong>⛑️💔 ${causeLabelFor(injury.cause)} ${tf('severe','grave')}.</strong> ${tf('careerEndsHere',"Les examens médicaux sont sans appel : la carrière s'arrête ici.")}</p>
       </div>`;
       STATE.injuryEndNote = {cause: injury.cause, raceName: race.name};
@@ -8018,7 +8183,7 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
     continueAttr = `onclick="renderInterviewScreen()"`;
   }
 
-  const confidentBetBanner = STATE.confidentBetNote ? `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;">
+  const confidentBetBanner = STATE.confidentBetNote ? `<div class="card" style="border:1.5px solid var(--red);background:var(--red-light);">
     <p style="margin:0;font-style:italic;">🎤 ${STATE.confidentBetNote}</p>
   </div>` : '';
   STATE.confidentBetNote = null;
@@ -8409,7 +8574,7 @@ function renderSeasonRecap(){
     </div>` : '';
 
   const sponsorNote = STATE.sponsorNote;
-  const sponsorNoteHTML = sponsorNote ? `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;">
+  const sponsorNoteHTML = sponsorNote ? `<div class="card" style="border:1.5px solid var(--red);background:var(--red-light);">
     <p style="margin:0;"><strong>${sponsorNote.icon} ${sponsorNote.name}</strong> ${sponsorNote.type==='dropped'
       ? tf('sponsorDropped',"met fin au contrat, faute de résultats à la hauteur de ses attentes cette saison.")
       : tf('sponsorEnds',"arrive au terme de son contrat — à renouveler ou remplacer.")}</p>
@@ -8427,7 +8592,7 @@ function renderSeasonRecap(){
   }).join('');
   STATE.rivalRetirementNotes = null;
   const objNote = STATE.objectiveNote;
-  const objNoteHTML = objNote ? `<div class="card" style="border:1.5px solid ${objNote.ok?'var(--green)':'var(--red)'};background:${objNote.ok?'var(--green-light)':'#FDF1EF'};">
+  const objNoteHTML = objNote ? `<div class="card" style="border:1.5px solid ${objNote.ok?'var(--green)':'var(--red)'};background:${objNote.ok?'var(--green-light)':'var(--red-light)'};">
     <p style="margin:0;"><strong>${objNote.ok?tf('objectiveMet','🎯 Objectif tenu — '):tf('objectiveMissed','🎯 Objectif manqué — ')}</strong>${objNote.text}</p>
   </div>` : '';
   STATE.objectiveNote = null;
@@ -8592,7 +8757,7 @@ function renderCareerEnd(){
     const success = (() => { try { return cr.challengeObj.check(r); } catch(e){ return false; } })();
     const color = success ? 'var(--green-dark,#1a7a3c)' : 'var(--red,#c0392b)';
     const icon = success ? tf('challengeAchieved','✅ Défi relevé !') : tf('challengeFailed','❌ Défi échoué');
-    challengeBadgeHTML = `<div class="card" style="border:2px solid ${color};background:${success?'#EFF9F3':'#FDF1EF'};text-align:center;">
+    challengeBadgeHTML = `<div class="card" style="border:2px solid ${color};background:${success?'var(--green-light)':'var(--red-light)'};text-align:center;">
       <p style="font-size:1.2rem;font-weight:800;color:${color};margin:0;">${icon}</p>
       <p class="small" style="margin:4px 0 0;">🎯 ${cr.challengeObj.label}</p>
     </div>`;
@@ -8601,7 +8766,7 @@ function renderCareerEnd(){
     ${heroHTML('🎬 '+tf('careerEnd','Fin de carrière'))}
     ${challengeBadgeHTML}
     ${trophyBannerHTML()}
-    ${injuryNote ? `<div class="card" style="border:1.5px solid var(--red);background:#FDF1EF;"><p><strong>⛑️ ${injuryNote}</strong></p></div>` : ''}
+    ${injuryNote ? `<div class="card" style="border:1.5px solid var(--red);background:var(--red-light);"><p><strong>⛑️ ${injuryNote}</strong></p></div>` : ''}
     <div class="card center">
       <h2>${r.name}</h2>
       <p class="small">${COUNTRIES.find(c=>c.code===r.countryCode).flag} ${COUNTRIES.find(c=>c.code===r.countryCode).name} · ${STYLES.find(s=>s.id===r.styleId).name}</p>
