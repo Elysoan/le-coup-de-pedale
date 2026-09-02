@@ -641,6 +641,7 @@ const I18N = {
     careerCapTitle:'Career milestone', careerCapDesc:'Set yourself an ambitious multi-season goal — rewarded with a real reputation bonus if reached in time.',
     confirmCapTitle:'Confirm your commitment', confirmCapDesc:'This milestone will follow you across several seasons, until reached or its deadline passes: ',
     confirmAndStartSeason:'Confirm milestone and start season',
+    autoFillConfirmWarning:'Tap again to replace your already-selected races.', confirmQuestion:'Confirm?',
     noCareerCap:'No milestone for now',
     careerCapAchievedSuffix:'career milestone reached! (+8 reputation)',
     careerCapMissedSuffix:'career milestone missed, the deadline has passed.',
@@ -5842,6 +5843,7 @@ function confirmSeasonSetup(){
   STATE.imposedRaceIds = imposed;
   STATE.selectedRaceIds = imposed.slice();
   STATE._calManualToggle = null; // repli du calendrier repart sur le défaut réactif chaque saison
+  STATE._autoFillPendingProfile = null;
   /* Tirer et appliquer les world events APRÈS la constitution du pool (certains events
      modifient le pool lui-même, ex. course_annulee) */
   STATE._worldEventCancelledRace = null;
@@ -6726,10 +6728,11 @@ function renderCalendarScreen(keepScroll){
       <p class="small" style="margin:4px 0 0;">${raceCount} ${tf(raceCount>1?'racesP':'race','course'+(raceCount>1?'s':''))} · ${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+' par l\'équipe')} · ${gtSelected}/2 ${tf('grandToursAbbr','Grands Tours')}</p>
       ${warnUnder}${warnFatigue}${warnOver}${warnForme}${warnBuzz}${warnSmart}
       <p class="small" style="margin:8px 0 4px;color:var(--text-soft);">${SETTINGS.lang==='en'?'Pre-fill your calendar automatically (optional — you can adjust after):':'Remplis automatiquement ton calendrier (facultatif — tu peux ajuster ensuite) :'}</p>
+      ${STATE._autoFillPendingProfile ? `<p class="small" style="color:var(--warn);margin:2px 0 6px;font-weight:700;">⚠️ ${tf('autoFillConfirmWarning',"Clique à nouveau pour remplacer tes courses déjà sélectionnées.")}</p>` : ''}
       <div style="display:flex;gap:6px;">
-        <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('conservateur')" title="${SETTINGS.lang==='en'?'~40-45 days, safer races':'~40-45 j, courses plus sûres'}">🧘 ${SETTINGS.lang==='en'?'Calm':'Pépère'}</button>
-        <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('equilibre')" title="${SETTINGS.lang==='en'?'~47-54 days, balanced':'~47-54 j, équilibré'}">⚖️ ${SETTINGS.lang==='en'?'Balanced':'Équilibré'}</button>
-        <button class="btn ghost" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('ambitieux')" title="${SETTINGS.lang==='en'?'~55-63 days, high prestige':'~55-63 j, haut prestige'}">🔥 ${SETTINGS.lang==='en'?'Ambitious':'Ambitieux'}</button>
+        <button class="btn ${STATE._autoFillPendingProfile==='conservateur'?'':'ghost'}" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('conservateur')" title="${SETTINGS.lang==='en'?'~40-45 days, safer races':'~40-45 j, courses plus sûres'}">🧘 ${STATE._autoFillPendingProfile==='conservateur'?tf('confirmQuestion','Confirmer ?'):(SETTINGS.lang==='en'?'Calm':'Pépère')}</button>
+        <button class="btn ${STATE._autoFillPendingProfile==='equilibre'?'':'ghost'}" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('equilibre')" title="${SETTINGS.lang==='en'?'~47-54 days, balanced':'~47-54 j, équilibré'}">⚖️ ${STATE._autoFillPendingProfile==='equilibre'?tf('confirmQuestion','Confirmer ?'):(SETTINGS.lang==='en'?'Balanced':'Équilibré')}</button>
+        <button class="btn ${STATE._autoFillPendingProfile==='ambitieux'?'':'ghost'}" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('ambitieux')" title="${SETTINGS.lang==='en'?'~55-63 days, high prestige':'~55-63 j, haut prestige'}">🔥 ${STATE._autoFillPendingProfile==='ambitieux'?tf('confirmQuestion','Confirmer ?'):(SETTINGS.lang==='en'?'Ambitious':'Ambitieux')}</button>
       </div>
     </div>
     ${tipRival}${tipBuzz}${tipForme}
@@ -6770,15 +6773,18 @@ function collapseAllCalMonths(){
    Respecte toutes les contraintes existantes (max 65j, max 2 GT, courses locked).
    Priorise : course signature, style matching, trajectoire, difficulté adaptée. */
 function autoSelectCalendar(profile){
-  /* Confirmation si le joueur a déjà une sélection manuelle */
+  /* Confirmation si le joueur a déjà une sélection manuelle — en deux temps dans le style
+     du jeu plutôt qu'un confirm() natif (qui bloque le rendu et l'automatisation, cf. le
+     cap de carrière plus haut) : le premier clic met CE bouton en attente de confirmation
+     (les deux autres profils restent cliquables normalement, sans confirmation supplémentaire
+     puisque rien n'a encore été remplacé), le second clic sur le même bouton valide vraiment. */
   const manualCount = STATE.selectedRaceIds.filter(id => !STATE.imposedRaceIds.includes(id)).length;
-  if(manualCount > 0){
-    const lang = SETTINGS.lang === 'en';
-    const msg = lang
-      ? `You have ${manualCount} race(s) already selected. Replace with automatic calendar?`
-      : `Tu as déjà ${manualCount} course(s) sélectionnée(s). Remplacer par le calendrier automatique ?`;
-    if(!confirm(msg)) return;
+  if(manualCount > 0 && STATE._autoFillPendingProfile !== profile){
+    STATE._autoFillPendingProfile = profile;
+    renderCalendarScreen(true);
+    return;
   }
+  STATE._autoFillPendingProfile = null;
   const r = STATE.rider;
   const pool = STATE.seasonRacePool;
   const imposed = STATE.imposedRaceIds.slice();
@@ -6947,6 +6953,7 @@ function toggleRace(id){
     }
     STATE.selectedRaceIds.push(id);
   }
+  STATE._autoFillPendingProfile = null; // la sélection change manuellement : la confirmation en attente n'a plus lieu d'être
   renderCalendarScreen(true);
 }
 

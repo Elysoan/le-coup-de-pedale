@@ -1,0 +1,44 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Run approfondi quotidien (plus de carrières simulées), à une heure creuse.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Installer les dépendances
+        working-directory: tests
+        run: npm ci
+
+      - name: Installer Chromium (Playwright)
+        working-directory: tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Lint statique
+        working-directory: tests
+        run: npm run lint
+
+      - name: Simulation de carrières (run rapide)
+        if: github.event_name != 'schedule'
+        working-directory: tests
+        run: node simulate.js 40
+
+      - name: Simulation de carrières (run approfondi)
+        if: github.event_name == 'schedule'
+        working-directory: tests
+        run: node simulate.js 300
