@@ -153,9 +153,14 @@ body{
 :root[data-theme="dark"] body{ background-blend-mode:multiply; }
 #app{max-width:720px;margin:0 auto;padding:22px 16px 60px;}
 h1,h2{font-family:'Nunito',sans-serif;font-weight:900;letter-spacing:-0.01em;margin:0;}
-h3{font-family:'Nunito',sans-serif;font-size:0.78rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-soft);margin:0 0 10px;}
+h3{font-family:'Nunito',sans-serif;font-size:0.98rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-soft);margin:0 0 10px;}
 h1{font-size:1.7rem;color:var(--green-dark);}
 h2{font-size:1.15rem;color:var(--text);font-weight:800;}
+/* Certains écrans n'avaient qu'un <h2> comme titre, sans aucun <h1> — repère de page
+   absent pour un lecteur d'écran qui navigue par niveau de titre. On les promeut en
+   <h1> pour la sémantique, tout en gardant leur apparence visuelle de h2 via cette
+   classe, pour ne rien changer à l'écran lui-même. */
+h1.h1-as-h2{font-size:1.15rem;color:var(--text);font-weight:800;}
 .mono{font-family:'JetBrains Mono',monospace;}
 p{line-height:1.5;color:var(--text-soft);margin:6px 0;font-weight:600;font-size:0.94rem;}
 .card{
@@ -196,8 +201,14 @@ p{line-height:1.5;color:var(--text-soft);margin:6px 0;font-weight:600;font-size:
 }
 .btn:active{transform:translateY(2px);}
 .btn:disabled{opacity:0.4;cursor:not-allowed;box-shadow:none;}
-.btn:focus-visible, .opt-card:focus-visible, .race-item:focus-visible, select:focus-visible{
+.btn:focus-visible, .opt-card:focus-visible, .race-item:focus-visible, select:focus-visible,
+.row-item:focus-visible, .chip:focus-visible, .team-card:focus-visible, .card[role="button"]:focus-visible,
+[role="button"]:focus-visible, [role="radio"]:focus-visible{
   outline:2px solid var(--green-dark); outline-offset:2px;
+}
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
 }
 .btn.ghost{ background:var(--surface); color:var(--yellow-dark); border:2.5px solid var(--yellow); box-shadow:0 4px 0 var(--yellow-light); }
 .btn.subtle{ background:var(--yellow-light); color:var(--yellow-dark); border:none; box-shadow:none; }
@@ -311,13 +322,13 @@ select{
 .race-item.imposed{border-color:var(--pink);background:var(--pink-light);}
 .diff-1{color:var(--green-dark);}
 .diff-2{color:var(--blue-dark);}
-.diff-3{color:#B5790A;}
+.diff-3{color:var(--yellow-dark);}
 .diff-4{color:var(--pink-dark);}
 .diff-5{color:var(--red);}
 .counter{position:sticky;top:0;z-index:5;background:var(--bg);padding:8px 0;}
 .flag{font-size:1.3rem;margin-right:6px;}
 .result-tier{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.25rem;}
-.tier-victoire{color:#C4890A;}
+.tier-victoire{color:var(--yellow-dark);}
 .tier-podium{color:var(--pink-dark);}
 .tier-top10{color:var(--blue-dark);}
 .tier-peloton{color:var(--text-soft);}
@@ -381,6 +392,22 @@ select{
   .result-tier.pop, .confetti-row, .trophy-shimmer{ animation:none !important; }
 }
 html.reduce-motion *{transition:none !important; animation:none !important;}
+/* Le jeu tenait jusqu'ici sur une seule colonne fluide sans aucun palier de largeur
+   dédié — fonctionnait "par accident" sur petit téléphone plutôt que par un vrai
+   réglage. Ce point d'arrêt resserre juste ce qui devenait visiblement à l'étroit. */
+@media (max-width:380px){
+  #app{padding:18px 10px 60px;}
+  .gauge-grid{gap:10px 4px;}
+  .gauge{width:50px;height:50px;}
+  .gauge-num{font-size:0.8rem;}
+  .gauge-cap{font-size:0.56rem;}
+  .grid3 .btn{padding:12px 6px;font-size:0.86rem;}
+}
+/* Filet de sécurité générique : un nom de coureur/équipe généré inhabituellement long
+   n'a nulle part de traitement d'overflow garanti (sauf 2 endroits précis) — ce
+   filet évite un débordement hors de sa carte/bouton, sans rien changer pour les
+   noms de longueur normale. */
+.card, .race-item, .btn, .stat-tile, .opt-card, .team-card{ overflow-wrap:break-word; }
 html.high-contrast{
   /* !important sur les variables elles-mêmes : sans ça, les règles de thème sombre
      (:root[data-theme="dark"], plus spécifiques qu'un simple html.classe) l'emportent
@@ -402,12 +429,12 @@ html.high-contrast .opt-card.selected, html.high-contrast .race-item.picked, htm
 }
 html.high-contrast .btn{ border:2px solid var(--text) !important; }
 html.high-contrast .small{ color:var(--text-soft) !important; }
-.help-btn{background:none;border:none;cursor:pointer;font-size:0.95rem;opacity:0.55;padding:0 2px;vertical-align:middle;line-height:1;}
+.help-btn{background:none;border:none;cursor:pointer;font-size:0.95rem;opacity:0.55;padding:10px 8px;margin:-10px -8px;vertical-align:middle;line-height:1;min-width:24px;min-height:24px;}
 .help-btn:hover{opacity:1;}
 .help-box{display:none;margin:6px 0 2px;padding:8px 10px;background:rgba(59,130,246,0.08);border-left:3px solid var(--blue);border-radius:6px;font-size:0.82rem;color:var(--text-soft);line-height:1.45;}
 .help-box.open{display:block;}
 .tip-box{position:relative;margin:6px 0 8px;padding:8px 34px 8px 10px;background:rgba(59,130,246,0.08);border-left:3px solid var(--blue);border-radius:6px;font-size:0.82rem;color:var(--text-soft);line-height:1.45;}
-.tip-dismiss-btn{position:absolute;top:4px;right:4px;background:none;border:none;font-size:1rem;line-height:1;color:var(--text-soft);cursor:pointer;padding:4px 6px;}
+.tip-dismiss-btn{position:absolute;top:0;right:0;background:none;border:none;font-size:1rem;line-height:1;color:var(--text-soft);cursor:pointer;padding:9px 10px;min-width:24px;min-height:24px;}
 .tip-dismiss-btn:hover{color:var(--text);}
 
 .screen-hero{
@@ -442,7 +469,8 @@ html.high-contrast .small{ color:var(--text-soft) !important; }
 </style>
 </head>
 <body>
-<div id="app"></div>
+<main id="app"></main>
+<div id="sr-announcer" aria-live="polite" class="sr-only"></div>
 <script>
 /* Assets visuels générés (Canva) intégrés en base64 pour un fichier autonome. */
 const LOGO_B64 = "data:image/png;base64,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";
@@ -939,6 +967,15 @@ function setLang(lang){
   saveSettings();
   if(STATE && STATE.rider){ rerenderCurrentScreenForLang(); } else { renderMainMenu(); }
 }
+/* Depuis l'écran Réglages (accessible avec ou sans carrière en cours, contrairement à
+   setLang() ci-dessus qui suppose venir du menu principal ou d'un écran de run
+   suivi) : on reste simplement sur Réglages plutôt que de sauter ailleurs. */
+function setLangFromSettings(lang){
+  SETTINGS.lang = lang;
+  applySettings();
+  saveSettings();
+  renderSettingsScreen(true);
+}
 /* Redessine l'écran courant après un changement de langue en cours de partie, sur le
    même principe que resumeSlot (dispatch par nom d'écran). */
 function rerenderCurrentScreenForLang(){
@@ -960,6 +997,14 @@ function rerenderCurrentScreenForLang(){
   else if(screen==='cancelrace') renderCancelRaceScreen();
   else if(STATE.runQueue && STATE.runQueue.length) renderCalendarScreen();
   else renderSeasonSetupScreen();
+}
+/* Réglages/Journal ouverts en cours de run (via NAV_RETURN_TO='inrun') ne touchent
+   jamais STATE._screen tant qu'ils sont affichés — sinon le "retour" perdrait la trace
+   du véritable écran de jeu sous-jacent. STATE._navReturnScreen capture ce nom d'écran
+   juste avant l'ouverture ; ce helper le restaure avant de redessiner. */
+function restoreNavReturnScreen(){
+  if(STATE && STATE._navReturnScreen) STATE._screen = STATE._navReturnScreen;
+  rerenderCurrentScreenForLang();
 }
 
 const STAT_LABELS_FR = {
@@ -3754,8 +3799,13 @@ function leaderboardConfigured(){
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+/* Distingue "hors-ligne / requête n'a jamais abouti" (fetch qui lève une exception)
+   de "le serveur a répondu, mais en erreur" (res.ok===false) — pour ne plus renvoyer
+   le même message générique quelle que soit la cause réelle de l'échec. */
+let LAST_LEADERBOARD_ERROR = null; // 'offline' | 'server'
 async function submitToLeaderboard(entry){
   if(!leaderboardConfigured()) return {ok:false};
+  LAST_LEADERBOARD_ERROR = null;
   try{
     const res = await fetch(LEADERBOARD_API_URL + '/submit', {
       method: 'POST',
@@ -3773,21 +3823,22 @@ async function submitToLeaderboard(entry){
         score: careerScore(entry),
       }),
     });
-    if(!res.ok) return {ok:false};
+    if(!res.ok){ LAST_LEADERBOARD_ERROR = 'server'; return {ok:false}; }
     const data = await res.json();
     return {ok:true, rank: data.rank || null};
-  } catch(e){ return {ok:false}; }
+  } catch(e){ LAST_LEADERBOARD_ERROR = 'offline'; return {ok:false}; }
 }
 async function fetchLeaderboard(styleId, countryCode){
   if(!leaderboardConfigured()) return null;
+  LAST_LEADERBOARD_ERROR = null;
   try{
     const styleQuery = (styleId && styleId!=='all') ? `&style=${encodeURIComponent(styleId)}` : '';
     const countryQuery = (countryCode && countryCode!=='all') ? `&country=${encodeURIComponent(countryCode)}` : '';
     const res = await fetch(LEADERBOARD_API_URL + '/leaderboard?limit=50' + styleQuery + countryQuery);
-    if(!res.ok) return null;
+    if(!res.ok){ LAST_LEADERBOARD_ERROR = 'server'; return null; }
     const data = await res.json();
     return Array.isArray(data.entries) ? data.entries : [];
-  } catch(e){ return null; }
+  } catch(e){ LAST_LEADERBOARD_ERROR = 'offline'; return null; }
 }
 async function publishToLeaderboard(){
   if(!STATE || !STATE.rider || CAREER_HISTORY.length===0) return;
@@ -3797,6 +3848,7 @@ async function publishToLeaderboard(){
   const result = await submitToLeaderboard(entry);
   if(!STATE) return; // écran quitté entretemps
   STATE.leaderboardStatus = result.ok ? 'ok' : 'error';
+  STATE.leaderboardErrorReason = result.ok ? null : LAST_LEADERBOARD_ERROR;
   STATE.leaderboardRank = result.ok ? result.rank : null;
   renderCareerEnd();
 }
@@ -3814,7 +3866,7 @@ function leaderboardCardHTML(){
   return `<div class="card center">
     <h3>🌍 ${tf('leaderboardTitle','Classement mondial')}</h3>
     <p class="small">${tf('leaderboardDesc',"Publie le score de ce coureur (nom, style, pays, palmarès) au classement public de tous les joueurs.")}</p>
-    ${status==='error' ? `<p class="small" style="color:var(--red);">${tf('leaderboardError',"Échec de l'envoi — réessaie plus tard.")}</p>` : ''}
+    ${status==='error' ? `<p class="small" style="color:var(--red);">${STATE.leaderboardErrorReason==='offline' ? tf('leaderboardErrorOffline',"Échec de l'envoi — vérifie ta connexion internet.") : tf('leaderboardErrorServer',"Échec de l'envoi — le service est indisponible pour le moment, réessaie plus tard.")}</p>` : ''}
     <button class="btn" ${status==='sending'?'disabled':''} onclick="publishToLeaderboard()">${status==='sending'?tf('sending','Envoi…'):tf('leaderboardPublish','📤 Publier au classement')}</button>
   </div>`;
 }
@@ -3890,7 +3942,7 @@ async function loadGlobalLeaderboard(){
   const rowsEl = document.getElementById('leaderboard-rows');
   if(!loadingEl || !rowsEl) return; // écran quitté entretemps
   if(entries === null){
-    loadingEl.innerHTML = `<p>${tf('leaderboardUnavailable',"Classement indisponible pour le moment.")}</p>`;
+    loadingEl.innerHTML = `<p>${LAST_LEADERBOARD_ERROR==='offline' ? tf('leaderboardUnavailableOffline','Impossible de contacter le classement — vérifie ta connexion internet.') : tf('leaderboardUnavailable',"Classement indisponible pour le moment.")}</p>`;
     return;
   }
   loadingEl.remove();
@@ -4044,6 +4096,10 @@ let SUPPRESS_SAVE = true; // le splash ne doit pas ecraser une sauvegarde exista
 let SLOTS = [null, null, null];
 let CURRENT_SLOT = null;
 let SAVE_FAILED = false; // localStorage plein/bloqué : signalé au joueur plutôt qu'absorbé en silence
+/* Où renvoie le "← Retour" de Réglages/Tutoriel : ces deux écrans sont accessibles à la
+   fois depuis le menu principal et depuis la création de personnage — un retour figé
+   sur le menu principal effaçait les choix de création déjà faits (nom/pays/style). */
+let NAV_RETURN_TO = 'menu'; // 'menu' | 'creation'
 
 /* ---------- ACCESSIBILITÉ ---------- */
 const SETTINGS_KEY = 'coupDePedale_settings_v1';
@@ -4057,7 +4113,7 @@ function loadSettings(){
 }
 
 function saveSettings(){
-  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); } catch(e){}
+  try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); SAVE_FAILED = false; } catch(e){ SAVE_FAILED = true; }
 }
 
 function applySettings(){
@@ -4076,8 +4132,19 @@ function toggleReduceMotion(){ SETTINGS.reduceMotion = !SETTINGS.reduceMotion; a
 function setTheme(mode){ SETTINGS.theme = mode; applySettings(); saveSettings(); renderSettingsScreen(true); }
 
 function renderSettingsScreen(keepScroll){
+  /* Nom d'écran dédié quand ouvert en cours de run (NAV_RETURN_TO==='inrun') : sinon
+     STATE._screen resterait bloqué sur le nom de l'écran de jeu réel pendant tout le
+     temps où Réglages est affiché, masquant qu'un vrai changement d'écran a eu lieu. */
+  if(STATE && NAV_RETURN_TO==='inrun') STATE._screen = 'settings';
   setHTML(`
     ${heroHTML(tf('accessibility','♿ Accessibilité'))}
+    <div class="card">
+      <h3>🌐 ${tf('languageTitle','Langue')}</h3>
+      <div class="grid2">
+        <button class="btn ${(SETTINGS.lang||'fr')==='fr'?'':'ghost'}" onclick="setLangFromSettings('fr')">🇫🇷 Français</button>
+        <button class="btn ${SETTINGS.lang==='en'?'':'ghost'}" onclick="setLangFromSettings('en')">🇬🇧 English</button>
+      </div>
+    </div>
     <div class="card">
       <h3>🔠 ${tf('textSize','Taille du texte')}</h3>
       <div class="grid3">
@@ -4105,7 +4172,7 @@ function renderSettingsScreen(keepScroll){
       <p class="small">${tf('reduceMotionDesc',"Désactive les transitions, confettis et effets d'apparition, en plus du réglage de ton système d'exploitation s'il est déjà activé.")}</p>
       <button class="btn ${SETTINGS.reduceMotion?'':'ghost'}" onclick="toggleReduceMotion()">${SETTINGS.reduceMotion?tf('enabled','✅ Activé'):tf('disabled','Désactivé')}</button>
     </div>
-    <button class="btn ghost" onclick="renderMainMenu()">${tf('back','← Retour')}</button>
+    <button class="btn" onclick="${NAV_RETURN_TO==='creation'?'renderCreationScreen()':(NAV_RETURN_TO==='inrun'?'restoreNavReturnScreen()':'renderMainMenu()')}">${tf('back','← Retour')}</button>
   `, keepScroll);
 }
 
@@ -4126,7 +4193,10 @@ function saveGame(){
     };
     localStorage.setItem(GLOBAL_KEY, JSON.stringify(global));
     if(CURRENT_SLOT !== null){
-      SLOTS[CURRENT_SLOT] = {state: STATE, creation: window._creation};
+      /* STATE null (juste après resetGame(), avant que confirmCreation() ne le
+         repeuple) : écrire le null pur attendu par l'invariant du slot, pas
+         {state:null,...} — sinon ce demi-état écrasait le null qu'on venait de poser. */
+      SLOTS[CURRENT_SLOT] = STATE ? {state: STATE, creation: window._creation} : null;
       localStorage.setItem(SLOTS_KEY, JSON.stringify(SLOTS));
     }
     SAVE_FAILED = false;
@@ -4267,6 +4337,8 @@ function selectSlot(i){
   const slot = SLOTS[i];
   if(slot && slot.state && slot.state.rider && !slot.state.rider.retired){
     resumeSlot(i);
+  } else if(slot && slot.state && slot.state.rider && slot.state.rider.retired){
+    viewRetiredCareer(i);
   } else {
     SUPPRESS_SAVE = false;
     CURRENT_SLOT = i;
@@ -4276,9 +4348,23 @@ function selectSlot(i){
   }
 }
 
+/* « Voir » sur une carrière retraitée doit vraiment l'afficher, pas relancer une
+   création dans ce même emplacement (ce qui l'écrasait au rendu suivant, via
+   l'autosave). CURRENT_SLOT reste sur cet emplacement comme pour resumeSlot() —
+   la carrière est déjà terminée, réécrire le même état ne perd rien. */
+function viewRetiredCareer(i){
+  SUPPRESS_SAVE = false;
+  CURRENT_SLOT = i;
+  const slot = SLOTS[i];
+  STATE = slot.state;
+  window._creation = slot.creation || {name:'', country: COUNTRIES[0].code, style:null};
+  backfillRiderFields(STATE.rider);
+  renderCareerEnd();
+}
+
 function deleteSlot(i){
   SLOTS[i] = null;
-  try{ localStorage.setItem(SLOTS_KEY, JSON.stringify(SLOTS)); } catch(e){}
+  try{ localStorage.setItem(SLOTS_KEY, JSON.stringify(SLOTS)); SAVE_FAILED = false; } catch(e){ SAVE_FAILED = true; }
   renderMainMenu();
 }
 
@@ -4287,7 +4373,7 @@ function confirmDeleteSlot(i){
   const name = slot && slot.state && slot.state.rider ? slot.state.rider.name : tf('thisCareer','cette carrière');
   setHTML(`
     <div class="card center">
-      <h2>🗑️ ${tf('deleteCareerTitle','Supprimer cette carrière ?')}</h2>
+      <h1 class="h1-as-h2">🗑️ ${tf('deleteCareerTitle','Supprimer cette carrière ?')}</h1>
       <p>${name} ${tf('willBeErased','sera')} <strong>${tf('permanentlyErased','définitivement effacé')}</strong> ${tf('fromThisSlot',"de cet emplacement — impossible de revenir en arrière.")}</p>
       <button class="btn" style="background:var(--red);box-shadow:0 6px 0 #C23B3B, 0 10px 20px -8px rgba(194,59,59,0.45);" onclick="deleteSlot(${i})">${tf('deletePermanently','Supprimer définitivement')}</button>
       <button class="btn ghost" onclick="renderMainMenu()">${tf('cancel','← Annuler')}</button>
@@ -4316,7 +4402,7 @@ function renderMainMenu(){
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
           <span style="color:var(--hero);font-weight:800;font-size:0.9rem;">${r.retired?tf('view','Voir'):tf('resume','▶️ Reprendre')}</span>
-          <button class="footer-link" style="padding:0;" onclick="event.stopPropagation();confirmDeleteSlot(${i})" aria-label="${tf('deleteSlot','Supprimer cet emplacement')}">🗑️</button>
+          <button class="footer-link" style="padding:10px;margin:-10px;" onclick="event.stopPropagation();confirmDeleteSlot(${i})" aria-label="${tf('deleteSlot','Supprimer cet emplacement')}" title="${tf('deleteSlot','Supprimer cet emplacement')}">🗑️</button>
         </div>
       </div>`;
     }
@@ -4366,13 +4452,14 @@ function renderMainMenu(){
     <h3 style="margin-top:14px;">🔎 ${tf('explore','Explorer')}</h3>
         <div class="grid2">
       <button class="btn ghost" onclick="renderHallOfFame()">${tf('hallOfFame','🏆 Palmarès des légendes')}</button>
-      <button class="btn ghost" onclick="renderTrophiesScreen()">${tf('trophies','🎖️ Trophées')} (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
+      <button class="btn ghost" onclick="NAV_RETURN_TO='menu';renderTrophiesScreen()">${tf('trophies','🎖️ Trophées')} (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
     </div>
     <button class="btn ghost" onclick="renderCareerComparator()">${tf('careerComparator','📊 Comparateur de carrières')}</button>
+    <button class="btn ghost" onclick="ALMANAC_SCOPE='legend';renderRaceAlmanac()">📖 ${tf('raceAlmanacLegend','Almanach de légende (63 courses)')}</button>
     ${leaderboardConfigured() ? `<button class="btn ghost" onclick="renderGlobalLeaderboard()">${tf('globalLeaderboard','🌍 Classement mondial')}</button>` : ''}
     <div class="footer-links">
-      <button class="footer-link" onclick="renderTutorialScreen()">${tf('howToPlay','📖 Comment jouer ?')}</button>
-      <button class="footer-link" onclick="renderSettingsScreen()">${tf('accessibility','♿ Accessibilité')}</button>
+      <button class="footer-link" onclick="NAV_RETURN_TO='menu';renderTutorialScreen()">${tf('howToPlay','📖 Comment jouer ?')}</button>
+      <button class="footer-link" onclick="NAV_RETURN_TO='menu';renderSettingsScreen()">${tf('accessibility','♿ Accessibilité')}</button>
     </div>
   `);
 }
@@ -4538,6 +4625,9 @@ function setHTML(html, keepScroll){
   if(STATE && STATE.rider){
     app().insertAdjacentHTML('beforeend', `<button class="footer-link" style="display:block;margin:18px auto 0;text-align:center;" onclick="renderMainMenu()">${tf('mainMenu','🏠 Menu principal')}</button>`);
     app().insertAdjacentHTML('beforeend', `<button class="footer-link" style="display:block;margin:6px auto 0;text-align:center;" onclick="renderRaceAlmanac()">${tf('raceAlmanac','📖 Almanach des courses')}</button>`);
+    /* Réglages jusqu'ici seulement accessibles hors course (menu principal/création) —
+       un joueur en pleine saison qui veut passer en thème sombre devait tout quitter. */
+    app().insertAdjacentHTML('beforeend', `<button class="footer-link" style="display:block;margin:6px auto 0;text-align:center;" onclick="NAV_RETURN_TO='inrun';STATE._navReturnScreen=STATE._screen;renderSettingsScreen()">${tf('accessibility','♿ Accessibilité')}</button>`);
   }
   app().insertAdjacentHTML('beforeend', `<a href="https://x.com/lecoupdepedale" target="_blank" rel="noopener" style="display:block;text-align:center;margin:14px auto 6px;font-size:0.72rem;color:var(--text-soft);text-decoration:none;opacity:0.75;">𝕏 @lecoupdepedale</a>`);
   /* Accessibilité clavier : les éléments cliquables non-natifs (div/span avec onclick,
@@ -4549,8 +4639,38 @@ function setHTML(html, keepScroll){
     if(el.hasAttribute('disabled')) return;
     if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
     if(!el.hasAttribute('role')) el.setAttribute('role','button');
+    /* Contrôles de sélection personnalisés (row-item/chip/opt-card/team-card) : leur état
+       "choisi" n'était jusqu'ici signalé que par une couleur de bordure/fond (classe
+       active/selected/picked), invisible pour une technologie d'assistance. On expose
+       cet état via aria-pressed pour tous ces éléments, sans toucher aux gabarits HTML
+       un par un — sauf là où un aria-pressed explicite existe déjà dans le code. */
+    if(!el.hasAttribute('aria-pressed') && (el.classList.contains('row-item') || el.classList.contains('chip') || el.classList.contains('opt-card') || el.classList.contains('team-card'))){
+      const isOn = el.classList.contains('active') || el.classList.contains('selected') || el.classList.contains('picked');
+      el.setAttribute('aria-pressed', String(isOn));
+    }
   });
   if(!keepScroll) window.scrollTo(0,0);
+  /* Gestion du focus au changement d'écran : setHTML() remplace tout le contenu de #app
+     à chaque navigation, ce qui laisse le focus clavier sur un nœud détruit (retombe
+     silencieusement sur <body>) et ne prévient jamais un lecteur d'écran qu'un nouvel
+     écran s'est affiché. On déplace le focus sur le titre du nouvel écran et on
+     l'annonce via une région aria-live permanente, hors de #app pour survivre au
+     remplacement. Uniquement sur une vraie navigation (!keepScroll) : les mises à jour
+     en place du même écran (ex. cocher une course au calendrier, qui passe keepScroll)
+     ne doivent pas renvoyer le focus clavier tout en haut à chaque coche. */
+  if(!keepScroll){
+    /* h1 en priorité (le vrai titre de l'écran) : riderHeaderHTML() place un <h2> avec
+       le nom du coureur en tête de nombreux écrans, avant le titre spécifique de
+       l'écran — chercher "h1, h2" sans distinction ramènerait presque toujours ce nom
+       plutôt que le titre réel. */
+    const _heading = app().querySelector('h1') || app().querySelector('h2');
+    if(_heading){
+      if(!_heading.hasAttribute('tabindex')) _heading.setAttribute('tabindex','-1');
+      _heading.focus({preventScroll:true});
+      const _announcer = document.getElementById('sr-announcer');
+      if(_announcer) _announcer.textContent = _heading.textContent;
+    }
+  }
   saveGame();
   const bars = app().querySelectorAll('.stat-fill.animated-fill');
   if(bars.length){
@@ -4680,6 +4800,7 @@ function riderHeaderHTML(){
           return `<p class="small" style="color:${_color};margin:2px 0 0;">${_icon} ${tf('seasonObjective','Objectif')} : ${_objLabel} — <em>${_status}</em></p>`;
         })()}
         ${r.teammate ? `<p class="small">🤝 ${tf('teammateWord','Coéquipier')} : ${r.teammate.name} (${TEAMMATE_ARCHETYPE_LABELS[r.teammate.archetype]})${r.isMentor?` · 🧑‍🏫 ${tf('youAreMentor','Tu es son mentor')}`:''}</p>` : ''}
+        <button class="btn ghost" style="margin-top:6px;font-size:0.78rem;padding:6px 10px;" onclick="NAV_RETURN_TO='inrun';STATE._navReturnScreen=STATE._screen;renderCareerJournal()">📖 ${tf('careerJournal','Journal de carrière')}</button>
       `;
       const openLabel = tf('expand','▼ Déplier');
       const closeLabel = tf('collapse','▲ Replier');
@@ -4692,7 +4813,7 @@ function riderHeaderHTML(){
     <div class="grid2" style="margin-top:8px;">
       <div class="stat-row">
         <div class="stat-label"><span>⭐ ${tf('reputationWord','Réputation')}</span><span>${Math.round(r.reputation)}</span></div>
-        <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.reputation))}%"></div></div>
+        <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.reputation))}%;background:${gaugeLevelColor(r.reputation)};"></div></div>
       </div>
       <div class="stat-row">
         <div class="stat-label"><span>🤝 ${tf('teamConfidenceWord','Confiance équipe')}</span><span>${Math.round(r.teamConfidence)}</span></div>
@@ -4802,11 +4923,12 @@ function renderCreationScreen(keepScroll){
       </div>`;
     })() : ''}
     ${nameBlock}
-    <button class="btn" ${cr.style?'':'disabled'} onclick="confirmCreation()">${tf('startCareer','🚀 Débuter la carrière')}</button>
+    ${cr.style ? '' : `<p id="style-required-hint" class="small" style="text-align:center;">${tf('styleRequiredHint','Choisis un style de coureur ci-dessus pour continuer.')}</p>`}
+    <button class="btn" ${cr.style?'':'disabled'} ${cr.style?'':'aria-describedby="style-required-hint"'} onclick="confirmCreation()">${tf('startCareer','🚀 Débuter la carrière')}</button>
     <button class="btn ghost" onclick="renderMainMenu()">${tf('backToMenu','← Retour au menu principal')}</button>
     <div class="footer-links">
-      <button class="footer-link" onclick="renderTutorialScreen()">${tf('howToPlay','📖 Comment jouer ?')}</button>
-      <button class="footer-link" onclick="renderSettingsScreen()">${tf('accessibility','♿ Accessibilité')}</button>
+      <button class="footer-link" onclick="NAV_RETURN_TO='creation';renderTutorialScreen()">${tf('howToPlay','📖 Comment jouer ?')}</button>
+      <button class="footer-link" onclick="NAV_RETURN_TO='creation';renderSettingsScreen()">${tf('accessibility','♿ Accessibilité')}</button>
     </div>
   `, keepScroll);
 }
@@ -4904,7 +5026,7 @@ function renderTutorialScreen(){
       <div class="race-item" style="cursor:default;"><span>${tf('scoringCrit','Critérium (et autres)')}</span><span class="pill mono">${tf('scoringWinLabel','victoire')} 10 · ${tf('scoringPodiumLabel','podium')} 3</span></div>
       <p class="small" style="margin:8px 0 0;">${tf('scoringExtras',"+ 15 pts par victoire d'étape, + 1 pt par point de réputation finale, et un bonus jusqu'à 60 pts selon ton meilleur classement mondial atteint en carrière.")}</p>
     </div>
-    <button class="btn ghost" onclick="renderMainMenu()">${tf('back','← Retour')}</button>
+    <button class="btn ghost" onclick="${NAV_RETURN_TO==='creation'?'renderCreationScreen()':'renderMainMenu()'}">${tf('back','← Retour')}</button>
   `);
 }
 
@@ -5025,7 +5147,7 @@ function renderChallengeSlotPicker(){
       if(!slot) return '';
       const r = slot.state && slot.state.rider;
       const label = r ? `${r.flag||''} ${r.name} — ${tf('seasonLabel','Saison')} ${r.season}` : tf('unknownCareer','Carrière inconnue');
-      return `<div class="race-item" onclick="_launchChallengeInSlot(${idx})" style="cursor:pointer;">
+      return `<div class="race-item" onclick="confirmChallengeOverwrite(${idx})" style="cursor:pointer;">
         <div>
           <strong>${tf('slot','Emplacement')} ${idx+1}</strong>
           <p class="small" style="margin:2px 0 0;">${label}</p>
@@ -5034,6 +5156,20 @@ function renderChallengeSlotPicker(){
       </div>`;
     }).join('')}
     <button class="btn ghost" onclick="renderChallenge()">${tf('back','← Retour')}</button>
+  `);
+}
+
+function confirmChallengeOverwrite(slotIdx){
+  const slot = SLOTS[slotIdx];
+  const r = slot && slot.state && slot.state.rider;
+  const label = r ? `${r.flag||''} ${r.name} (${tf('seasonLabel','Saison')} ${r.season}${r.retired?`, ${tf('careerOver','Carrière terminée')}`:''})` : tf('unknownCareer','Carrière inconnue');
+  setHTML(`
+    <div class="card center">
+      <h1 class="h1-as-h2">🗑️ ${tf('overwriteConfirmTitle','Écraser cette carrière ?')}</h1>
+      <p>${label} ${tf('willBeErased','sera')} <strong>${tf('permanentlyErased','définitivement effacé')}</strong> ${tf('fromThisSlot',"de cet emplacement — impossible de revenir en arrière.")}</p>
+      <button class="btn" style="background:var(--red);box-shadow:0 6px 0 #C23B3B, 0 10px 20px -8px rgba(194,59,59,0.45);" onclick="_launchChallengeInSlot(${slotIdx})">${tf('overwriteConfirmButton','Écraser et lancer le défi')}</button>
+      <button class="btn ghost" onclick="renderChallengeSlotPicker()">${tf('cancel','← Annuler')}</button>
+    </div>
   `);
 }
 
@@ -5089,9 +5225,12 @@ function setAlmanacScope(s){ ALMANAC_SCOPE = s; renderRaceAlmanac(); }
 
 function renderRaceAlmanac(){
   if(STATE) STATE._screen = 'racealmanac';
-  const r = STATE.rider;
+  const r = STATE ? STATE.rider : null;
+  /* Accessible depuis le menu principal même sans carrière en cours (l'Almanach de
+     légende ne dépend que des records globaux) — mais sans coureur actif, le scope
+     "Cette carrière" n'a rien à montrer : on retombe sur "légende" dans ce cas. */
   const races = RACES_DATA().slice().sort((a,b)=>a.month-b.month);
-  const isLegend = ALMANAC_SCOPE==='legend';
+  const isLegend = ALMANAC_SCOPE==='legend' || !r;
   const bestByRace = {};
   if(isLegend){
     races.forEach(race=>{ if(RACE_RECORDS[race.id]) bestByRace[race.id] = RACE_RECORDS[race.id]; });
@@ -5125,7 +5264,7 @@ function renderRaceAlmanac(){
   setHTML(`
     ${heroHTML(tf('raceAlmanacTitle','Almanach des courses'), isLegend ? tf('almanacDescLegend',"Le meilleur résultat jamais obtenu sur chacune des 63 courses, toutes carrières confondues.") : tf('almanacDesc',"Ton historique personnel sur les 63 courses du jeu, cette carrière."))}
     <div class="chip-row" style="justify-content:center;margin-bottom:6px;">
-      ${scopeChip('career', tf('almanacScopeCareer','Cette carrière'))}
+      ${r ? scopeChip('career', tf('almanacScopeCareer','Cette carrière')) : ''}
       ${scopeChip('legend', '🏛️ '+tf('almanacScopeLegend','Almanach de légende'))}
     </div>
     <p class="small" style="margin:-6px 0 8px;text-align:center;">${racedCount} / ${races.length} ${tf('raced','courues')}</p>
@@ -5135,7 +5274,7 @@ function renderRaceAlmanac(){
       ${filterChip('unraced', tf('almanacFilterUnraced','Jamais courues'))}
     </div>
     <div class="card" style="padding:8px 12px;">${rows}</div>
-    <button class="btn ghost" onclick="${STATE.seasonRacePool ? 'renderCalendarScreen()' : 'renderMainMenu()'}">${STATE.seasonRacePool ? tf('backToCalendar','← Retour au calendrier') : tf('back','← Retour')}</button>
+    <button class="btn ghost" onclick="${STATE && STATE.seasonRacePool ? 'renderCalendarScreen()' : 'renderMainMenu()'}">${STATE && STATE.seasonRacePool ? tf('backToCalendar','← Retour au calendrier') : tf('back','← Retour')}</button>
   `);
 }
 
@@ -5370,7 +5509,7 @@ function renderCareerComparator(){
           <div><strong>${country?country.flag:''} ${c.name}</strong><p class="small" style="margin:2px 0 0;">${STYLES.find(s=>s.id===c.styleId).name} · ${c.seasons} ${tf('seasonsBareLower','saisons')}</p></div>
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="pill mono">${c.wins}🏆 ${c.podiums}🥈</span>
-            <button type="button" class="chip ${selected?'active':''}" style="padding:5px 9px;font-size:0.75rem;" onclick="toggleCompareCareer(${i})">🆚</button>
+            <button type="button" class="chip ${selected?'active':''}" style="padding:11px 14px;font-size:0.75rem;" onclick="toggleCompareCareer(${i})" aria-label="${tf('addToComparison','Ajouter à la comparaison')}" title="${tf('addToComparison','Ajouter à la comparaison')}" aria-pressed="${selected}">🆚</button>
           </div>
         </div>`;
       }).join('') : `<p class="small center" style="padding:8px;">${tf('almanacFilterEmpty','Aucune course ne correspond à ce filtre.')}</p>`}
@@ -5421,7 +5560,7 @@ function renderTrophiesScreen(){
         }).join('')}
       </div>
     `).join('')}
-    <button class="btn ghost" onclick="renderMainMenu()">${tf('back','← Retour')}</button>
+    <button class="btn ghost" onclick="${NAV_RETURN_TO==='careerend'?'renderCareerEnd()':'renderMainMenu()'}">${tf('back','← Retour')}</button>
   `);
 }
 
@@ -5501,7 +5640,7 @@ function renderMentorOffer(){
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card">
-      <h2>🧑‍🏫 ${tf('mentorTitle','Basculer vers un rôle de mentor ?')}</h2>
+      <h1 class="h1-as-h2">🧑‍🏫 ${tf('mentorTitle','Basculer vers un rôle de mentor ?')}</h1>
       <p>${tf('mentorDesc1','Tu approches de la fin de ta carrière. Tu pourrais désormais investir une partie de ton énergie à faire progresser')} ${tm.name} ${tf('mentorDesc1b',"plutôt qu'à courir uniquement pour toi-même.")}</p>
       <p class="small">${tf('mentorDesc2','En tant que mentor')} : ${tf('mentorDesc2b','ta complicité avec')} ${tm.name} ${tf('mentorDesc2c',"progresse plus vite, ta réputation grandit doucement chaque saison (le peloton respecte ce rôle), mais tu renonces aux objectifs et défis de saison — ta priorité, désormais, c'est lui.")}</p>
       <button class="btn" onclick="acceptMentorRole()">${tf('becomeMentor','Devenir mentor')}</button>
@@ -6393,7 +6532,7 @@ function renderPivotEvent(pivot){
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card" style="border-left:4px solid var(--yellow);">
-      <h2>${pivot.icon} ${pivot.title}</h2>
+      <h1 class="h1-as-h2">${pivot.icon} ${pivot.title}</h1>
       <p>${pivot.desc}</p>
     </div>
     ${pivot.choices.map((c,i)=>`
@@ -6430,7 +6569,7 @@ function renderTrajectoryChoice(){
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card" style="border-left:4px solid var(--yellow);">
-      <h2>🛤️ ${tf('trajectoryTitle','Quelle carrière veux-tu construire ?')}</h2>
+      <h1 class="h1-as-h2">🛤️ ${tf('trajectoryTitle','Quelle carrière veux-tu construire ?')}</h1>
       <p>${tf('trajectoryDesc','Tu as 4 saisons de recul. Il est temps de choisir le fil directeur de ta carrière — une décision permanente qui orientera tes objectifs et tes opportunités.')}</p>
     </div>
     <div class="card" onclick="chooseTrajectory('specialiste')" style="cursor:pointer;">
@@ -6474,7 +6613,7 @@ function renderWorldEventsScreen(){
     ${riderHeaderHTML()}
     ${vestHTML}
     <div class="card" style="border-left:4px solid var(--blue);">
-      <h2>🌐 ${tf('worldEventsTitle','Actualité du peloton')}</h2>
+      <h1 class="h1-as-h2">🌐 ${tf('worldEventsTitle','Actualité du peloton')}</h1>
       <p class="small">${tf('worldEventsSubtitle','Avant de bâtir ton calendrier, voici ce qui agite le monde cycliste cette saison.')}</p>
     </div>
     ${events.map(ev=>{
@@ -6606,7 +6745,7 @@ function renderPersonalEvent(){
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card">
-      <h2>${ev.icon} ${tf('personalLife','Vie personnelle')}</h2>
+      <h1 class="h1-as-h2">${ev.icon} ${tf('personalLife','Vie personnelle')}</h1>
       <h3>${ev.title}</h3>
       <p>${ev.desc}</p>
       ${ev.choices.map((c,i)=>`<button class="btn equilibre" onclick="applyPersonalEvent(${i})">${c.label}</button>`).join('')}
@@ -6747,6 +6886,7 @@ function calendarFormeInsight(){
 
 function renderCalendarScreen(keepScroll){
   if(STATE) STATE._screen='calendar';
+  if(!keepScroll) STATE._calendarBlockNote = null;
   const r = STATE.rider;
   const olympicNote = isOlympicSeason(r)
     ? (STATE.seasonRacePool.some(race=>race.olympic)
@@ -6814,9 +6954,9 @@ function renderCalendarScreen(keepScroll){
     return monthHeader + raceItems;
   }).join('');
 
-  const warnUnder = under40 ? `<p class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('minDays40','Minimum 40 jours de course requis.')}</p>` : '';
+  const warnUnder = under40 ? `<p id="cal-warn-under" class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('minDays40','Minimum 40 jours de course requis.')}</p>` : '';
   const warnFatigue = over45 && !over65 ? `<p class="small" style="color:var(--warn);margin:2px 0 0;">⚠️ ${tf('fatigueWarning','Au-delà de 45 jours, la fatigue s\'accumule nettement plus vite sur le reste de la saison.')}</p>` : '';
-  const warnOver = over65 ? `<p class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('exceeds65','Dépasse 65 j')}</p>` : '';
+  const warnOver = over65 ? `<p id="cal-warn-over" class="small" style="color:var(--red);margin:2px 0 0;">🛑 ${tf('exceeds65','Dépasse 65 j')}</p>` : '';
 
   /* ---- Alerte calendrier intelligente ---- */
   const _sel = STATE.selectedRaceIds;
@@ -6867,6 +7007,7 @@ function renderCalendarScreen(keepScroll){
       </div>
       <div class="stat-track" style="margin-top:6px;"><div class="stat-fill" style="width:${Math.min(100, daysTotal/65*100)}%;background:${daysColor};"></div></div>
       <p class="small" style="margin:4px 0 0;">${raceCount} ${tf(raceCount>1?'racesP':'race','course'+(raceCount>1?'s':''))} · ${imposedCount} ${tf(imposedCount>1?'imposedByTeamP':'imposedByTeam','imposée'+(imposedCount>1?'s':'')+' par l\'équipe')} · ${gtSelected}/2 ${tf('grandToursAbbr','Grands Tours')}</p>
+      ${STATE._calendarBlockNote ? `<p class="small" style="color:var(--red);font-weight:700;margin:4px 0 0;">🛑 ${STATE._calendarBlockNote}</p>` : ''}
       ${warnUnder}${warnFatigue}${warnOver}${warnForme}${warnBuzz}${warnSmart}
       <p class="small" style="margin:8px 0 4px;color:var(--text-soft);">${SETTINGS.lang==='en'?'Pre-fill your calendar automatically (optional — you can adjust after):':'Remplis automatiquement ton calendrier (facultatif — tu peux ajuster ensuite) :'}</p>
       ${STATE._autoFillPendingProfile ? `<p class="small" style="color:var(--warn);margin:2px 0 6px;font-weight:700;">⚠️ ${tf('autoFillConfirmWarning',"Clique à nouveau pour remplacer tes courses déjà sélectionnées.")}</p>` : ''}
@@ -6882,7 +7023,7 @@ function renderCalendarScreen(keepScroll){
       <button class="btn ghost" style="flex:1;font-size:0.78rem;padding:6px 4px;" onclick="collapseAllCalMonths()">▲ ${tf('collapseAllMonths','Tout replier')}</button>
     </div>
     <div class="card" style="padding:8px 12px;">${rows}</div>
-    <button class="btn" ${(over65||under40)?'disabled':''} onclick="confirmCalendar()">🚀 ${tf('startSeason','Lancer la saison')}</button>
+    <button class="btn" ${(over65||under40)?'disabled':''} ${under40?'aria-describedby="cal-warn-under"':(over65?'aria-describedby="cal-warn-over"':'')} onclick="confirmCalendar()">🚀 ${tf('startSeason','Lancer la saison')}</button>
     <button class="btn ghost" onclick="renderRaceAlmanac()">${tf('raceAlmanac','📖 Almanach des courses')}</button>
     ${(STATE.rider.seasonHistory&&STATE.rider.seasonHistory.length>0)?`<button class="btn ghost" onclick="renderSeasonHistory()">📜 ${SETTINGS.lang==='en'?'Season history':'Historique des saisons'}</button>`:''}
   `, keepScroll);
@@ -7080,17 +7221,29 @@ function autoSelectCalendar(profile){
 function toggleRace(id){
   if(STATE.imposedRaceIds.includes(id)) return;
   const i = STATE.selectedRaceIds.indexOf(id);
+  STATE._calendarBlockNote = null;
   if(i>=0){ STATE.selectedRaceIds.splice(i,1); }
   else {
     const race = STATE.seasonRacePool.find(r=>r.id===id);
     if(race.locked) return;
-    if(selectedDaysTotal() + race.days > 65) return;
+    /* Plafonds bloquants : jusqu'ici un simple "return" silencieux — la course cliquée
+       avait l'air tout aussi sélectionnable que les autres, sans aucun signe qu'elle
+       venait d'être refusée. On mémorise un message affiché au prochain rendu. */
+    if(selectedDaysTotal() + race.days > 65){
+      STATE._calendarBlockNote = tf('calendarCapDays','Impossible d\'ajouter cette course : le plafond de 65 jours de course dans la saison serait dépassé.');
+      renderCalendarScreen(true);
+      return;
+    }
     if(race.type==='grandtour'){
       const gtCount = STATE.selectedRaceIds.filter(rid=>{
         const rr = STATE.seasonRacePool.find(r=>r.id===rid);
         return rr && rr.type==='grandtour';
       }).length;
-      if(gtCount >= 2) return;
+      if(gtCount >= 2){
+        STATE._calendarBlockNote = tf('calendarCapGT','Impossible d\'ajouter cette course : maximum 2 grands tours par saison.');
+        renderCalendarScreen(true);
+        return;
+      }
     }
     STATE.selectedRaceIds.push(id);
   }
@@ -7164,7 +7317,7 @@ function renderConvalescenceScreen(race){
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card">
-      <h2>🚑 ${tf('convalescence','Convalescence')}</h2>
+      <h1 class="h1-as-h2">🚑 ${tf('convalescence','Convalescence')}</h1>
       <p>${tf('convalescenceDesc','Encore en soins après la blessure — forfait sur')} « ${race.name} ». ${tf('convalescenceDesc2','Comment abordes-tu cette étape de la rééducation ?')}</p>
       <button class="btn ghost" onclick="convalescenceChoice('protocole')">🩺 ${tf('followProtocol','Suivre le protocole à la lettre')} <span class="small">(${tf('safeSteady','sûr, régulier')})</span></button>
       <button class="btn ghost" onclick="convalescenceChoice('pousser')">⚡ ${tf('pushRecovery','Pousser la reprise')} <span class="small">(${tf('pushRecoveryDesc','peut accélérer le retour, ou provoquer un revers')})</span></button>
@@ -8404,7 +8557,7 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
       ${trainedList.map(k=>`<p class="small">📈 ${STAT_LABELS[k]} ${tf('statUp','en hausse')}</p>`).join('')}
       ${detrainedList.map(k=>`<p class="small">📉 ${STAT_LABELS[k]} ${tf('statDown','en baisse')}</p>`).join('')}
       <hr class="divider" style="border:none;border-top:1px dashed var(--line);">
-      <div class="grid3" style="${prize>0?'grid-template-columns:1fr 1fr 1fr 1fr;':''}">
+      <div class="grid3" style="${prize>0?'grid-template-columns:1fr 1fr;gap:10px;':''}">
         <div class="stat-tile"><span class="stat-tile-num" style="color:${repGain>=0?'var(--green-dark)':'var(--red)'};">${repGain>=0?'+':''}${repGain}</span><span class="stat-tile-label">${tf('reputationWord','Réputation')}</span></div>
         <div class="stat-tile"><span class="stat-tile-num" style="color:${confDelta>=0?'var(--green-dark)':'var(--red)'};">${confDelta>=0?'+':''}${confDelta}</span><span class="stat-tile-label">${tf('confidenceWord','Confiance')}</span></div>
         <div class="stat-tile"><span class="stat-tile-num">${Math.round(STATE.rider.fatigue)}</span><span class="stat-tile-label">${tf('fatigueWord','Fatigue')}</span></div>
@@ -8472,7 +8625,7 @@ function renderInterviewScreen(){
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card">
-      <h2>🎤 ${tf('postRaceInterview',"Interview d'après-course")}</h2>
+      <h1 class="h1-as-h2">🎤 ${tf('postRaceInterview',"Interview d'après-course")}</h1>
       <p>${tf('journalistMic','Un journaliste te tend son micro, tout sourire. Que réponds-tu ?')}</p>
       <button class="btn ghost" onclick="applyInterviewChoice('humble')">🙏 ${tf('stayHumble','Rester humble')} — « ${tf('humbleQuote',"L'équipe a fait un travail formidable.")} »</button>
       <button class="btn ghost" onclick="applyInterviewChoice('confiant')">💪 ${tf('showConfidence','Afficher ta confiance')} — « ${tf('confidentQuote',"Je sens que je suis sur une autre planète en ce moment.")} »</button>
@@ -8505,7 +8658,7 @@ function renderInterviewReactionScreen(){
   setHTML(`
     ${riderHeaderHTML()}
     <div class="card">
-      <h2>📱 ${tf('publicReactions','Réactions du public')}</h2>
+      <h1 class="h1-as-h2">📱 ${tf('publicReactions','Réactions du public')}</h1>
       <p class="narrative-text" style="font-style:italic;">${STATE.pendingInterviewReaction}</p>
     </div>
     <button class="btn" onclick="nextAfterRaceResult()">${tf('continue','Continuer')}</button>
@@ -8845,7 +8998,7 @@ function renderSeasonRecap(){
       <h3>📈 ${tf('progressVsLastSeason','Évolution par rapport à la saison précédente')}</h3>
       <div class="grid3">
         <div class="stat-tile"><span class="stat-tile-num" style="color:${repChange>0?'var(--green-dark)':repChange<0?'var(--red)':'var(--text-soft)'};">${repChange>=0?'+':''}${repChange}</span><span class="stat-tile-label">${tf('reputationWord','Réputation')}</span></div>
-        <div class="stat-tile"><span class="stat-tile-num" style="color:${rankChange>0?'var(--green-dark)':rankChange<0?'var(--red)':'var(--text-soft)'};">${rankChange>=0?'+':''}${rankChange}</span><span class="stat-tile-label">${tf('worldRankProgress','places au classement')}</span></div>
+        <div class="stat-tile"><span class="stat-tile-num" style="color:${rankChange>0?'var(--green-dark)':rankChange<0?'var(--red)':'var(--text-soft)'};">${rankChange>=0?'+':''}${rankChange}</span><span class="stat-tile-label">🌍 ${tf('worldRankProgress','places au classement')}</span></div>
         <div class="stat-tile"><span class="stat-tile-num" style="color:${ratingChange>0?'var(--green-dark)':ratingChange<0?'var(--red)':'var(--text-soft)'};">${ratingChange>=0?'+':''}${Math.round(ratingChange)}</span><span class="stat-tile-label">${tf('overallRatingProgress','note globale')}</span></div>
       </div>
     </div>` : ''}
@@ -8874,8 +9027,10 @@ function renderSeasonRecap(){
 
 /* ---- Fin de contrat ---- */
 
-function renderContractScreen(){
+function renderContractScreen(keepState){
   if(STATE) STATE._screen='contractscreen';
+  if(!keepState) STATE._pendingTeamChoice = null;
+  const pendingTeam = STATE._pendingTeamChoice;
   const r = STATE.rider;
   const offers = offersForRider(r);
   const current = currentTeam(r);
@@ -8903,7 +9058,8 @@ function renderContractScreen(){
         'WorldTour': tf('tierDescWorldTour','Niveau 3 — Élite mondiale, grands tours'),
         'Équipe de légende': tf('tierDescLegende','Niveau 4 — Sommet absolu du cyclisme professionnel'),
       }[t.tier] || '';
-      return `<div class="card team-card" onclick="chooseTeam('${t.id}')">
+      const isPending = pendingTeam === t.id;
+      return `<div class="card team-card ${isPending?'selected':''}" onclick="selectTeamCard('${t.id}')">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <h2>🎽 ${t.name}</h2>
           <span class="pill">${teamTierLabel(t.tier)}</span>
@@ -8911,9 +9067,16 @@ function renderContractScreen(){
         <p class="small" style="margin:2px 0;color:var(--text-soft);font-style:italic;">${tierDesc}</p>
         <p class="small">${t.id===current.id?tf('renewalCurrent','Prolongation avec ton équipe actuelle'):tf('newEmployer','Nouvel employeur')} · ${tf('contractOf','contrat de')} ${duration} ${tf(duration>1?'seasonsBareP':'seasonsBare','saison'+(duration>1?'s':''))}. ${t.specialty?`${tf('specialty','Spécialité')} : ${STAT_ICONS[t.specialty]} ${STAT_LABELS[t.specialty]}.`:tf('generalistTeam','Équipe généraliste.')}</p>
         <p class="small"><strong>${offeredRole.icon} ${tf('roleOffered','Poste proposé')} : ${SETTINGS.lang==='en'?offeredRole.nameEN:offeredRole.name}</strong> · 💰 ${offeredSalary.toLocaleString('fr-FR')} €/${tf('seasonBare','saison')}</p>
+        ${isPending ? `<p class="small" style="color:var(--warn);font-weight:700;margin-top:6px;">⚠️ ${tf('confirmTeamWarning','Clique à nouveau pour signer ce contrat.')}</p>` : ''}
       </div>`;
     }).join('')}
-  `);
+  `, keepState);
+}
+
+function selectTeamCard(teamId){
+  if(STATE._pendingTeamChoice === teamId){ chooseTeam(teamId); return; }
+  STATE._pendingTeamChoice = teamId;
+  renderContractScreen(true);
 }
 
 /* Durée de contrat proposée : les équipes s'engagent plus longtemps avec les coureurs
@@ -9009,21 +9172,34 @@ function renderCareerEnd(){
     </div>
     ${leaderboardCardHTML()}
     <button class="btn" onclick="openShareCard()">${tf('shareCareer','📤 Partager ma carrière')}</button>
-    <button class="btn ghost" onclick="renderCareerJournal()">${tf('careerJournal','📖 Journal de carrière')}</button>
-    <button class="btn ghost" onclick="resetGame()">${tf('startNewCareer','Commencer une nouvelle carrière')}</button>
-    <button class="btn ghost" onclick="renderTrophiesScreen()">🏆 ${tf('viewMyTrophies','Voir mes trophées')} (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
+    <button class="btn ghost" onclick="NAV_RETURN_TO='careerend';renderCareerJournal()">${tf('careerJournal','📖 Journal de carrière')}</button>
+    <button class="btn ghost" onclick="confirmResetGame()">${tf('startNewCareer','Commencer une nouvelle carrière')}</button>
+    <button class="btn ghost" onclick="NAV_RETURN_TO='careerend';renderTrophiesScreen()">🏆 ${tf('viewMyTrophies','Voir mes trophées')} (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
   `);
 }
 
 function renderCareerJournal(){
   const r = STATE.rider;
+  /* Nom d'écran dédié en cours de run, même logique que renderSettingsScreen(). */
+  if(NAV_RETURN_TO==='inrun') STATE._screen = 'careerjournal';
   const entries = (r.journal||[]).slice().sort((a,b)=>a.season-b.season);
   setHTML(`
     ${heroHTML('📖 '+tf('careerJournalTitle','Journal de carrière'), `${tf('journalDesc','Les temps forts de la carrière de')} ${r.name}, ${tf('seasonAfterSeason','saison après saison.')}`)}
     <div class="card">
       ${entries.length ? entries.map(e=>`<div class="race-item"><div><span class="pill">${tf('season','Saison')} ${e.season}</span><p style="margin:6px 0 0;">${e.text}</p></div></div>`).join('') : `<p class="small">${tf('quietCareer','Une carrière discrète, sans grand moment marquant enregistré ici.')}</p>`}
     </div>
-    <button class="btn ghost" onclick="renderCareerEnd()">${tf('backToRecap','← Retour au bilan')}</button>
+    <button class="btn ghost" onclick="${NAV_RETURN_TO==='inrun'?'restoreNavReturnScreen()':'renderCareerEnd()'}">${NAV_RETURN_TO==='inrun'?tf('back','← Retour'):tf('backToRecap','← Retour au bilan')}</button>
+  `);
+}
+
+function confirmResetGame(){
+  setHTML(`
+    <div class="card center">
+      <h1 class="h1-as-h2">🆕 ${tf('newCareerConfirmTitle','Commencer une nouvelle carrière ?')}</h1>
+      <p>${tf('newCareerConfirmDesc',"Cet emplacement sera libéré pour la nouvelle carrière — la carrière que tu viens de terminer restera consultable depuis le Palmarès des légendes, mais son bilan détaillé (journal, palmarès complet) sera effacé de cet emplacement, sans possibilité de revenir en arrière.")}</p>
+      <button class="btn" onclick="resetGame()">${tf('confirmNewCareer','Confirmer — nouvelle carrière')}</button>
+      <button class="btn ghost" onclick="renderCareerEnd()">${tf('cancel','← Annuler')}</button>
+    </div>
   `);
 }
 
@@ -9031,10 +9207,10 @@ function resetGame(){
   STATE = null;
   window._creation = {name:'', country: COUNTRIES[0].code, style:null};
   if(CURRENT_SLOT !== null) SLOTS[CURRENT_SLOT] = null;
-  /* CURRENT_SLOT doit repasser à null ici : sinon le prochain rendu déclenche un
-     autosave (setHTML -> saveGame) qui réécrit aussitôt l'emplacement avec
-     {state:null, creation:...} au lieu du null pur qu'on vient de poser. */
-  CURRENT_SLOT = null;
+  /* CURRENT_SLOT reste sur ce même emplacement (ne pas le repasser à null) : c'est lui
+     qui indique où sauvegarder la prochaine carrière une fois la création terminée
+     (confirmCreation() ne réassigne jamais de slot lui-même). saveGame() sait
+     désormais écrire null tant que STATE est vide, plutôt que {state:null,...}. */
   renderCreationScreen();
 }
 
@@ -9047,6 +9223,7 @@ function openShareCard(){
     <div class="card center">
       <canvas id="shareCanvas" width="1080" height="1080" style="width:100%;max-width:420px;border-radius:18px;box-shadow:0 6px 24px rgba(43,36,24,0.18);"></canvas>
       <p class="small" style="margin-top:12px;">${tf('shareCardDesc',"Image prête à partager sur les réseaux — aucune donnée envoyée nulle part, tout se génère dans ton navigateur.")}</p>
+      <p id="shareCardError" class="small" style="color:var(--red);display:none;">${tf('shareCardExportError',"Échec de l'export de l'image — réessaie, ou fais une capture d'écran de la carte ci-dessus.")}</p>
       <button class="btn" onclick="downloadShareCard()">${tf('download',"⬇️ Télécharger l'image")}</button>
       <button class="btn ghost" id="shareNativeBtn" style="display:none;" onclick="nativeShareCard()">${tf('shareNative','📤 Partager directement')}</button>
       <button class="btn ghost" onclick="renderCareerEnd()">${tf('backToRecap','← Retour au bilan')}</button>
@@ -9154,7 +9331,7 @@ function downloadShareCard(){
   const canvas = document.getElementById('shareCanvas');
   if(!canvas) return;
   canvas.toBlob(blob=>{
-    if(!blob) return;
+    if(!blob){ showShareCardError(); return; }
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -9168,12 +9345,19 @@ function nativeShareCard(){
   const canvas = document.getElementById('shareCanvas');
   if(!canvas) return;
   canvas.toBlob(blob=>{
-    if(!blob) return;
+    if(!blob){ showShareCardError(); return; }
     const file = new File([blob], 'ma-carriere-le-coup-de-pedale.png', {type:'image/png'});
     if(navigator.canShare && navigator.canShare({files:[file]})){
       navigator.share({files:[file], title:'Le coup de pédale', text:tf('shareNativeText','Ma carrière de coureur cycliste — lecoupdepedale.com')}).catch(()=>{});
     }
   }, 'image/png');
+}
+
+/* Silencieux jusqu'ici : si toBlob() échoue (canvas non supporté/vidé), un clic sur
+   Télécharger ou Partager ne produisait rien du tout, sans le moindre message. */
+function showShareCardError(){
+  const el = document.getElementById('shareCardError');
+  if(el) el.style.display = 'block';
 }
 
 /* Quelques moments forts choisis dans la carrière, pour donner un vrai résumé plutôt
