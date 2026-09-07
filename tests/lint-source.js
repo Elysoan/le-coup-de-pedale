@@ -27,9 +27,15 @@ function pass(msg){
    pas de balise statique en dehors. On isole donc ces blocs et on retire les commentaires
    (/* *​/ et //) avant de chercher quoi que ce soit : sinon un commentaire qui EXPLIQUE
    pourquoi on évite tel ou tel élément (il y en a, volontairement, dans ce fichier même)
-   se ferait à tort repérer comme une régression. */
+   se ferait à tort repérer comme une régression. Les <script src="..."> locaux (ex.
+   data/*.js, extraits d'index.html) sont inclus aussi : ce ne sont que des données pour
+   l'instant, mais rien ne garantit que ça reste vrai indéfiniment. */
 const scriptBlocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-const allScripts = scriptBlocks.join('\n');
+const localSrcFiles = [...html.matchAll(/<script src="([^"]+)">/g)]
+  .map(m => m[1])
+  .filter(src => !/^https?:\/\//.test(src));
+const dataScripts = localSrcFiles.map(src => fs.readFileSync(path.join(__dirname, '..', src), 'utf8'));
+const allScripts = scriptBlocks.concat(dataScripts).join('\n');
 const withoutComments = allScripts
   .replace(/\/\*[\s\S]*?\*\//g, ' ')
   .replace(/(^|[^:])\/\/.*$/gm, '$1');
