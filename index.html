@@ -319,7 +319,7 @@ select{
 }
 .race-item.picked{border-color:var(--green);background:var(--green-light);}
 .race-item.locked{opacity:0.4;}
-.race-item.imposed{border-color:var(--pink);background:var(--pink-light);}
+.race-item.imposed{border-color:var(--orange);background:var(--orange-light);}
 .diff-1{color:var(--green-dark);}
 .diff-2{color:var(--blue-dark);}
 .diff-3{color:var(--yellow-dark);}
@@ -626,10 +626,10 @@ const I18N = {
     rivalRetires:'retires after a long career.', newRivalEmerges:'A new rival emerges in the peloton.',
     headToHeadRecord:'Head-to-head record',
     buzzRaceTooltip:'Hyped race: reputation gained or lost is amplified',
-    buzzCalendarNote:'This season, one or more races are heavily hyped (🔥): reputation swings are amplified, for better or worse.',
+    buzzCalendarNote:'This season, one or more races are heavily hyped (📣): reputation swings are amplified, for better or worse.',
     gotIt:'Got it',
     tipRivalCalendar:'The 🥊 badge marks a race where one of your rivals shows up: beat them to fuel your rivalry over the seasons.',
-    tipBuzzCalendar:'The 🔥 badge marks a heavily hyped race this season: your reputation swings are amplified there, for better or worse.',
+    tipBuzzCalendar:'The 📣 badge marks a heavily hyped race this season: your reputation swings are amplified there, for better or worse.',
     tipFormeCalendar:'"Projected form" estimates how fresh you\'ll be for your most prestigious race, based on the calendar you\'re building — adjust it to improve the score.',
     tipFreeCancel:'Above 70 fatigue, you can cancel up to 2 upcoming races per season with no penalty — no DNS, no reputation loss — to catch your breath.',
     tipRiskLevels:'Each choice carries a risk level: safer options are steadier but score lower, bolder ones can pay off big or backfire. Watch the ⚠️ crash-risk warning too.',
@@ -637,7 +637,7 @@ const I18N = {
     roleSuperstar:'World superstar', roleLeader:'Designated leader', roleCoLeader:'Co-leader',
     roleDeluxe:'Deluxe domestique', roleDomestique:'Domestique / young hopeful',
     arch_domestique:'loyal domestique', arch_espoir:'young hopeful', arch_veteran:'veteran nearing retirement',
-    expand:'▼ Expand', collapse:'▲ Collapse', statsGlobalRating:'Statistics — Overall rating',
+    expand:'▼ Expand', collapse:'▲ Collapse', statsGlobalRating:'Statistics — Overall rating', moreDetails:'More details',
     nationalChampionBadge:'National champion', contractWord:'contract',
     ordinalSt:'st', ordinalTh:'th', worldwide:'in the world', fameWord:'Fame', bestRankLabel:'Best ranking', finalRepLabel:'Final reputation', amongStyle:'among', ofCountry:'from',
     sponsorWord:'Sponsor', teammateWord:'Teammate', youAreMentor:"You're his mentor",
@@ -5839,7 +5839,7 @@ const SIDE_CHALLENGES = [
   {id:'victoire-semitour', icon:'🚵', label:"Remporte un semi-tour cette saison", labelEN:"Win a semi-tour this season", check:(results)=>results.some(x=>x.type==='semitour' && x.bestTier==='victoire'), reward:{money:1500, reputation:2}},
   {id:'deux-victoires', icon:'🎯', label:"Remporte au moins 2 courses cette saison", labelEN:"Win at least 2 races this season", check:(results)=>results.filter(x=>x.bestTier==='victoire').length>=2, reward:{reputation:3, money:1000}},
   {id:'defi-rival', icon:'⚔️', label:"Bats un de tes rivaux au moins une fois cette saison", labelEN:"Beat one of your rivals at least once this season", check:(results)=>results.some(x=>x.rivalBeat), reward:{reputation:3, money:800}},
-  {id:'defi-buzz', icon:'🔥', label:"Monte sur le podium d'une course très suivie (🔥)", labelEN:"Reach the podium of a hyped race (🔥)", check:(results)=>results.some(x=>x.buzz && ['victoire','podium'].includes(x.bestTier)), reward:{reputation:3, money:1200}},
+  {id:'defi-buzz', icon:'📣', label:"Monte sur le podium d'une course très suivie (📣)", labelEN:"Reach the podium of a hyped race (📣)", check:(results)=>results.some(x=>x.buzz && ['victoire','podium'].includes(x.bestTier)), reward:{reputation:3, money:1200}},
 ];
 
 /* ---------- STAGE DE PRÉPARATION ----------
@@ -6937,15 +6937,19 @@ function renderCalendarScreen(keepScroll){
       const isSelected = STATE.selectedRaceIds.includes(race.id);
       const diff = difficultyForRace(race, r);
       const rv = (STATE.rivals||[]).filter(rv=>(rv.raceIds||[]).includes(race.id));
-      const borderStyle = isImposed ? 'border-left:3px solid var(--red);' : isSelected ? 'border-left:3px solid var(--green-dark);' : '';
+      /* Orange plutôt que rouge : une course imposée par l'équipe est une contrainte
+         neutre, pas un signal négatif — le rouge reste réservé aux vraies alertes
+         (fatigue, abandon). Cohérent avec le "Mode défi", qui utilise déjà l'orange
+         pour signaler une contrainte imposée au joueur. */
+      const borderStyle = isImposed ? 'border-left:3px solid var(--orange);' : isSelected ? 'border-left:3px solid var(--green-dark);' : '';
       const lockInfo = race.locked ? `<span class="pill" style="border-color:var(--text-soft);color:var(--text-soft);font-size:0.7em;">${race.lockReason==='continental' ? tf('lockReasonContinental','Équipe trop petite') : race.lockReason==='confidence' ? tf('lockReasonConfidence','Confiance insuffisante') : tf('locked','Verrouillée')}</span>` : '';
-      const imposedBadge = isImposed ? `<span class="pill" style="border-color:var(--red);color:var(--red);font-size:0.7em;">${tf('imposedByTeamPill','Imposée')}</span>` : '';
+      const imposedBadge = isImposed ? `<span class="pill" style="border-color:var(--orange);color:var(--orange);font-size:0.7em;">${tf('imposedByTeamPill','Imposée')}</span>` : '';
       const rivalBadge = rv.length ? ` <span style="color:var(--blue);font-size:0.8em;font-weight:600;">🥊 ${rv.map(x=>x.name.split(' ')[0]).join(', ')}</span>` : '';
       const styleMatch = r.styleId && raceMatchesStyle(race, r.styleId);
       const styleBadge = styleMatch ? ` <span style="color:var(--green-dark);font-size:0.85em;">⭐</span>` : '';
       const isSignature = r.signatureRaceId && race.id === r.signatureRaceId;
       const signatureBadge = isSignature ? ` <span style="color:var(--pink);font-size:0.85em;">❤️</span>` : '';
-      const buzzBadge = race.buzz ? ` <span title="${tf('buzzRaceTooltip','Course très suivie : réputation gagnée ou perdue amplifiée')}" style="color:var(--warn);font-size:0.85em;">🔥</span>` : '';
+      const buzzBadge = race.buzz ? ` <span title="${tf('buzzRaceTooltip','Course très suivie : réputation gagnée ou perdue amplifiée')}" style="color:var(--warn);font-size:0.85em;">📣</span>` : '';
       const clickable = !isImposed && !race.locked;
       const opacity = race.locked ? 'opacity:0.45;' : '';
       return `<div class="race-item" style="cursor:${clickable?'pointer':'default'};${borderStyle}${opacity}" ${clickable?`onclick="toggleRace('${race.id}')"`:''}><div style="flex:1;"><strong>${race.flag?race.flag+' ':''}${race.name}</strong>${styleBadge}${signatureBadge}${buzzBadge}${rivalBadge}<p class="small" style="margin:2px 0 0;">${race.days} ${tf('daysAbbr','j')} · ${'★'.repeat(race.prestige)} · ${raceFocusIcons(race)} ${imposedBadge}${lockInfo}</p></div><div style="text-align:right;min-width:70px;">${badgeHTML(race.type)}<p class="small ${diff.cls}" style="margin:4px 0 0;font-weight:600;">${diff.label}</p></div></div>`;
@@ -6991,10 +6995,10 @@ function renderCalendarScreen(keepScroll){
   const _forme = calendarFormeInsight();
   const warnForme = _forme ? `<p class="small" style="color:${_forme.score>=70?'var(--green-dark)':_forme.score>=45?'var(--warn)':'var(--red)'};margin:2px 0 0;font-weight:700;">🎯 ${tf('formeForecast','Forme prévisionnelle pour')} ${_forme.pointRace.name} : ${_forme.score}/100</p>` : '';
   const hasBuzzRace = STATE.seasonRacePool.some(rc=>rc.buzz);
-  const warnBuzz = hasBuzzRace ? `<p class="small" style="color:var(--warn);margin:2px 0 0;">🔥 ${tf('buzzCalendarNote','Cette saison, une ou plusieurs courses sont très suivies (🔥) : réputation amplifiée, en bien comme en mal.')}</p>` : '';
+  const warnBuzz = hasBuzzRace ? `<p class="small" style="color:var(--warn);margin:2px 0 0;">📣 ${tf('buzzCalendarNote','Cette saison, une ou plusieurs courses sont très suivies (📣) : réputation amplifiée, en bien comme en mal.')}</p>` : '';
   const hasRivalRace = (STATE.rivals||[]).length>0 && STATE.seasonRacePool.some(rc=>(STATE.rivals||[]).some(rv=>(rv.raceIds||[]).includes(rc.id)));
   const tipRival = hasRivalRace ? tipBox('rival-calendar', "Le badge 🥊 signale une course où un de tes rivaux est présent : bats-le pour alimenter votre rivalité au fil des saisons.", tf('tipRivalCalendar')) : '';
-  const tipBuzz = hasBuzzRace ? tipBox('buzz-calendar', "Le badge 🔥 signale une course très suivie cette saison : ta réputation y est amplifiée, en bien comme en mal.", tf('tipBuzzCalendar')) : '';
+  const tipBuzz = hasBuzzRace ? tipBox('buzz-calendar', "Le badge 📣 signale une course très suivie cette saison : ta réputation y est amplifiée, en bien comme en mal.", tf('tipBuzzCalendar')) : '';
   const tipForme = _forme ? tipBox('forme-calendar', "La \"forme prévisionnelle\" estime ta fraîcheur pour ta course la plus prestigieuse, en fonction du calendrier que tu es en train de construire — ajuste-le pour l'améliorer.", tf('tipFormeCalendar')) : '';
 
   setHTML(`
@@ -7014,7 +7018,7 @@ function renderCalendarScreen(keepScroll){
       <div style="display:flex;gap:6px;">
         <button class="btn ${STATE._autoFillPendingProfile==='conservateur'?'':'ghost'}" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('conservateur')" title="${SETTINGS.lang==='en'?'~40-46 days, safer races':'~40-46 j, courses plus sûres'}">🧘 ${STATE._autoFillPendingProfile==='conservateur'?tf('confirmQuestion','Confirmer ?'):(SETTINGS.lang==='en'?'Calm':'Pépère')}</button>
         <button class="btn ${STATE._autoFillPendingProfile==='equilibre'?'':'ghost'}" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('equilibre')" title="${SETTINGS.lang==='en'?'~41-45 days, balanced':'~41-45 j, équilibré'}">⚖️ ${STATE._autoFillPendingProfile==='equilibre'?tf('confirmQuestion','Confirmer ?'):(SETTINGS.lang==='en'?'Balanced':'Équilibré')}</button>
-        <button class="btn ${STATE._autoFillPendingProfile==='ambitieux'?'':'ghost'}" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('ambitieux')" title="${SETTINGS.lang==='en'?'~47-58 days, high prestige':'~47-58 j, haut prestige'}">🔥 ${STATE._autoFillPendingProfile==='ambitieux'?tf('confirmQuestion','Confirmer ?'):(SETTINGS.lang==='en'?'Ambitious':'Ambitieux')}</button>
+        <button class="btn ${STATE._autoFillPendingProfile==='ambitieux'?'':'ghost'}" style="flex:1;font-size:0.82rem;padding:6px 4px;" onclick="autoSelectCalendar('ambitieux')" title="${SETTINGS.lang==='en'?'~47-58 days, high prestige':'~47-58 j, haut prestige'}">💪 ${STATE._autoFillPendingProfile==='ambitieux'?tf('confirmQuestion','Confirmer ?'):(SETTINGS.lang==='en'?'Ambitious':'Ambitieux')}</button>
       </div>
     </div>
     ${tipRival}${tipBuzz}${tipForme}
@@ -8994,17 +8998,22 @@ function renderSeasonRecap(){
       ${results.map(x=>`<div class="race-item"><div><strong>${x.raceName}</strong></div>
         <span class="${tierClass(x.bestTier)} mono small">${TIER_LABEL[x.bestTier]}</span></div>`).join('')}
     </div>
-    ${(rankChange!==null || ratingChange!==null) ? `<div class="card">
-      <h3>📈 ${tf('progressVsLastSeason','Évolution par rapport à la saison précédente')}</h3>
-      <div class="grid3">
-        <div class="stat-tile"><span class="stat-tile-num" style="color:${repChange>0?'var(--green-dark)':repChange<0?'var(--red)':'var(--text-soft)'};">${repChange>=0?'+':''}${repChange}</span><span class="stat-tile-label">${tf('reputationWord','Réputation')}</span></div>
-        <div class="stat-tile"><span class="stat-tile-num" style="color:${rankChange>0?'var(--green-dark)':rankChange<0?'var(--red)':'var(--text-soft)'};">${rankChange>=0?'+':''}${rankChange}</span><span class="stat-tile-label">🌍 ${tf('worldRankProgress','places au classement')}</span></div>
-        <div class="stat-tile"><span class="stat-tile-num" style="color:${ratingChange>0?'var(--green-dark)':ratingChange<0?'var(--red)':'var(--text-soft)'};">${ratingChange>=0?'+':''}${Math.round(ratingChange)}</span><span class="stat-tile-label">${tf('overallRatingProgress','note globale')}</span></div>
-      </div>
-    </div>` : ''}
     <div class="card">
-      <h3>${tf('newStats','Nouvelles statistiques')}</h3>
-      ${statBarsHTML(r.stats, statsStart)}
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="const b=document.getElementById('seasonRecapDetailsBody'), a=document.getElementById('seasonRecapDetailsArrow'); const open = b.style.display!=='none'; b.style.display = open?'none':'block'; a.textContent = open?'${tf('expand','▼ Déplier')}':'${tf('collapse','▲ Replier')}';">
+        <h3 style="margin:0;">${tf('moreDetails','Plus de détails')}</h3>
+        <span class="small" id="seasonRecapDetailsArrow">${tf('expand','▼ Déplier')}</span>
+      </div>
+      <div id="seasonRecapDetailsBody" style="display:none;margin-top:10px;">
+        ${(rankChange!==null || ratingChange!==null) ? `
+        <h3>📈 ${tf('progressVsLastSeason','Évolution par rapport à la saison précédente')}</h3>
+        <div class="grid3">
+          <div class="stat-tile"><span class="stat-tile-num" style="color:${repChange>0?'var(--green-dark)':repChange<0?'var(--red)':'var(--text-soft)'};">${repChange>=0?'+':''}${repChange}</span><span class="stat-tile-label">${tf('reputationWord','Réputation')}</span></div>
+          <div class="stat-tile"><span class="stat-tile-num" style="color:${rankChange>0?'var(--green-dark)':rankChange<0?'var(--red)':'var(--text-soft)'};">${rankChange>=0?'+':''}${rankChange}</span><span class="stat-tile-label">🌍 ${tf('worldRankProgress','places au classement')}</span></div>
+          <div class="stat-tile"><span class="stat-tile-num" style="color:${ratingChange>0?'var(--green-dark)':ratingChange<0?'var(--red)':'var(--text-soft)'};">${ratingChange>=0?'+':''}${Math.round(ratingChange)}</span><span class="stat-tile-label">${tf('overallRatingProgress','note globale')}</span></div>
+        </div>` : ''}
+        <h3 style="margin-top:16px;">${tf('newStats','Nouvelles statistiques')}</h3>
+        ${statBarsHTML(r.stats, statsStart)}
+      </div>
     </div>
     ${recruitHintHTML}
     ${forcedRetire ? `
@@ -9158,19 +9167,21 @@ function renderCareerEnd(){
       ${wins.length===0 ? `<p class="small">${tf('noWinsCareer','Aucune victoire en carrière.')}</p>` : wins.map(w=>`<div class="log-line">${tf('season','Saison')} ${w.season} — <strong>${w.raceName}</strong> ${badgeHTML(w.type)}</div>`).join('')}
     </div>
     <div class="card">
-      <h3>${tf('finalStats','Statistiques en fin de carrière')}</h3>
-      ${statBarsHTML(r.stats)}
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="const b=document.getElementById('careerEndDetailsBody'), a=document.getElementById('careerEndDetailsArrow'); const open = b.style.display!=='none'; b.style.display = open?'none':'block'; a.textContent = open?'${tf('expand','▼ Déplier')}':'${tf('collapse','▲ Replier')}';">
+        <h3 style="margin:0;">${tf('moreDetails','Plus de détails')}</h3>
+        <span class="small" id="careerEndDetailsArrow">${tf('expand','▼ Déplier')}</span>
+      </div>
+      <div id="careerEndDetailsBody" style="display:none;margin-top:10px;">
+        <h3>${tf('finalStats','Statistiques en fin de carrière')}</h3>
+        ${statBarsHTML(r.stats)}
+        <h3 style="margin-top:16px;">💰 ${tf('financialRecap','Bilan financier')}</h3>
+        <p class="small">${tf('fortuneAmassed','Fortune amassée sur la carrière')} : ${Math.round(r.money).toLocaleString('fr-FR')} €</p>
+        ${rivalsCardHTML()}
+        <h3 style="margin-top:16px;">🏆 ${tf('top5Careers','Top 5 des carrières de la partie')}</h3>
+        ${top.map((c,i)=>`<div class="race-item"><div><strong>#${i+1} ${c.name}</strong><p class="small" style="margin:2px 0 0;">${legacyTitleText(c.title)}</p></div><span class="pill">${c.wins} 🏆</span></div>`).join('')}
+        ${leaderboardCardHTML()}
+      </div>
     </div>
-    <div class="card">
-      <h3>💰 ${tf('financialRecap','Bilan financier')}</h3>
-      <p class="small">${tf('fortuneAmassed','Fortune amassée sur la carrière')} : ${Math.round(r.money).toLocaleString('fr-FR')} €</p>
-    </div>
-    ${rivalsCardHTML()}
-    <div class="card">
-      <h3>🏆 ${tf('top5Careers','Top 5 des carrières de la partie')}</h3>
-      ${top.map((c,i)=>`<div class="race-item"><div><strong>#${i+1} ${c.name}</strong><p class="small" style="margin:2px 0 0;">${legacyTitleText(c.title)}</p></div><span class="pill">${c.wins} 🏆</span></div>`).join('')}
-    </div>
-    ${leaderboardCardHTML()}
     <button class="btn" onclick="openShareCard()">${tf('shareCareer','📤 Partager ma carrière')}</button>
     <button class="btn ghost" onclick="NAV_RETURN_TO='careerend';renderCareerJournal()">${tf('careerJournal','📖 Journal de carrière')}</button>
     <button class="btn ghost" onclick="confirmResetGame()">${tf('startNewCareer','Commencer une nouvelle carrière')}</button>
