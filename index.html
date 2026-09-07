@@ -990,10 +990,9 @@ function restoreNavReturnScreen(){
   rerenderCurrentScreenForLang();
 }
 
-const STAT_LABELS_FR = {
-  montagne:'Montagne', sprint:'Sprint', clm:'Contre-la-montre',
-  classiques:'Classiques / Pavé', resistance:'Résistance', recuperation:'Récupération', mental:'Mental'
-};
+</script>
+<script src="data/stat-labels.js"></script>
+<script>
 const STAT_LABELS = new Proxy(STAT_LABELS_FR, {
   get(target, prop){ const v = t(prop); return v!==null ? v : target[prop]; }
 });
@@ -1044,7 +1043,9 @@ function generateRiderName(countryCode){
 </script>
 <script src="data/teammate-archetypes.js"></script>
 <script>
-const TEAMMATE_ARCHETYPE_LABELS_FR = {domestique:'domestique fidèle', espoir:'jeune espoir', veteran:'vétéran en fin de carrière'};
+</script>
+<script src="data/teammate-archetype-labels.js"></script>
+<script>
 const TEAMMATE_ARCHETYPE_LABELS = new Proxy(TEAMMATE_ARCHETYPE_LABELS_FR, {
   get(target, prop){ const v = t('arch_'+prop); return v!==null ? v : target[prop]; }
 });
@@ -1054,59 +1055,9 @@ function generateTeammate(){
   return {name: generateRiderName(country.code), countryCode: country.code, archetype, bond:50};
 }
 
-const TEAMMATE_EVENTS = {
-  domestique: [
-    {icon:'🤝', title:"{name}, toujours au front pour toi", titleEN:"{name}, always at the front for you", desc:"{name} a une fois de plus sacrifié ses propres chances pour te protéger dans le peloton et te ramener aux avant-postes.", descEN:"{name} has once again sacrificed his own chances to protect you in the peloton and bring you back to the front.",
-      choices:[
-        {label:"Le remercier publiquement pour son travail de l'ombre", labelEN:"Thank him publicly for his behind-the-scenes work", effect:{reputation:1, stats:{mental:2}}, bond:8},
-        {label:"Considérer que ça fait partie de son rôle, sans plus", labelEN:"Consider it's just part of his role, nothing more", effect:{stats:{mental:1}}, bond:-3},
-      ]},
-    {icon:'😮‍💨', title:"Une fatigue partagée", titleEN:"A shared exhaustion", desc:"{name} montre des signes d'épuisement à force de rouler pour toi course après course.", descEN:"{name} is showing signs of exhaustion after riding for you race after race.",
-      choices:[
-        {label:"Proposer qu'il lève un peu le pied la prochaine fois", labelEN:"Suggest he eases off a little next time", effect:{}, bond:6},
-        {label:"Continuer de compter sur lui à fond", labelEN:"Keep relying on him fully", effect:{stats:{mental:1}}, bond:-2},
-      ]},
-    {payoff:true, icon:'🎽', title:"Une ligne droite offerte", titleEN:"A finish line handed over", desc:"Sur une petite course sans enjeu pour ton classement, tu ralentis légèrement pour laisser {name} lever les bras — en reconnaissance de tous ses sacrifices.", descEN:"On a small race with nothing at stake for your standings, you ease off slightly to let {name} raise his arms — in recognition of all his sacrifices.",
-      choices:[
-        {label:"Le laisser savourer pleinement ce moment", labelEN:"Let him savour the moment fully", effect:{reputation:1}, bond:15},
-        {label:"Reprendre l'avantage au dernier moment, l'occasion était trop belle", labelEN:"Take it back at the last moment, the chance was too good", effect:{stats:{mental:1}}, bond:-15},
-      ]},
-  ],
-  espoir: [
-    {icon:'🧑‍🏫', title:"{name} sollicite tes conseils", titleEN:"{name} asks for your advice", desc:"Impressionné par ton expérience, {name} vient chercher tes conseils pour progresser plus vite.", descEN:"Impressed by your experience, {name} comes to you for advice to progress faster.",
-      choices:[
-        {label:"Prendre le temps de le former", labelEN:"Take the time to mentor him", effect:{stats:{mental:2}, fatigue:2}, bond:8},
-        {label:"Rester concentré sur tes propres objectifs", labelEN:"Stay focused on your own goals", effect:{}, bond:-3},
-      ]},
-    {icon:'📈', title:"{name} progresse vite", titleEN:"{name} is improving fast", desc:"Les performances de {name} s'améliorent course après course, au point de commencer à te talonner.", descEN:"{name}'s performances keep improving race after race, to the point of starting to breathe down your neck.",
-      choices:[
-        {label:"T'en réjouir sincèrement", labelEN:"Be genuinely happy for him", effect:{stats:{mental:2}}, bond:6},
-        {label:"Ressentir une pointe de rivalité naissante", labelEN:"Feel a hint of budding rivalry", effect:{stats:{mental:1}}, bond:-4},
-      ]},
-    {payoff:true, icon:'🌅', title:"Le jour où {name} te dépasse", titleEN:"The day {name} overtakes you", desc:"Sur une course sans grand enjeu pour toi, {name} s'impose pour la première fois devant toi au sprint final.", descEN:"In a race with little at stake for you, {name} beats you for the first time in the final sprint.",
-      choices:[
-        {label:"L'accueillir avec fierté, la relève est là", labelEN:"Welcome it with pride, the next generation has arrived", effect:{reputation:2}, bond:15},
-        {label:"Ravaler une déception difficile à cacher totalement", labelEN:"Swallow a disappointment hard to hide completely", effect:{}, bond:-8},
-      ]},
-  ],
-  veteran: [
-    {icon:'🎓', title:"{name} partage son expérience", titleEN:"{name} shares his experience", desc:"Des années de peloton ont donné à {name} un regard précieux, qu'il partage volontiers avec toi.", descEN:"Years in the peloton have given {name} a valuable perspective, which he happily shares with you.",
-      choices:[
-        {label:"Écouter attentivement ses conseils", labelEN:"Listen closely to his advice", effect:{stats:{mental:2}}, bond:8},
-        {label:"Suivre avant tout ta propre intuition", labelEN:"Trust your own instincts above all", effect:{stats:{mental:1}}, bond:-3},
-      ]},
-    {icon:'👋', title:"Les adieux approchent", titleEN:"The farewell draws near", desc:"La retraite de {name} se profile, et une certaine mélancolie gagne discrètement le groupe.", descEN:"{name}'s retirement is looming, and a quiet melancholy is settling over the group.",
-      choices:[
-        {label:"L'aider à préparer cette transition", labelEN:"Help him prepare for this transition", effect:{stats:{mental:1}}, bond:8},
-        {label:"Rester pudique, ne pas trop en parler", labelEN:"Stay discreet, not dwell on it too much", effect:{}, bond:2},
-      ]},
-    {payoff:true, icon:'🏁', title:"La dernière course de {name}", titleEN:"{name}'s last race", desc:"Pour sa dernière saison, {name} dispute ce qui sera sa toute dernière course professionnelle à tes côtés.", descEN:"For his final season, {name} rides what will be his very last professional race by your side.",
-      choices:[
-        {label:"Tout faire pour l'aider à briller une dernière fois", labelEN:"Do everything to help him shine one last time", effect:{reputation:2, fatigue:3}, bond:15},
-        {label:"Rester concentré sur ton propre résultat du jour", labelEN:"Stay focused on your own result for the day", effect:{}, bond:-10},
-      ]},
-  ],
-};
+</script>
+<script src="data/teammate-events.js"></script>
+<script>
 
 /* Un seul rival, réutilisé à la fois pour le trio initial et pour le remplaçant généré
    quand l'un d'eux prend sa retraite (cf. finishSeason()) — même logique de génération,
@@ -1317,35 +1268,21 @@ function RACES_DATA(){
 </script>
 <script src="data/tier-order.js"></script>
 <script>
-const TIER_LABEL_FR = {
-  victoire:'Victoire !', podium:'Podium', top10:'Top 10',
-  peloton:'Dans le peloton', jourssans:'Jour sans', abandon:'Abandon', forfait:'Forfait (blessure)'
-};
+</script>
+<script src="data/tier-label.js"></script>
+<script>
 const TIER_LABEL = new Proxy(TIER_LABEL_FR, {
   get(target, prop){ const v = t(prop); return v!==null ? v : target[prop]; }
 });
-const TIER_VALUE = {forfait:-1, abandon:-1, jourssans:0, peloton:1, top10:2, podium:3, victoire:4};
+</script>
+<script src="data/tier-value.js"></script>
+<script>
 
 /* Petites phrases narratives tirées au sort pour illustrer le résultat, sans verser
    dans un récit détaillé course par course. */
-const TIER_NARRATIVE_FR = {
-  victoire: ["Tu lèves les bras en franchissant la ligne en tête !!", "Explosion de joie — la victoire est pour toi, aujourd'hui !", "Un final parfaitement maîtrisé... personne n'a pu te suivre !", "Quelle course ! Tu passes la ligne en vainqueur, bras levés vers le ciel."],
-  podium: ["Tu montes sur le podium — la lutte a été acharnée jusqu'au bout !", "Une belle place d'honneur, à quelques petites secondes du vainqueur...", "Le podium, et la satisfaction du devoir accompli !"],
-  top10: ["Tu termines dans le top 10 — un résultat solide, sans plus.", "Une place honorable parmi les dix premiers, pas de quoi s'enflammer.", "Pas de folie aujourd'hui, mais un bon résultat dans les points."],
-  peloton: ["Tu termines dans le gros peloton... sans faire d'étincelles.", "Une journée sans histoire, planquée au cœur du peloton.", "Un jour de travail discret — pour toi, ou pour l'équipe."],
-  jourssans: ["Jour sans... les jambes ne répondaient tout simplement pas.", "Une course compliquée, loin — très loin — de tes standards.", "Ça ne voulait pas passer, aujourd'hui. Un point c'est tout."],
-  abandon: ["Tu es contraint à l'abandon... le corps a dit stop.", "La course s'arrête là, pour toi, aujourd'hui.", "Impossible de continuer — direction la voiture balai, tête basse."],
-  forfait: ["Le staff médical impose le repos, avant même le départ...", "Encore diminué, tu ne prends pas le départ. Frustrant."],
-};
-const TIER_NARRATIVE_EN = {
-  victoire: ["You raise your arms as you cross the line in front!!", "An explosion of joy — victory is yours today!", "A perfectly controlled finale... nobody could follow you!", "What a race! You cross the line as the winner, arms raised to the sky."],
-  podium: ["You step onto the podium — the fight was fierce right to the end!", "A fine result, just a few seconds behind the winner...", "The podium, and the satisfaction of a job well done!"],
-  top10: ["You finish in the top 10 — a solid result, nothing more.", "An honourable finish among the top ten, nothing to get too excited about.", "No fireworks today, but a decent result in the points."],
-  peloton: ["You finish in the bunch... without making waves.", "An uneventful day, tucked away in the peloton.", "A quiet day's work — for yourself, or for the team."],
-  jourssans: ["An off day... the legs simply wouldn't respond.", "A tough race, far — very far — from your usual standard.", "It just wasn't happening today. That's all there is to it."],
-  abandon: ["You're forced to abandon... the body said stop.", "The race ends there for you today.", "Unable to continue — heading for the broom wagon, head down."],
-  forfait: ["The medical staff insist on rest, even before the start...", "Still not fully recovered, you don't start. Frustrating."],
-};
+</script>
+<script src="data/tier-narrative.js"></script>
+<script>
 const TIER_NARRATIVE = new Proxy(TIER_NARRATIVE_FR, {
   get(target, prop){
     if(SETTINGS.lang==='en' && TIER_NARRATIVE_EN[prop]!==undefined) return TIER_NARRATIVE_EN[prop];
@@ -1357,42 +1294,9 @@ function tierNarrative(tier){
   return arr[Math.floor(Math.random()*arr.length)];
 }
 
-/* Petites raisons (parfois cocasses, parfois non) données à une blessure légère ou
-   modérée, pour lui donner un peu de vécu plutôt qu'une simple étiquette clinique. */
-const INJURY_REASONS_FR = {
-  chute: [
-    "Une roue qui dérape sur une plaque d'égout mouillée... plus de peur que de mal !",
-    "Un contact fortuit dans le peloton, et te voilà au sol — rien de cassé, heureusement.",
-    "Un chien s'échappe et traverse la route au pire moment. La chute est spectaculaire, les dégâts limités.",
-    "Tu accroches la roue d'un coéquipier dans une bordure. Fierté écorchée, corps globalement intact.",
-    "Glissade sur un rond-point mal négocié — le public retient son souffle, puis applaudit ton sang-froid.",
-    "Une plaque de verglas matinale, invisible jusqu'au dernier moment... Aïe.",
-    "Un bidon perdu par un autre coureur roule sous ta roue avant. Classique, mais douloureux.",
-  ],
-  surmenage: [
-    "Trop de kilomètres, pas assez de repos... le corps finit par le faire savoir.",
-    "Une fatigue accumulée qui rattrape enfin son homme — rien de dramatique, mais un signal clair.",
-    "Le corps tire la sonnette d'alarme après des semaines sans vraie coupure.",
-    "Une gestion de l'effort un peu trop optimiste ces derniers temps... le compteur était à zéro.",
-  ],
-};
-const INJURY_REASONS_EN = {
-  chute: [
-    "A wheel slips on a wet manhole cover... more scare than harm!",
-    "A chance contact in the peloton, and down you go — nothing broken, thankfully.",
-    "A dog breaks loose and crosses the road at the worst possible moment. Spectacular fall, limited damage.",
-    "You clip a teammate's wheel in an echelon. Bruised pride, body mostly intact.",
-    "A skid on a badly judged roundabout — the crowd holds its breath, then applauds your composure.",
-    "An early-morning patch of black ice, invisible until the last second... Ouch.",
-    "A bottle dropped by another rider rolls under your front wheel. A classic, but painful.",
-  ],
-  surmenage: [
-    "Too many kilometres, not enough rest... the body eventually makes itself heard.",
-    "Accumulated fatigue finally catches up with you — nothing dramatic, but a clear signal.",
-    "The body sounds the alarm after weeks without a real break.",
-    "A slightly too optimistic approach to effort management lately... the tank was empty.",
-  ],
-};
+</script>
+<script src="data/injury-reasons.js"></script>
+<script>
 const INJURY_REASONS = new Proxy(INJURY_REASONS_FR, {
   get(target, prop){
     if(SETTINGS.lang==='en' && INJURY_REASONS_EN[prop]!==undefined) return INJURY_REASONS_EN[prop];
@@ -1434,7 +1338,9 @@ function estimatePlacement(tier, perf){
   return pos+'e';
 }
 
-const RISK_LABEL_FR = {sur:'Sûr', equilibre:'Équilibré', audacieux:'Audacieux', loufoque:'Loufoque'};
+</script>
+<script src="data/risk-label.js"></script>
+<script>
 const RISK_LABEL = new Proxy(RISK_LABEL_FR, {
   get(target, prop){ const v = t(prop); return v!==null ? v : target[prop]; }
 });
@@ -2951,7 +2857,9 @@ const MONTHS = new Proxy(MONTHS_FR, {
     return target[prop];
   }
 });
-const TYPE_LABEL_FR = {grandtour:'Grand Tour', monument:'Monument', classique:'Classique', semitour:'Course par étapes', champ:'Championnat', crit:'Critérium'};
+</script>
+<script src="data/type-label.js"></script>
+<script>
 const TYPE_LABEL = new Proxy(TYPE_LABEL_FR, {
   get(target, prop){ const v = t('type_'+prop); return v!==null ? v : target[prop]; }
 });
@@ -5922,16 +5830,9 @@ function chooseOption(i){
    donner un peu de chair à un "Paris-Nice" de 8 jours qui, mécaniquement, ne repose que
    sur une seule résolution. Purement narratif : aucune incidence sur les stats, l'argent
    ou les trophées, qui restent basés sur le résultat global déjà calculé par ailleurs. */
-const STAGE_TYPE_LABELS_FR = {
-  montagne: 'étape de montagne', sprint: 'étape de sprint', clm: 'contre-la-montre',
-  classiques: 'étape vallonnée', resistance: 'étape de plat', mental: 'étape nerveuse',
-  recuperation: 'étape de transition',
-};
-const STAGE_TYPE_LABELS_EN = {
-  montagne: 'mountain stage', sprint: 'sprint stage', clm: 'time trial',
-  classiques: 'rolling stage', resistance: 'flat stage', mental: 'nervy stage',
-  recuperation: 'transition stage',
-};
+</script>
+<script src="data/stage-type-labels.js"></script>
+<script>
 const STAGE_TYPE_LABELS = new Proxy(STAGE_TYPE_LABELS_FR, {
   get(target, prop){
     if(SETTINGS.lang==='en' && STAGE_TYPE_LABELS_EN[prop]!==undefined) return STAGE_TYPE_LABELS_EN[prop];
