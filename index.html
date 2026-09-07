@@ -9185,6 +9185,7 @@ function renderCareerEnd(){
     <button class="btn" onclick="openShareCard()">${tf('shareCareer','📤 Partager ma carrière')}</button>
     <button class="btn ghost" onclick="NAV_RETURN_TO='careerend';renderCareerJournal()">${tf('careerJournal','📖 Journal de carrière')}</button>
     <button class="btn ghost" onclick="confirmResetGame()">${tf('startNewCareer','Commencer une nouvelle carrière')}</button>
+    <button class="btn ghost" onclick="renderChallenge()" style="border-color:var(--orange);color:var(--orange-dark);">🎯 ${tf('challengeMode','Mode défi')}</button>
     <button class="btn ghost" onclick="NAV_RETURN_TO='careerend';renderTrophiesScreen()">🏆 ${tf('viewMyTrophies','Voir mes trophées')} (${UNLOCKED.size}/${ACHIEVEMENTS.length})</button>
   `);
 }
