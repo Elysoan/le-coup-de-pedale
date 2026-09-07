@@ -3991,19 +3991,9 @@ function declineMentorRole(){
    Déclaré en début de saison, évalué en fin de saison (finishSeason) : un vrai bonus/malus
    de réputation selon que l'objectif a été tenu ou non — pas juste subir la saison, la piloter. */
 
-/* ---------- RÔLES CONTRACTUELS ---------- */
-/* Un rôle est proposé à chaque signature de contrat selon le style du coureur,
-   la spécialité de l'équipe, et son niveau de réputation.
-   Il est stocké sur rider.role et influence salaire, courses suggérées, objectifs. */
-
-const RIDER_ROLES = [
-  {id:'leader-gc',   name:'Leader GC',            nameEN:'GC Leader',             icon:'👑', styles:['grimpeur','rouleur'],        specialties:['montagne','resistance',null]},
-  {id:'leader-clas', name:'Leader Classiques',     nameEN:'Classics Leader',       icon:'🏆', styles:['puncheur','baroudeur'],      specialties:['classiques',null]},
-  {id:'leader-spr',  name:'Leader Sprint',         nameEN:'Sprint Leader',         icon:'⚡', styles:['sprinteur'],                 specialties:['sprint',null]},
-  {id:'leader-clm',  name:'Leader CLM',            nameEN:'TT Leader',             icon:'⏱️', styles:['rouleur'],                   specialties:['clm',null]},
-  {id:'equip-mont',  name:'Équipier Montagne',     nameEN:'Mountain Domestique',   icon:'⛰️', styles:['grimpeur','polyvalent'],     specialties:['montagne','resistance']},
-  {id:'equip-poly',  name:'Équipier Polyvalent',   nameEN:'All-round Domestique',  icon:'🔧', styles:['polyvalent','rouleur','puncheur','sprinteur','grimpeur'], specialties:['classiques','sprint','clm','resistance','montagne',null]},
-];
+</script>
+<script src="data/rider-roles.js"></script>
+<script>
 
 /* Types de courses recommandées par rôle */
 const ROLE_RECOMMENDED_TYPES = {
@@ -4087,43 +4077,9 @@ function computeOfferedRole(rider, team){
   return RIDER_ROLES.find(r=>r.id==='leader-gc');
 }
 
-const SEASON_OBJECTIVES = [
-  /* id, sévérité (1=mineur, 2=intermédiaire, 3=majeur)
-     minRep/maxRep : fourchette de réputation
-     minSeason : saison minimale pour apparaître (évite de proposer des objectifs irréalistes en S1-S2) */
-  {id:'survive', icon:'🎽', severity:1,
-    label:"Terminer toutes tes courses", labelEN:"Finish every race",
-    desc:"L'équipe attend simplement que tu ailles au bout — aucun abandon, aucun forfait.", descEN:"The team simply expects you to finish — no DNF, no DNS.",
-    minRep:0, maxRep:20, minSeason:1},
-  {id:'top10', icon:'📋', severity:1,
-    label:"Finir dans le top 10 d'une grande course", labelEN:"Finish top 10 in a major race",
-    desc:"L'équipe attend au moins un bon classement sur une course de prestige ≥ 3.", descEN:"The team expects at least one solid result on a prestige ≥ 3 race.",
-    minRep:10, maxRep:40, minSeason:1},
-  {id:'podium', icon:'🥉', severity:2,
-    label:"Décrocher un podium", labelEN:"Reach a podium",
-    desc:"Un top 3 sur n'importe quelle course de prestige ≥ 3.", descEN:"A top 3 on any prestige ≥ 3 race.",
-    minRep:30, maxRep:65, minSeason:3},
-  {id:'etapes', icon:'📈', severity:2,
-    label:"Te révéler sur les courses à étapes", labelEN:"Make your mark on stage races",
-    desc:"Un podium ou mieux sur un grand tour ou semi-tour.", descEN:"A podium or better on a grand tour or stage race.",
-    minRep:35, maxRep:75, minSeason:3},
-  {id:'victoire', icon:'🏆', severity:3,
-    label:"Remporter une victoire", labelEN:"Win a race",
-    desc:"L'équipe attend une victoire sur une course de prestige ≥ 3.", descEN:"The team expects a win on a prestige ≥ 3 race.",
-    minRep:45, maxRep:100, minSeason:4},
-  {id:'monument', icon:'🏔️', severity:3,
-    label:"Viser un monument ou un grand tour", labelEN:"Aim for a monument or grand tour",
-    desc:"Une victoire sur une course de prestige maximum. Exigence absolue.", descEN:"A win on a maximum-prestige race. The highest bar.",
-    minRep:60, maxRep:100, minSeason:6},
-  {id:'solide', icon:'🛡️', severity:1,
-    label:"Saison solide, sans contre-performance", labelEN:"Solid season, no setbacks",
-    desc:"Aucun abandon ou forfait. Régularité avant tout.", descEN:"No DNF or DNS. Consistency above all.",
-    minRep:0, maxRep:100, minSeason:1},
-  {id:'aucun', icon:'🤷', severity:0,
-    label:"Aucun objectif particulier", labelEN:"No particular objective",
-    desc:"Ni bonus ni malus à la clé.", descEN:"No bonus or penalty either way.",
-    minRep:0, maxRep:100, minSeason:1},
-];
+</script>
+<script src="data/season-objectives.js"></script>
+<script>
 
 /* Retourne les objectifs pertinents pour ce coureur cette saison.
    Filtre selon réputation, saison, et exclut ceux déjà accomplis récemment. */
@@ -4164,18 +4120,9 @@ const STAGE_PAIRS = {montagne:'sprint', sprint:'montagne', clm:'classiques', cla
    Regroupe en un seul écran ce qui prenait auparavant 4-5 écrans successifs (priorité,
    stage, objectif, sponsor, défi) — tous les choix se font d'un coup, validés ensemble
    par un unique bouton, plutôt qu'une série d'écrans à traverser un par un. */
-/* ---------- CAP DE CARRIÈRE PLURIANNUEL ----------
-   Un objectif ambitieux fixé sur 2-3 saisons, distinct de l'objectif annuel — donne une
-   direction de plus long terme à la carrière, avec une vraie récompense à la clé. */
-const CAREER_CAP_TYPES = [
-  {id:'grandtour', icon:'🏆', label:"Gagner un grand tour", labelEN:"Win a grand tour", years:4},
-  {id:'monument', icon:'🥇', label:"Gagner un monument", labelEN:"Win a monument", years:4},
-  {id:'top20', icon:'🌍', label:"Entrer dans le top 20 mondial", labelEN:"Break into the world top 20", years:4},
-  {id:'reputation70', icon:'⭐', label:"Atteindre 70 de réputation", labelEN:"Reach 70 reputation", years:3},
-  {id:'cinq-victoires', icon:'🎯', label:"Remporter 5 victoires au total", labelEN:"Win 5 races in total", years:4},
-  {id:'top50-trois-saisons', icon:'📈', label:"Finir 3 saisons dans le top 50 mondial", labelEN:"Finish 3 seasons in the world top 50", years:5},
-  {id:'fidelite-equipe', icon:'🤝', label:"Ne jamais changer d'équipe en 4 saisons", labelEN:"Never change teams for 4 seasons", years:4},
-];
+</script>
+<script src="data/career-cap-types.js"></script>
+<script>
 
 function checkCareerCapCondition(rider, type){
   if(type==='grandtour') return rider.palmares.some(p=>p.type==='grandtour' && p.tier==='victoire');
