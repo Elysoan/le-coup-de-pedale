@@ -1597,17 +1597,9 @@ function statFocusAverage(rider, focus){
   return vals.reduce((a,b)=>a+b,0)/vals.length;
 }
 
-/* ---------- MÉTÉO ----------
-   Une condition tirée à chaque évènement de course, qui vient nuancer le résultat sans
-   jamais dominer les stats/choix — un facteur stratégique de plus, pas un nouveau
-   système à part entière à maîtriser. */
-const WEATHER_TYPES = [
-  {id:'soleil', label:'Grand soleil', icon:'☀️', weight:40},
-  {id:'pluie', label:'Pluie battante', icon:'🌧️', weight:20},
-  {id:'vent', label:'Vent fort', icon:'💨', weight:15},
-  {id:'canicule', label:'Canicule', icon:'🥵', weight:15},
-  {id:'froid', label:'Froid mordant', icon:'🥶', weight:10},
-];
+</script>
+<script src="data/weather-types.js"></script>
+<script>
 WEATHER_TYPES.forEach(w=>{
   const frLabel = w.label;
   Object.defineProperty(w, 'label', {get(){ const v = t(w.id); return v!==null ? v : frLabel; }});
@@ -3949,18 +3941,9 @@ function startNewSeason(){
   }
 }
 
-/* ---------- SPONSOR PERSONNEL ----------
-   Distinct du contrat d'équipe : un équipementier personnel (marques fictives),
-   négocié séparément, avec sa propre personnalité — exigeant (paie mieux mais rompt
-   le contrat sans un podium dans la saison) ou fidèle (moins généreux mais stable). */
-const SPONSOR_BRANDS = [
-  {name:'Cadence Cycles', category:'vélo', icon:'🚲'},
-  {name:'Vertige Bikes', category:'vélo', icon:'🚴'},
-  {name:'Pédalo Gear', category:'équipement', icon:'👟'},
-  {name:'Flèche Sport', category:'équipement', icon:'🧦'},
-  {name:'Horizon Optics', category:'lunettes', icon:'🕶️'},
-  {name:'AeroVista', category:'casque', icon:'🪖'},
-];
+</script>
+<script src="data/sponsor-brands.js"></script>
+<script>
 
 function generateSponsorOffers(rider){
   const picks = shuffleArr(SPONSOR_BRANDS.slice()).slice(0,3);
