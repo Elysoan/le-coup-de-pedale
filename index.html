@@ -4443,21 +4443,9 @@ function localizeEvent(ev){
    à l'écran ET mécaniques réels.
    ====================================================================== */
 
-/* ---------- POOL VESTIAIRE ----------
-   Courts messages narratifs d'ambiance générés en début de saison — pas de choix,
-   pas de mécanique : juste une phrase qui plante le contexte humain du groupe. */
-const VESTIAIRE_POOL = [
-  {icon:'💬', fr:"Un vétéran de l'équipe a glissé dans le vestiaire : ‘Cette saison, on va faire quelque chose de bien.’ Personne n'a répondu. Tout le monde a souri.", en:"A team veteran murmured in the locker room: ‘This season, we’re going to do something special.’ No one replied. Everyone smiled."},
-  {icon:'🎧', fr:"L'ambiance au camp d'entraînement est studieuse. Chacun travaille en silence, écouteurs vissés aux oreilles. Le groupe est sérieux.", en:"The atmosphere at training camp is focused. Everyone works in silence, earphones on. The group means business."},
-  {icon:'⚡', fr:"La compétition interne est perceptible dès les premières sorties. Chaque montée se transforme en mini-duel. C'est bon signe.", en:"Internal competition is palpable from the first rides. Every climb becomes a mini-duel. That's a good sign."},
-  {icon:'🌧️', fr:"Le stage hivernal a été rude. Pluie, froid, routes cassées. Mais tout le groupe est allé au bout. Ça soude.", en:"Winter camp was brutal. Rain, cold, broken roads. But everyone made it through. That kind of thing bonds a team."},
-  {icon:'😴', fr:"Le directeur sportif est entré dans la salle de réunion avec une seule diapositive. ‘La saison commence maintenant.’ Silence. Tout était dit.", en:"The team director walked into the meeting room with a single slide. ‘The season starts now.’ Silence. That said it all."},
-  {icon:'🤝', fr:"Un nouveau coéquipier a rejoint l'équipe cet hiver. Il est discret, observateur. Le genre de profil qui surprend au printemps.", en:"A new teammate joined the squad this winter. Quiet, observant. The kind of rider who surprises you in spring."},
-  {icon:'📰', fr:"Un journaliste a prédit en janvier que ton équipe serait décevante cette saison. L'article est affiché dans le couloir du centre d'entraînement.", en:"A journalist predicted in January that your team would disappoint this season. The article is pinned up in the training centre hallway."},
-  {icon:'🏔️', fr:"Au stage altitude, quelqu'un a tracé ‘S'EN SOUVENIR’ sur un tableau blanc. Personne ne l'a effacé avant le départ.", en:"At altitude camp, someone wrote ‘REMEMBER THIS’ on a whiteboard. Nobody erased it before leaving."},
-  {icon:'🔥', fr:"L'hiver a été court. Trop court, peut-être. Mais tout le groupe ressent cette faim particulière qui n'appartient qu'aux débuts de saison.", en:"The winter felt short. Too short, maybe. But the whole group feels that particular hunger that only comes at the start of a season."},
-  {icon:'📦', fr:"Les nouveaux maillots sont arrivés ce matin. Quand on les a sortis des cartons, personne n'a rien dit, mais tout le monde les a essayés aussitôt.", en:"The new jerseys arrived this morning. When they came out of the boxes, nobody said a word — but everyone tried them on straight away."},
-];
+</script>
+<script src="data/vestiaire-pool.js"></script>
+<script>
 
 function pickVestiaireMessage(){
   if(!STATE || (STATE.rider && STATE.rider.season <= 1)) return null; // pas en S1
@@ -4465,187 +4453,9 @@ function pickVestiaireMessage(){
   return msg;
 }
 
-const WORLD_EVENTS = [
-  {id:'canicule_juillet', icon:'🥵',
-   get title(){ return tf('we_canicule','Canicule historique en juillet'); },
-   get titleEN(){ return 'Historic July heatwave'; },
-   get desc(){ return tf('we_canicule_desc',"Les courses de juillet se disputent sous des températures record. La gestion de l'effort sera cruciale."); },
-   get descEN(){ return "July races are held in record temperatures. Managing your effort will be crucial."; },
-   get effect(){ return tf('we_canicule_effect','+20% de fatigue sur toutes les courses de juillet'); },
-   get effectEN(){ return '+20% fatigue on all July races'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.julyFatigue = 1.20; }},
-
-  {id:'hiver_precoce', icon:'🌨️',
-   get title(){ return tf('we_hiver','Hiver précoce sur les classiques'); },
-   get titleEN(){ return 'Early winter hits the classics'; },
-   get desc(){ return tf('we_hiver_desc','Des chutes de neige inattendues perturbent les classiques de printemps. Les pavés sont encore plus redoutables.'); },
-   get descEN(){ return 'Unexpected snowfall disrupts the spring classics. The cobbles are even more fearsome.'; },
-   get effect(){ return tf('we_hiver_effect','+15% de fatigue sur les monuments et classiques de mars-avril'); },
-   get effectEN(){ return '+15% fatigue on monuments and classics in March-April'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.springFatigue = 1.15; }},
-
-  {id:'routes_degradees', icon:'🚧',
-   get title(){ return tf('we_routes','Routes dégradées après les intempéries'); },
-   get titleEN(){ return 'Roads degraded after storms'; },
-   get desc(){ return tf('we_routes_desc','Les routes sont en mauvais état après un hiver difficile. Les risques de chute sont accrus sur toute la saison.'); },
-   get descEN(){ return 'Roads are in poor condition after a hard winter. Crash risk is increased throughout the season.'; },
-   get effect(){ return tf('we_routes_effect','+30% de risque de chute sur toutes les courses'); },
-   get effectEN(){ return '+30% crash risk on all races'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.crashMult = 1.30; }},
-
-  {id:'vent_favorable', icon:'💨', excludes:['calendrier_charge'],
-   get title(){ return tf('we_vent','Vents favorables cette saison'); },
-   get titleEN(){ return 'Favourable winds this season'; },
-   get desc(){ return tf('we_vent_desc','Les conditions météo sont exceptionnellement favorables. Les coureurs récupèrent mieux entre les efforts.'); },
-   get descEN(){ return 'Weather conditions are exceptionally favourable. Riders recover better between efforts.'; },
-   get effect(){ return tf('we_vent_effect','-10% de fatigue sur toutes les courses'); },
-   get effectEN(){ return '-10% fatigue on all races'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.globalFatigueReduction = 0.90; }},
-
-  {id:'altitude_record', icon:'🏔️',
-   get title(){ return tf('we_altitude','Les grands tours misent sur l\'altitude'); },
-   get titleEN(){ return "Grand tours go high this year"; },
-   get desc(){ return tf('we_altitude_desc','Les organisateurs ont concocté des profils exceptionnellement montagneux. Les grimpeurs sont attendus.'); },
-   get descEN(){ return "Grand tour organisers have created exceptionally mountainous routes. Climbers are in demand."; },
-   get effect(){ return tf('we_altitude_effect','+2 points de réputation sur les victoires en grand tour cette saison'); },
-   get effectEN(){ return '+2 reputation on grand tour wins this season'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.gtRepBonus = 2; }},
-
-  {id:'saison_sprinters', icon:'⚡',
-   get title(){ return tf('we_sprint','Saison taillée pour les sprinteurs'); },
-   get titleEN(){ return "A sprinters' season"; },
-   get desc(){ return tf('we_sprint_desc','Les grands tours ont privilégié les arrivées massives. Les équipes de sprinteurs dictent leur loi.'); },
-   get descEN(){ return "Grand tours have favoured bunch sprint finishes. Sprinters' teams are calling the shots."; },
-   get effect(){ return tf('we_sprint_effect','+2 points de réputation sur les victoires en classique ou critérium'); },
-   get effectEN(){ return '+2 reputation on wins in classic or criterium'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.sprintRepBonus = 2; }},
-
-  {id:'course_annulee', icon:'❌',
-   get title(){ return tf('we_annulee','Une grande classique annule son édition'); },
-   get titleEN(){ return 'A major classic cancels its edition'; },
-   get desc(){ return tf('we_annulee_desc','Un différend avec les organisateurs locaux force l\'annulation d\'une grande classique.'); },
-   get descEN(){ return "A dispute with local organisers forces the cancellation of a major classic."; },
-   get effect(){ return tf('we_annulee_effect','Une course classique de prestige 3-4 est retirée du calendrier'); },
-   get effectEN(){ return 'A prestige 3-4 classic is removed from the calendar'; },
-   apply(state){
-     const pool = state.seasonRacePool || [];
-     const classics = pool.filter(r=>r.type==='classique'&&r.prestige>=3&&!(state.imposedRaceIds||[]).includes(r.id));
-     if(classics.length){
-       const victim = classics[Math.floor(Math.random()*classics.length)];
-       state.seasonRacePool = pool.filter(r=>r.id!==victim.id);
-       state.selectedRaceIds = (state.selectedRaceIds||[]).filter(id=>id!==victim.id);
-       state._worldEventCancelledRace = victim.name;
-     }
-   }},
-
-  {id:'nouvelle_course', icon:'🆕',
-   get title(){ return tf('we_nouvelle','Le bruit d\'une nouvelle épreuve à venir'); },
-   get titleEN(){ return 'Buzz about a future new race'; },
-   get desc(){ return tf('we_nouvelle_desc','Un fort soutien des sponsors fait circuler la rumeur d\'une nouvelle épreuve pour les saisons à venir. En attendant, chaque victoire attire davantage l\'attention.'); },
-   get descEN(){ return "Strong sponsor backing fuels rumours of a new race for future seasons. In the meantime, every win draws a little more attention."; },
-   get effect(){ return tf('we_nouvelle_effect','+1 point de réputation sur les victoires cette saison'); },
-   get effectEN(){ return '+1 reputation on all wins this season'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.newRaceRepBonus = 1; }},
-
-  {id:'calendrier_charge', icon:'📅', excludes:['vent_favorable'],
-   get title(){ return tf('we_charge','Calendrier exceptionnellement chargé'); },
-   get titleEN(){ return 'Exceptionally packed calendar'; },
-   get desc(){ return tf('we_charge_desc','Plusieurs épreuves se chevauchent cette saison. Les coureurs s\'épuisent plus vite.'); },
-   get descEN(){ return "Several events overlap this season. Riders tire faster."; },
-   get effect(){ return tf('we_charge_effect','+10% de fatigue sur toutes les courses de la saison'); },
-   get effectEN(){ return '+10% fatigue on all races this season'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.globalFatigueBoost = 1.10; }},
-
-  {id:'equipe_rivale_crise', icon:'💥',
-   get title(){ return tf('we_crise','Une équipe rivale en crise'); },
-   get titleEN(){ return 'A rival team in crisis'; },
-   get desc(){ return tf('we_crise_desc','Le sponsor principal d\'une grande équipe se retire. Leurs coureurs sont dispersés sur le marché.'); },
-   get descEN(){ return "A major team's main sponsor pulls out. Their riders scatter onto the transfer market."; },
-   get effect(){ return tf('we_crise_effect','Accès à des équipes de tier supérieur cette saison (+1 rang de recrutement)'); },
-   get effectEN(){ return 'Access to higher-tier teams this season (+1 recruitment rank)'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.recruitmentBonus = 1; }},
-
-  {id:'uci_points', icon:'📊',
-   get title(){ return tf('we_uci','Nouveau barème FMC'); },
-   get titleEN(){ return 'New FMC points scale'; },
-   get desc(){ return tf('we_uci_desc','La Fédération Mondiale du Cyclisme (FMC) modifie son barème. Les grands tours et monuments rapportent significativement plus de réputation.'); },
-   get descEN(){ return "The World Cycling Federation (FMC) revises its points scale. Grand tours and monuments earn significantly more reputation."; },
-   get effect(){ return tf('we_uci_effect','+3 réputation sur les victoires en GT et monument cette saison'); },
-   get effectEN(){ return '+3 reputation on GT and monument wins this season'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.bigRaceRepBonus = 3; }},
-
-  {id:'star_recrutee', icon:'⭐',
-   get title(){ return tf('we_star','Ton équipe recrute une star'); },
-   get titleEN(){ return 'Your team signs a star'; },
-   get desc(){ return tf('we_star_desc','Ton équipe a signé un coureur très médiatisé. Tes performances sont scrutées de plus près.'); },
-   get descEN(){ return "Your team has signed a high-profile rider. Your performances are scrutinised more closely."; },
-   get effect(){ return tf('we_star_effect','+2 rep sur les victoires, mais contre-perfs plus visibles'); },
-   get effectEN(){ return '+2 reputation on wins, but poor results are more visible'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.teamSpotlight = true; }},
-
-  {id:'generation_montante', icon:'🌱',
-   get title(){ return tf('we_generation','Une génération de jeunes talents explose'); },
-   get titleEN(){ return 'A generation of young talents erupts'; },
-   get desc(){ return tf('we_generation_desc','Une nouvelle vague de coureurs crève l\'écran. La concurrence est accrue sur toutes les courses.'); },
-   get descEN(){ return "A new wave of young riders bursts onto the scene. Competition is fiercer across the board."; },
-   get effect(){ return tf('we_generation_effect','Seuils de victoire légèrement relevés cette saison (concurrence accrue)'); },
-   get effectEN(){ return 'Victory thresholds slightly raised this season (stiffer competition)'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.competitionUp = 2; }},
-
-  {id:'dopage_scandale', icon:'💊',
-   get title(){ return tf('we_dopage','Vague de contrôles antidopage renforcés'); },
-   get titleEN(){ return 'Wave of strengthened doping controls'; },
-   get desc(){ return tf('we_dopage_desc','Suite à des révélations, les contrôles sont renforcés. L\'ambiance est pesante dans le peloton.'); },
-   get descEN(){ return "Following revelations, controls are tightened. The atmosphere in the peloton is tense."; },
-   get effect(){ return tf('we_dopage_effect','-1 point de mental en début de saison'); },
-   get effectEN(){ return '-1 mental point at the start of the season'; },
-   apply(state){ if(state.rider) state.rider.stats.mental = Math.max(8, (state.rider.stats.mental||50)-1); }},
-
-  {id:'grand_depart_pays', icon:'🎉',
-   get title(){ return tf('we_depart','Ton pays accueille un Grand Départ'); },
-   get titleEN(){ return 'Your country hosts a Grand Départ'; },
-   get desc(){ return tf('we_depart_desc','L\'un des grands tours démarre dans ton pays. La ferveur populaire est immense.'); },
-   get descEN(){ return "One of the grand tours starts in your country. Public enthusiasm is huge."; },
-   get effect(){ return tf('we_depart_effect','+5 pts de réputation si tu participes à ce grand tour'); },
-   get effectEN(){ return '+5 reputation if you participate in this grand tour'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.homeGrandDepart = true; }},
-
-  {id:'record_heure', icon:'⏱️',
-   get title(){ return tf('we_record','Un record de l\'heure fait parler'); },
-   get titleEN(){ return 'An Hour Record sparks debate'; },
-   get desc(){ return tf('we_record_desc','Une tentative médiatisée remet les rouleurs et les CLM sous les projecteurs cette saison.'); },
-   get descEN(){ return "A high-profile attempt puts rouleurs and time trials in the spotlight this season."; },
-   get effect(){ return tf('we_record_effect','+2 rep sur les victoires en course à étapes cette saison'); },
-   get effectEN(){ return '+2 reputation on stage race wins this season'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.clmRepBonus = 2; }},
-
-  {id:'hommage_legende', icon:'🕯️',
-   get title(){ return tf('we_hommage','Hommage à une légende du peloton'); },
-   get titleEN(){ return 'Tribute to a peloton legend'; },
-   get desc(){ return tf('we_hommage_desc','Le peloton rend hommage à une figure marquante. Courir avec coeur prend tout son sens.'); },
-   get descEN(){ return "The peloton pays tribute to a major figure. Racing with heart means everything."; },
-   get effect(){ return tf('we_hommage_effect','+1 pt de mental pour tous les coureurs ce début de saison'); },
-   get effectEN(){ return '+1 mental point at the start of the season'; },
-   apply(state){ if(state.rider) state.rider.stats.mental = Math.min(99, (state.rider.stats.mental||50)+1); }},
-
-  {id:'soutien_sponsor', icon:'💰',
-   get title(){ return tf('we_soutien','Engouement exceptionnel des sponsors'); },
-   get titleEN(){ return 'Exceptional sponsor enthusiasm'; },
-   get desc(){ return tf('we_soutien_desc','Une année très médiatisée attire de nouveaux partenaires. Les primes sont plus généreuses.'); },
-   get descEN(){ return "A particularly high-profile year attracts new partners. Prize money is more generous."; },
-   get effect(){ return tf('we_soutien_effect','+20% de revenus sur les primes de course cette saison'); },
-   get effectEN(){ return '+20% earnings on race prize money this season'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.moneyBonus = 1.20; }},
-
-  {id:'media_cyclo', icon:'📺',
-   get title(){ return tf('we_media','Explosion de la couverture médiatique'); },
-   get titleEN(){ return 'Explosion in media coverage'; },
-   get desc(){ return tf('we_media_desc','Le cyclisme est à la une. Chaque performance est analysée — les coureurs gagnent en visibilité.'); },
-   get descEN(){ return "Cycling is front-page news. Every performance is analysed — riders gain in visibility."; },
-   get effect(){ return tf('we_media_effect','+1 rep sur chaque top10 (la moindre performance est valorisée)'); },
-   get effectEN(){ return '+1 reputation on every top 10'; },
-   apply(state){ state.seasonWorldMods = state.seasonWorldMods||{}; state.seasonWorldMods.top10RepBonus = 1; }},
-];
+</script>
+<script src="data/world-events.js"></script>
+<script>
 
 function rollWorldEvents(){
   if(!STATE.rider || STATE.rider.season < 2) return [];
@@ -4671,108 +4481,9 @@ function applyWorldEvents(events){
 }
 
 
-const PIVOT_EVENTS = [
-  /* S3 : Offre d'équipe en cours de contrat */
-  {id:'offer_prematured', triggerSeason:3,
-   title:tf('pivotOfferTitle',"Une offre inattendue"),
-   titleEN:"An unexpected offer",
-   icon:'📨',
-   desc:tf('pivotOfferDesc',"Une équipe de division supérieure t'a fait parvenir un message discret : ils t'observent depuis le début de saison et seraient prêts à te signer dès maintenant, avant la fin de ton contrat actuel. Partir maintenant serait une trahison vis-à-vis de ton équipe actuelle — mais l'opportunité est rare."),
-   descEN:"A higher-division team has sent you a discreet message: they've been watching you since the start of the season and would be willing to sign you now, before your current contract ends. Leaving now would be a betrayal of your current team — but the opportunity is rare.",
-   choices:[
-     {label:tf('pivotOfferAccept',"Accepter l'offre (trahison, +opportunité)"), labelEN:"Accept the offer (betrayal, +opportunity)",
-      effect:(r)=>{
-        r.careerFlags.betrayedTeam = r.season;
-        r.teamConfidence = Math.max(0, r.teamConfidence - 25);
-        r.reputation = Math.max(0, r.reputation - 8);
-        addJournalEntry(r, tf('pivotOfferAcceptLog',"Tu as quitté ton équipe en cours de contrat pour une opportunité en division supérieure. Ça a froissé beaucoup de monde."));
-      }},
-     {label:tf('pivotOfferDecline',"Refuser — rester fidèle à l'équipe"), labelEN:"Decline — stay loyal to the team",
-      effect:(r)=>{
-        r.careerFlags.loyaltyBonus = r.season;
-        r.teamConfidence = Math.min(100, r.teamConfidence + 15);
-        addJournalEntry(r, tf('pivotOfferDeclineLog',"Tu as décliné une offre en cours de contrat. Ta loyauté n'est pas passée inaperçue dans le peloton."));
-      }},
-   ]},
-
-  /* S5 : Scandale dans l'équipe */
-  {id:'team_scandal', triggerSeason:5,
-   title:tf('pivotScandalTitle',"Nuage sur l'équipe"),
-   titleEN:"Storm clouds over the team",
-   icon:'📰',
-   desc:tf('pivotScandalDesc',"Des rumeurs de dopage circulent autour de ton équipe. Un journaliste t'a contacté pour avoir ta réaction. Tu n'es impliqué en rien — mais ta réponse publique va définir ton image pour les prochaines saisons."),
-   descEN:"Doping rumours are circulating around your team. A journalist has contacted you for your reaction. You're not involved at all — but your public response will define your image for the next few seasons.",
-   choices:[
-     {label:tf('pivotScandalSolidaire',"Rester solidaire de l'équipe"), labelEN:"Stand by the team",
-      effect:(r)=>{
-        r.careerFlags.scandalSolidaire = r.season;
-        r.teamConfidence = Math.min(100, r.teamConfidence + 20);
-        r.reputation = Math.max(0, r.reputation - 5);
-        addJournalEntry(r, tf('pivotScandalSolidaireLog',"Tu as défendu ton équipe publiquement. La confiance interne est au beau fixe, mais ton image en a pris un coup."));
-      }},
-     {label:tf('pivotScandalDistance',"Prendre ses distances publiquement"), labelEN:"Publicly distance yourself",
-      effect:(r)=>{
-        r.careerFlags.scandalDistance = r.season;
-        r.teamConfidence = Math.max(0, r.teamConfidence - 15);
-        r.reputation = Math.min(100, r.reputation + 5);
-        addJournalEntry(r, tf('pivotScandalDistanceLog',"Tu t'es désolidarisé publiquement de l'équipe. Ton image est préservée, mais l'ambiance interne est froide."));
-      }},
-   ]},
-
-  /* S7 : Coéquipier devenu rival */
-  {id:'teammate_rival', triggerSeason:7,
-   title:tf('pivotRivalTitle',"Trahison dans le peloton"),
-   titleEN:"Betrayal in the peloton",
-   icon:'🥊',
-   desc:tf('pivotRivalDesc',"Ton ancien coéquipier vient de signer dans une équipe concurrente. Lors d'une conférence de presse, il s'est permis de sous-entendre que tu lui avais volé des victoires ces dernières saisons. Le peloton observe ta réaction."),
-   descEN:"Your former teammate has just signed for a rival team. At a press conference, he implied that you had stolen victories from him over the past few seasons. The peloton is watching your reaction.",
-   choices:[
-     {label:tf('pivotRivalIgnore',"Ignorer — laisser la course parler"), labelEN:"Ignore it — let the racing do the talking",
-      effect:(r)=>{
-        r.careerFlags.rivalIgnored = r.season;
-        r.reputation = Math.min(100, r.reputation + 3);
-        addJournalEntry(r, tf('pivotRivalIgnoreLog',"Tu n'as pas répondu aux provocations. Le peloton a apprécié ta classe."));
-      }},
-     {label:tf('pivotRivalConfront',"Répondre publiquement — fixer une confrontation"), labelEN:"Respond publicly — set up a showdown",
-      effect:(r)=>{
-        r.careerFlags.rivalConfront = r.season;
-        // Forcer l'apparition d'un rival narratif plus intense
-        if(STATE.rivals && STATE.rivals.length < 3){
-          STATE.rivals.push({
-            name: r.teammate ? r.teammate.name : tf('pivotRivalName','Ton ancien coéquipier'),
-            styleId: r.styleId,
-            intensity: 'intense',
-            raceIds: [],
-            createdSeason: r.season,
-          });
-        }
-        addJournalEntry(r, tf('pivotRivalConfrontLog',"Tu as accepté la confrontation. Une rivalité brûlante s'est allumée — le public adore ça."));
-      }},
-   ]},
-
-  /* S9 : Proposition de reconversion anticipée */
-  {id:'retirement_offer', triggerSeason:9,
-   title:tf('pivotRetireTitle',"Une porte de sortie"),
-   titleEN:"A way out",
-   icon:'🎙️',
-   desc:tf('pivotRetireDesc',"Un directeur sportif t'a proposé un poste de directeur d'équipe à partir de la saison prochaine. C'est une reconnaissance de ta carrière — mais tu pourrais encore courir 3-4 saisons. Choisir de rester, c'est chercher les victoires qui manquent encore à ton palmarès."),
-   descEN:"A sporting director has offered you a team director position starting next season. It's recognition of your career — but you could still race for 3-4 more seasons. Staying means chasing the wins still missing from your palmares.",
-   choices:[
-     {label:tf('pivotRetireAccept',"Accepter — finir sur un rôle de mentor"), labelEN:"Accept — finish as a mentor figure",
-      effect:(r)=>{
-        r.careerFlags.earlyRetirement = r.season;
-        r.isMentor = true;
-        r.reputation = Math.min(100, r.reputation + 8);
-        addJournalEntry(r, tf('pivotRetireAcceptLog',"Tu as accepté la transition. Le peloton te voit désormais comme une figure tutélaire."));
-      }},
-     {label:tf('pivotRetireDecline',"Refuser — continuer à courir"), labelEN:"Decline — keep racing",
-      effect:(r)=>{
-        r.careerFlags.refusedRetirement = r.season;
-        r.careerFlags.hungerBonus = r.season; // bonus de motivation pour 2 saisons
-        addJournalEntry(r, tf('pivotRetireDeclineLog',"Tu as refusé de raccrocher. Il te reste des batailles à mener."));
-      }},
-   ]},
-];
+</script>
+<script src="data/pivot-events.js"></script>
+<script>
 
 function checkPivotTrigger(){
   const r = STATE.rider;
@@ -5613,178 +5324,13 @@ function convalescenceChoice(mode){
 }
 
 
-/* ---------- PHASES NARRATIVES BONUS (Évolution 6) ----------
-   Pool de moments tactiques injectés en début de course selon le prestige.
-   Prestige 1 : 0-1 phase | Prestige 2-3 : 1-2 phases | Prestige 4-5 : 2-3 phases.
-   Ces phases passent par resolveEvent() et influencent le score final. */
+</script>
+<script src="data/bonus-phase-pool.js"></script>
+<script>
 
-const BONUS_PHASE_POOL = [
-  { focus:['resistance','mental'],
-    variants:[
-      {title:"Échauffement sous tension", titleEN:"Warm-up under pressure",
-       desc:"Le peloton est nerveux dès le départ. Plusieurs équipes lancent des accélérations pour tester les jambes. Comment tu gères ces premiers kilomètres ?", descEN:"The peloton is nervous from the start. Several teams are testing the legs early. How do you handle these opening kilometres?"},
-      {title:"Début de course chaotique", titleEN:"Chaotic race start",
-       desc:"Chutes, contre-attaques, fanions dans tous les sens. La course part vite et fort. Tu dois placer tes premières cartes.", descEN:"Crashes, counter-attacks, fans everywhere. The race starts fast and hard. Time to play your opening cards."},
-    ],
-    choices:[
-      {label:"Rester en sécurité dans le ventre du peloton", labelEN:"Stay safe in the bunch", risk:'sur', tilt:['recuperation']},
-      {label:"Se placer dans les dix premières roues", labelEN:"Move up to the top ten wheels", risk:'equilibre', tilt:['mental','resistance']},
-      {label:"Partir dans la première échappée", labelEN:"Jump in the first breakaway", risk:'audacieux', tilt:['resistance','mental']},
-    ]
-  },
-  { focus:['mental','recuperation'],
-    variants:[
-      {title:"Ravitaillement raté", titleEN:"Missed feed zone",
-       desc:"La zone de ravitaillement est bondée. Ton bidon t'échappe des mains. Tu dois gérer l'effort sans apport d'énergie suffisant.", descEN:"The feed zone is packed. Your bottle slips away. You have to manage without proper fuelling."},
-      {title:"La gestion de l'effort", titleEN:"Pacing the effort",
-       desc:"À mi-course, tu sens la fatigue pointer. Certains adversaires accélèrent pour provoquer des sélections. Quelle est ta stratégie ?", descEN:"Mid-race, you feel the fatigue creeping in. Rivals are accelerating to cause splits. What's your strategy?"},
-    ],
-    choices:[
-      {label:"Économiser pour la fin, rester dans la roue", labelEN:"Save energy, stay on wheels", risk:'sur', tilt:['recuperation']},
-      {label:"Maintenir le rythme imposé, sans forcer", labelEN:"Hold the pace without pushing", risk:'equilibre', tilt:['mental','recuperation']},
-      {label:"Profiter de la confusion pour attaquer", labelEN:"Use the confusion to attack", risk:'audacieux', tilt:['mental','resistance']},
-    ]
-  },
-  { focus:['sprint','mental'],
-    variants:[
-      {title:"La guerre des positions", titleEN:"The positioning battle",
-       desc:"À 30 km de l'arrivée, les équipes de sprinteurs commencent à contrôler. Chaque roue compte. Le bordel commence.", descEN:"30km out, sprint teams are taking control. Every wheel counts. The chaos begins."},
-      {title:"Tension dans le final", titleEN:"Tension in the finale",
-       desc:"L'arrivée approche. Les nerfs lâchent dans le peloton. Un adversaire direct se colle à ta roue et ne te lâche plus.", descEN:"The finish is approaching. Nerves are fraying in the peloton. A direct rival is glued to your wheel."},
-    ],
-    choices:[
-      {label:"Laisser le train se former, sprinter sur lancée", labelEN:"Let the lead-out form, sprint on speed", risk:'sur', tilt:['sprint']},
-      {label:"Se glisser dans le train adverse", labelEN:"Slot into the rival train", risk:'equilibre', tilt:['sprint','mental']},
-      {label:"Attaque surprise à 400 mètres", labelEN:"Surprise attack at 400 metres", risk:'audacieux', tilt:['sprint','mental']},
-    ]
-  },
-  { focus:['montagne','resistance'],
-    variants:[
-      {title:"Le col décisif", titleEN:"The decisive climb",
-       desc:"Le grand col du jour commence. L'allure s'emballe. Les groupes se forment. Tu dois choisir ton rythme maintenant.", descEN:"The main climb of the day begins. The pace explodes. Groups are forming. You must choose your rhythm now."},
-      {title:"L'accélération dans la montée", titleEN:"The acceleration on the climb",
-       desc:"Un grimpeur de renom sort des roues à mi-pente. Le peloton hésite. Tu as trois secondes pour décider.", descEN:"A top climber goes clear mid-climb. The peloton hesitates. You have three seconds to decide."},
-    ],
-    choices:[
-      {label:"Tenir le groupe et gérer jusqu'au sommet", labelEN:"Stick with the group to the summit", risk:'sur', tilt:['resistance']},
-      {label:"Suivre l'attaque, quitte à souffrir", labelEN:"Follow the attack, even if it hurts", risk:'equilibre', tilt:['montagne','mental']},
-      {label:"Contre-attaquer au-dessus pour semer tout le monde", labelEN:"Counter-attack over the top to drop everyone", risk:'audacieux', tilt:['montagne','resistance']},
-    ]
-  },
-  { focus:['classiques','mental'],
-    variants:[
-      {title:"Le secteur pavé", titleEN:"The cobbled sector",
-       desc:"L'entrée dans les premiers secteurs pavés. Le bruit est assourdissant. Plusieurs coureurs crèvent. Tu dois choisir ta ligne.", descEN:"Entering the first cobbled sectors. The noise is deafening. Several riders puncture. You must pick your line."},
-      {title:"L'éventail dans le vent", titleEN:"Wind echelons",
-       desc:"Le vent de travers crée des éventails. Le peloton se casse. Tu dois trouver le bon groupe avant qu'il ne soit trop tard.", descEN:"Crosswinds are causing echelons. The peloton splits. You need to find the right group before it's too late."},
-    ],
-    choices:[
-      {label:"Rouler au centre, position prudente", labelEN:"Ride in the middle, safe position", risk:'sur', tilt:['recuperation']},
-      {label:"Coller aux favoris, gestion fine", labelEN:"Stick with the favourites, controlled riding", risk:'equilibre', tilt:['classiques','mental']},
-      {label:"Partir à l'avant avant l'entrée du secteur", labelEN:"Go to the front before the sector", risk:'audacieux', tilt:['classiques','resistance']},
-    ]
-  },
-  { focus:['clm','resistance'],
-    variants:[
-      {title:"Le contre-la-montre intermédiaire", titleEN:"The intermediate time check",
-       desc:"Les chronos tombent. Tu es en selle depuis un moment. La gestion de l'effort sera décisive dans les 10 derniers kilomètres.", descEN:"The time checks are coming in. You've been riding a while. Pacing the last 10km will be crucial."},
-      {title:"Le vent de face dans la montée finale", titleEN:"Headwind on the final climb",
-       desc:"La route monte et le vent s'invite. L'effort est décuplé. Il faut choisir : conserver ou tout donner.", descEN:"The road climbs and the wind joins in. The effort multiplies. Choose: conserve or go all-in."},
-    ],
-    choices:[
-      {label:"Doser l'effort, ne pas se griller", labelEN:"Pace the effort, don't burn out", risk:'sur', tilt:['clm']},
-      {label:"Maintenir la puissance cible", labelEN:"Hold the target power", risk:'equilibre', tilt:['clm','resistance']},
-      {label:"Tout envoyer dans le final", labelEN:"Give everything in the finale", risk:'audacieux', tilt:['clm','mental']},
-    ]
-  },
-];
-
-/* ---------- EVENTS RIVAL EN COURSE ----------
-   Déclenchés quand un rival est présent dans la course.
-   Injectés comme phase bonus supplémentaire si un rival figure dans race.raceIds.
-   Format identique aux bonus phases : focus, title, desc, choices. */
-const RIVAL_RACE_EVENTS = [
-  {
-    focus: ['mental','classiques'],
-    variants: [
-      {title:"Dans la roue du rival", titleEN:"On the rival's wheel",
-       desc:"Dans le final, {name} se retrouve juste devant toi. Tu peux rester dans sa roue et profiter de son travail, ou tenter de le surprendre.",
-       descEN:"{name} is right ahead of you in the finale. You can sit on their wheel and benefit from their pace, or try to surprise them."},
-      {title:"Le regard du rival", titleEN:"The rival's glance",
-       desc:"{name} t'a repéré dans le groupe de tête. Un bref regard s'échange — les deux équipes savent que la course va se jouer entre vous.",
-       descEN:"{name} has spotted you in the lead group. A brief glance is exchanged — both teams know the race will be decided between you."},
-    ],
-    choices: [
-      {label:"Rester dans sa roue, sprinter au bon moment", labelEN:"Stay on their wheel, sprint at the right moment", risk:'equilibre', tilt:['sprint','mental']},
-      {label:"Attaquer en premier, le prendre de vitesse", labelEN:"Attack first, catch them off guard", risk:'audacieux', tilt:['classiques','mental']},
-      {label:"Couvrir ses mouvements, laisser l'équipe travailler", labelEN:"Cover their moves, let the team work", risk:'sur', tilt:['resistance']},
-    ]
-  },
-  {
-    focus: ['montagne','mental'],
-    variants: [
-      {title:"Duel au sommet", titleEN:"Summit duel",
-       desc:"{name} accélère dans la montée finale. C'est le moment de vérité : sa grimpe contre la tienne.",
-       descEN:"{name} accelerates on the final climb. This is the moment of truth: their climbing against yours."},
-      {title:"La contre-attaque du rival", titleEN:"The rival's counterattack",
-       desc:"Tu croyais avoir lâché {name}, mais il revient dans ta roue à 2 km du sommet. Il n'est pas encore éliminé.",
-       descEN:"You thought you'd dropped {name}, but they come back to your wheel 2km from the summit. They're not done yet."},
-    ],
-    choices: [
-      {label:"Accélérer pour le craquer définitivement", labelEN:"Accelerate to crack them once and for all", risk:'audacieux', tilt:['montagne','mental']},
-      {label:"Maintenir ton rythme et gérer la distance", labelEN:"Hold your pace and manage the gap", risk:'equilibre', tilt:['montagne','resistance']},
-      {label:"Feindre la faiblesse pour mieux repartir", labelEN:"Feign weakness to recover and strike later", risk:'sur', tilt:['mental']},
-    ]
-  },
-  {
-    focus: ['classiques','resistance'],
-    variants: [
-      {title:"Manœuvre d'équipe contre le rival", titleEN:"Team tactics against the rival",
-       desc:"Ton équipe a repéré que {name} est seul en tête. C'est le moment de rouler pour te mettre en position idéale.",
-       descEN:"Your team has spotted {name} alone at the front. Time to ride and put you in the perfect position."},
-      {title:"Le piège du rival", titleEN:"The rival's trap",
-       desc:"{name} envoie son équipier en échappée — une provocation pour t'obliger à dépenser de l'énergie sur ses termes.",
-       descEN:"{name} sends a teammate in the break — a provocation to force you to spend energy on their terms."},
-    ],
-    choices: [
-      {label:"Laisser partir l'équipier, contrôler depuis le peloton", labelEN:"Let the teammate go, control from the peloton", risk:'sur', tilt:['resistance','mental']},
-      {label:"Envoyer un équipier à ta place pour répondre", labelEN:"Send your own teammate to respond", risk:'equilibre', tilt:['resistance']},
-      {label:"Partir toi-même, montrer que tu ne te laisses pas manipuler", labelEN:"Go yourself, show you won't be manipulated", risk:'audacieux', tilt:['classiques','mental']},
-    ]
-  },
-  {
-    focus: ['sprint','mental'],
-    variants: [
-      {title:"Le sprint face au rival", titleEN:"The sprint against the rival",
-       desc:"La ligne arrive. {name} est à ta hauteur, les mâchoires serrées. Tout va se jouer dans les 200 derniers mètres.",
-       descEN:"The line is coming. {name} is right beside you, jaw set. Everything will be decided in the final 200 metres."},
-      {title:"La relance explosive du rival", titleEN:"The rival's explosive surge",
-       desc:"{name} se lève sur les pédales à 300m. Tu dois répondre maintenant ou le laisser filer.",
-       descEN:"{name} jumps out of the saddle at 300m. You have to respond now or let them go."},
-    ],
-    choices: [
-      {label:"Partir en même temps, s'appuyer sur ta pointe de vitesse", labelEN:"Go at the same time, rely on your top speed", risk:'audacieux', tilt:['sprint']},
-      {label:"Partir 50m après lui, profiter de son élan", labelEN:"Go 50m after them, use their momentum", risk:'equilibre', tilt:['sprint','mental']},
-      {label:"Attendre le dernier moment pour déborder", labelEN:"Wait for the last moment to come around", risk:'sur', tilt:['sprint','mental']},
-    ]
-  },
-  {
-    focus: ['resistance','mental'],
-    variants: [
-      {title:"Une course de harcèlement", titleEN:"A race of attrition",
-       desc:"{name} et toi vous vous rendez coup pour coup depuis le départ. C'est une guerre d'usure — qui craquera en premier ?",
-       descEN:"{name} and you have been trading blows since the start. It's a war of attrition — who will crack first?"},
-      {title:"L'accélération surprise du rival", titleEN:"The rival's surprise acceleration",
-       desc:"{name} place une attaque dans un faux-plat montant, là où personne ne l'attendait. Le peloton est surpris.",
-       descEN:"{name} attacks on a false flat climb, where nobody expected it. The peloton is caught off guard."},
-    ],
-    choices: [
-      {label:"Répondre immédiatement, ne pas laisser d'écart", labelEN:"Respond immediately, don't let a gap open", risk:'audacieux', tilt:['resistance','mental']},
-      {label:"Gérer depuis le peloton, reprendre plus tard", labelEN:"Manage from the peloton, chase back later", risk:'equilibre', tilt:['resistance']},
-      {label:"Laisser partir, économiser pour le final", labelEN:"Let them go, save energy for the finale", risk:'sur', tilt:['mental']},
-    ]
-  },
-];
+</script>
+<script src="data/rival-race-events.js"></script>
+<script>
 
 /* ---------- FEEDBACK NARRATIF DUEL RIVAL ----------
    Affiché après le choix du joueur sur un event _isRivalEvent.
@@ -6109,30 +5655,9 @@ function resolveAsDomestique(race){
   finalizeRace();
 }
 
-const WACKY_CHOICE_LABELS_FR = [
-  "Suivre les conseils improvisés d'un spectateur en bord de route",
-  "Tenter un pari un peu fou lancé par un coéquipier avant le départ",
-  "Changer de braquet fétiche à la dernière minute, pour voir",
-  "Partir sur une prémonition et attaquer dès le premier kilomètre",
-  "Porter la casquette fétiche de l'équipe à l'envers, pour la chance",
-  "Rouler aujourd'hui sans regarder une seule fois le compteur",
-  "Improviser une tactique inédite, jamais tentée à l'entraînement",
-  "Suivre à la lettre l'horoscope du jour lu ce matin",
-  "Manger un plat inhabituel proposé par un fan la veille de la course",
-  "Laisser un coéquipier choisir la tactique du jour à ta place",
-];
-const WACKY_CHOICE_LABELS_EN = [
-  "Follow the improvised advice of a roadside spectator",
-  "Take on a slightly crazy bet from a teammate before the start",
-  "Switch your lucky gear ratio at the last minute, just to see",
-  "Go on a hunch and attack from the first kilometre",
-  "Wear the team's lucky cap backwards, for luck",
-  "Ride today without ever looking at the computer",
-  "Improvise a brand-new tactic, never tried in training",
-  "Follow this morning's horoscope to the letter",
-  "Eat an unusual dish offered by a fan the night before the race",
-  "Let a teammate choose today's tactic for you",
-];
+</script>
+<script src="data/wacky-choice-labels.js"></script>
+<script>
 const WACKY_CHOICE_LABELS = new Proxy(WACKY_CHOICE_LABELS_FR, {
   get(target, prop){
     if(SETTINGS.lang==='en' && WACKY_CHOICE_LABELS_EN[prop]!==undefined) return WACKY_CHOICE_LABELS_EN[prop];
@@ -6381,16 +5906,9 @@ function chooseOption(i){
   else { renderCurrentEvent(); }
 }
 
-/* La Confrérie de la Poisse — clin d'œil fictif à l'autodérision sportive à la
-   française, sans lien avec une marque ou une entité réelle. */
-const CONFRERIE_POISSE_EVENTS = [
-  {icon:'🏅', title:"Prix de la défaite la plus stylée", titleEN:"Award for the most stylish defeat", desc:"La Confrérie de la Poisse te décerne son trophée du mois pour ta contre-performance, déjà commentée avec un enthousiasme suspect sur les réseaux.", descEN:"The Brotherhood of Bad Luck awards you its trophy of the month for your poor performance, already discussed online with suspicious enthusiasm.",
-    choiceLabel:"En rire avec eux, autodérision assumée", choiceLabelEN:"Laugh along with them, embracing the self-deprecation", effect:{mental:2}},
-  {icon:'📸', title:"Le ralenti qui tourne en boucle", titleEN:"The slow-motion replay on loop", desc:"Ta chute ou ton abandon devient l'extrait le plus partagé de la semaine chez La Confrérie de la Poisse, musique dramatique en fond sonore.", descEN:"Your crash or abandon becomes the most shared clip of the week at the Brotherhood of Bad Luck, dramatic music included.",
-    choiceLabel:"Répondre avec humour plutôt que de s'en offusquer", choiceLabelEN:"Respond with humour rather than taking offence", effect:{mental:1}},
-  {icon:'🎖️', title:"Intronisation surprise", titleEN:"A surprise induction", desc:"La Confrérie de la Poisse t'invite officiellement à rejoindre son panthéon informel des défaites les plus héroïques du peloton.", descEN:"The Brotherhood of Bad Luck officially invites you to join its informal hall of fame of the peloton's most heroic defeats.",
-    choiceLabel:"Accepter avec fierté, une pointe d'autodérision", choiceLabelEN:"Accept with pride, and a touch of self-deprecation", effect:{mental:3}},
-];
+</script>
+<script src="data/confrerie-poisse-events.js"></script>
+<script>
 
 /* Traduit le résultat d'un seul évènement en un résumé narratif étalé sur les jours
    réels de la course (sans jouer plusieurs évènements ni ajouter de clic) — histoire de
