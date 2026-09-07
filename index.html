@@ -493,7 +493,9 @@ COUNTRIES.forEach(c=>{
   Object.defineProperty(c, 'name', {get(){ const v = t(c.code); return v!==null ? v : frName; }});
 });
 
-const STAT_KEYS = ['montagne','sprint','clm','classiques','resistance','recuperation','mental'];
+</script>
+<script src="data/stat-keys.js"></script>
+<script>
 /* ---------- SYSTÈME DE LANGUE (FR/EN) ----------
    Étape 1 d'un chantier en plusieurs temps : infrastructure + interface + noms de
    courses traduits dès maintenant. Les descriptions/choix des courses et les ~124
@@ -1039,7 +1041,9 @@ function generateRiderName(countryCode){
    Un coéquipier nommé, distinct des rivaux, qui accompagne le coureur au fil des
    saisons (renouvelé à chaque changement d'équipe) — avec sa propre petite trajectoire
    plutôt que d'être un simple figurant interchangeable. */
-const TEAMMATE_ARCHETYPES = ['domestique', 'espoir', 'veteran'];
+</script>
+<script src="data/teammate-archetypes.js"></script>
+<script>
 const TEAMMATE_ARCHETYPE_LABELS_FR = {domestique:'domestique fidèle', espoir:'jeune espoir', veteran:'vétéran en fin de carrière'};
 const TEAMMATE_ARCHETYPE_LABELS = new Proxy(TEAMMATE_ARCHETYPE_LABELS_FR, {
   get(target, prop){ const v = t('arch_'+prop); return v!==null ? v : target[prop]; }
@@ -1310,7 +1314,9 @@ function RACES_DATA(){
   });
 }
 
-const TIER_ORDER = ['forfait','abandon','jourssans','peloton','top10','podium','victoire'];
+</script>
+<script src="data/tier-order.js"></script>
+<script>
 const TIER_LABEL_FR = {
   victoire:'Victoire !', podium:'Podium', top10:'Top 10',
   peloton:'Dans le peloton', jourssans:'Jour sans', abandon:'Abandon', forfait:'Forfait (blessure)'
@@ -2936,8 +2942,9 @@ function legacyTitle(rider){
    INTERFACE
    ============================================================ */
 
-const MONTHS_FR = ['','janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-const MONTHS_EN = ['','January','February','March','April','May','June','July','August','September','October','November','December'];
+</script>
+<script src="data/months.js"></script>
+<script>
 const MONTHS = new Proxy(MONTHS_FR, {
   get(target, prop){
     if(SETTINGS.lang==='en' && MONTHS_EN[prop]!==undefined) return MONTHS_EN[prop];
