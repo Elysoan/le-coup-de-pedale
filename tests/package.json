@@ -5,8 +5,9 @@
   "description": "Suite de tests du jeu (lint statique + simulation de carrières via Playwright).",
   "scripts": {
     "lint": "node lint-source.js",
+    "unit": "node --test unit/*.test.js",
     "simulate": "node simulate.js",
-    "test": "npm run lint && npm run simulate"
+    "test": "npm run lint && npm run unit && npm run simulate"
   },
   "devDependencies": {
     "playwright": "1.62.1"
