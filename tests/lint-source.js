@@ -61,6 +61,37 @@ const withoutComments = allScripts
   }
 });
 
+// ---- 3. Chaque <script> (inline ou src local) est syntaxiquement valide pris isolément ----
+// Un navigateur parse chaque balise <script> indépendamment : une découpe qui coupe un
+// commentaire ou une chaîne en plein milieu (ex. lors d'une extraction de data/*.js) peut
+// rester invisible si on ne vérifie que la concaténation de tout le JS — chaque moitié
+// prise séparément est pourtant invalide, et le bloc qui échoue n'exécute plus RIEN,
+// y compris les déclarations de fonctions qu'il contient (bug réellement rencontré).
+{
+  let scriptFailures = 0;
+  const scriptRe = /<script(?:\s+src="([^"]+)")?[^>]*>([\s\S]*?)<\/script>/g;
+  let sm;
+  while((sm = scriptRe.exec(html))){
+    const srcAttr = sm[1];
+    let code, label;
+    if(srcAttr){
+      if(/^https?:\/\//.test(srcAttr)) continue;
+      code = fs.readFileSync(path.join(__dirname, '..', srcAttr), 'utf8');
+      label = srcAttr;
+    } else {
+      code = sm[2];
+      label = `bloc inline à l'offset ${sm.index}`;
+    }
+    try{
+      new Function(code);
+    }catch(e){
+      scriptFailures++;
+      fail(`Erreur de syntaxe dans ${label} (pris isolément) : ${e.message}`);
+    }
+  }
+  if(scriptFailures === 0) pass('Chaque <script> (inline ou src local) est syntaxiquement valide pris isolément.');
+}
+
 console.log('');
 if(failures > 0){
   console.error(`Lint échoué : ${failures} problème(s).`);

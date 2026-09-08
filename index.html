@@ -996,34 +996,13 @@ function restoreNavReturnScreen(){
 const STAT_LABELS = new Proxy(STAT_LABELS_FR, {
   get(target, prop){ const v = t(prop); return v!==null ? v : target[prop]; }
 });
-const STAT_ICONS = {
-  montagne:'⛰️', sprint:'⚡', clm:'⏱️', classiques:'🪨', resistance:'🔋', recuperation:'💤', mental:'🧠'
-};
+</script>
+<script src="data/stat-icons.js"></script>
+<script>
 
-/* ---------- NOMS DE COUREURS (générés aléatoirement par nationalité) ---------- */
-
-const NAME_POOLS = {
-  FR:{first:['Julien','Romain','Thibault','Antoine','Clément','Maxime','Baptiste','Matthieu','Arnaud'], last:['Vasseur','Moreau','Girard','Lefèvre','Rousseau','Perrin','Fournier','Stapor','Jollivet']},
-  BE:{first:['Wout','Tim','Jasper','Yves','Dries','Kobe','Arnaud','Antoine'], last:['Van Damme','Vermeulen','Claeys','De Backer','Peeters','Willems','De Lie','Dusoulier']},
-  IT:{first:['Matteo','Alessandro','Davide','Giulio','Lorenzo','Filippo','Simone','Lucca'], last:['Ferrari','Bianchi','Colombo','Moretti','Ricci','Conti','Marchetti','Buido']},
-  NL:{first:['Mathieu','Bram','Sven','Daan','Thijs','Niels','Koen'], last:['de Groot','Bakker','Visser','Jansen','Smit','Mulder','Dekker']},
-  ES:{first:['Alejandro','Pablo','Iñaki','Marc','Rubén','Óscar','Enrique'], last:['García','Fernández','Pérez','Martínez','Sánchez','Romero','Navarro']},
-  DE:{first:['Lukas','Jonas','Felix','Tobias','Maximilian','Jan','Simon'], last:['Müller','Schneider','Becker','Hoffmann','Wagner','Richter','Zimmermann']},
-  AU:{first:['Jack','Ryan','Cameron','Luke','Nathan','Ben','Harrison'], last:['Mitchell','Turner','Walsh','Coleman','Hughes','Baxter','Sinclair']},
-  GB:{first:['Oliver','Thomas','George','Harry','Jack','Charlie','Daniel'], last:['Bennett','Carter','Foster','Whitfield','Hughes','Marsh','Doyle']},
-  CO:{first:['Andrés','Camilo','Sebastián','Juan','Nairo','Esteban','Diego'], last:['Ramírez','Gómez','Torres','Vargas','Castro','Herrera','Molina']},
-  DK:{first:['Mikkel','Jonas','Magnus','Anders','Kasper','Emil','Frederik'], last:['Nielsen','Jensen','Hansen','Andersen','Christensen','Pedersen','Mortensen']},
-  CH:{first:['Marc','Lukas','Nino','Stefan','Reto','Silvan','Gino'], last:['Roth','Baumann','Keller','Meier','Steiner','Brunner','Zurbriggen']},
-  SI:{first:['Tadej','Primož','Jan','Matej','Luka','Domen','Žiga'], last:['Novak','Kovač','Horvat','Zupan','Krajnc','Potočnik','Vidmar']},
-  US:{first:['Tyler','Brandon','Sean','Kyle','Chris','Alex','Grant'], last:['Anderson','Miller','Reynolds','Coleman','Parker','Bishop','Harding']},
-  NO:{first:['Kristoffer','Magnus','Sindre','Odd','Vegard','Tobias','Erlend'], last:['Hansen','Olsen','Johansen','Berg','Haugen','Solberg','Dahl']},
-  LU:{first:['Bob','Laurent','Kevin','Michel','Pit','Nicolas','Tom'], last:['Weber','Kirsch','Schmit','Wagner','Muller','Thill','Braun']},
-  PT:{first:['João','Rui','Nuno','Tiago','Miguel','Bruno','André'], last:['Silva','Costa','Ferreira','Oliveira','Sousa','Rodrigues','Carvalho']},
-  PL:{first:['Michał','Kamil','Paweł','Piotr','Wojciech','Adam','Marcin'], last:['Kowalski','Nowak','Wiśniewski','Wójcik','Kamiński','Lewandowski','Zieliński']},
-  IE:{first:['Sean','Conor','Liam','Cian','Darragh','Eoin','Ronan'], last:['Murphy','Kelly',"O'Brien",'Ryan','Byrne','Doyle','Walsh']},
-  ER:{first:['Daniel','Natnael','Merhawi','Amanuel','Henok','Yonas','Robel'], last:['Tesfay','Ghebremedhin','Kidane','Weldu','Habte','Solomon','Mengistu']},
-  RW:{first:['Jean','Eric','Joseph','Emmanuel','Patrick','Moise','Bonaventure'], last:['Uwimana','Nkurunziza','Habimana','Nsengimana','Mugisha','Niyonzima','Bizimana']},
-};
+</script>
+<script src="data/name-pools.js"></script>
+<script>
 
 function generateRiderName(countryCode){
   const pool = NAME_POOLS[countryCode] || NAME_POOLS.FR;
@@ -1192,22 +1171,12 @@ STYLES.forEach(s=>{
   Object.defineProperty(s, 'desc', {get(){ const v = t('style_'+s.id+'_desc'); return v!==null ? v : frDesc; }});
 });
 
-/* Pictogrammes de style : badge en dégradé diagonal + icône SVG monochrome
-   (currentColor), un couple de teintes par style repris de la palette du jeu. */
-const STYLE_BADGE_COLORS = {
-  grimpeur: ['var(--green)','var(--green-dark)'],
-  sprinteur: ['var(--yellow)','var(--yellow-dark)'],
-  rouleur: ['var(--blue)','var(--blue-dark)'],
-  puncheur: ['var(--pink)','var(--pink-dark)'],
-  polyvalent: ['var(--hero)','var(--hero-dark)'],
-};
-const STYLE_BADGE_ICONS = {
-  grimpeur: `<path d="M2 20 L9 8 L13 14 L16 9 L22 20 Z" fill="currentColor"/><circle cx="9" cy="6" r="1.6" fill="currentColor"/>`,
-  sprinteur: `<path d="M13 2 L4 13 H10.5 L9 22 L20 10 H13.5 Z" fill="currentColor"/>`,
-  rouleur: `<circle cx="12" cy="13" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 13 L12 7.5 M12 13 L16 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M9.5 2 H14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
-  puncheur: `<path d="M12 2 L14.2 9 L21 9.5 L15.5 13.8 L17.3 21 L12 16.8 L6.7 21 L8.5 13.8 L3 9.5 L9.8 9 Z" fill="currentColor"/>`,
-  polyvalent: `<circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 5 L14 11 L20 12 L14 13 L12 19 L10 13 L4 12 L10 11 Z" fill="currentColor"/>`,
-};
+</script>
+<script src="data/style-badge-colors.js"></script>
+<script>
+</script>
+<script src="data/style-badge-icons.js"></script>
+<script>
 function styleBadgeHTML(styleId){
   const [c1,c2] = STYLE_BADGE_COLORS[styleId] || ['var(--text-soft)','var(--text-soft)'];
   return `<div class="style-badge" style="background:linear-gradient(135deg, ${c1}, ${c2});">
@@ -1487,11 +1456,9 @@ function pickRaceOffers(){
   return offered.sort((a,b)=>a.month-b.month);
 }
 
-/* Calendrier du buzz : chaque saison, quelques courses (rarement plus de 3, plus
-   probable sur les grosses épreuves) sont marquées comme très suivies — un risque et
-   une récompense de réputation amplifiés (cf. repGainFor), pour donner un intérêt
-   stratégique de plus au choix du calendrier au-delà du seul prestige fixe des courses. */
-const BUZZ_CHANCE_BY_PRESTIGE = {1:0.03, 2:0.08, 3:0.16, 4:0.28, 5:0.42};
+</script>
+<script src="data/buzz-chance-by-prestige.js"></script>
+<script>
 function assignSeasonBuzz(pool){
   pool.forEach(race=>{ race.buzz = false; });
   const eligible = pool
@@ -1699,12 +1666,10 @@ function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour
   return {tier, perf: Math.round(perf), trained, detrained};
 }
 
-/* Le coût en fatigue dépend du cumul RÉEL de jours de course déjà disputés cette saison
-   (pas d'un total figé calculé au calendrier), de l'intensité de la course (un grand tour
-   pèse plus lourd, jour pour jour, qu'une accumulation de courses courtes), et maintenant
-   aussi du niveau de risque pris sur le choix : attaquer à fond (audacieux) coûte
-   nettement plus cher physiquement que gérer sagement son effort (sûr). */
-const RISK_FATIGUE_MULT = {sur:0.75, equilibre:1, audacieux:1.65, loufoque:1};
+
+</script>
+<script src="data/risk-fatigue-mult.js"></script>
+<script>
 function applyFatigue(rider, race, choice, weatherId){
   /* Récupération individuelle : réduit l'accumulation de base */
   const reduc = 1 - (rider.stats.recuperation/280);
@@ -2005,17 +1970,13 @@ function endSeasonAging(rider, trainingFocus){
 
 /* ---------- MARCHÉ DES TRANSFERTS ---------- */
 
-/* Fidèle à la réalité : on ne saute jamais un palier d'équipe d'un coup, même avec une
-   réputation qui le permettrait largement. Continentale -> ProTeam -> WorldTour ->
-   Équipe de légende, un cran à la fois — chaque transfert ne peut viser qu'au maximum
-   le palier juste au-dessus de l'équipe actuelle. */
-const TEAM_TIER_ORDER = {'Continentale':0, 'ProTeam':1, 'WorldTour':2, 'Équipe de légende':3};
+</script>
+<script src="data/team-tier-order.js"></script>
+<script>
 
-/* ---- Équipe de départ améliorée (déblocage entre carrières) ----
-   Plus le total de victoires cumulées sur toutes les carrières est élevé, plus l'équipe
-   de départ proposée est prestigieuse — sans jamais dépendre des trophées (réservés au
-   bonus exclu). */
-const STYLE_TEAM_SPECIALTY = {grimpeur:'montagne', sprinteur:'sprint', rouleur:'clm', puncheur:'classiques', polyvalent:null};
+</script>
+<script src="data/style-team-specialty.js"></script>
+<script>
 function totalCareerWins(){
   return CAREER_HISTORY.reduce((sum,c)=>sum+(c.wins||0), 0);
 }
@@ -2800,17 +2761,9 @@ function checkSessionAchievements(rider){
   if(SESSION.stylesPlayed.size>=STYLES.length) unlockTrophy('polyvalent-joueur');
 }
 
-const LEGACY_TITLE_FR = {
-  legacyGrandTourLegend:"Légende des grands tours",
-  legacyClassicsLord:"Seigneur des classiques",
-  legacyCompleteRider:"Coureur complet, entré dans l'histoire",
-  legacyTirelessBreakaway:"Baroudeur increvable",
-  legacyRespectedFigure:"Cadre reconnu du peloton mondial",
-  legacyRespectedWinner:"Vainqueur respecté",
-  legacyModestDomestique:"Modeste équipier, fidèle au peloton",
-  legacyLivingLegend:"Légende vivante du peloton",
-  legacyHeir:"Héritier de la gloire",
-};
+</script>
+<script src="data/legacy-title-fr.js"></script>
+<script>
 /* Retourne uniquement la clé (pas le texte résolu) — utilisée pour le stockage dans
    l'historique de session (CAREER_HISTORY), afin que le titre reste traduisible même
    après un changement de langue survenu après la fin de cette carrière. */
@@ -2959,10 +2912,9 @@ function statBarsHTML(stats, beforeStats){
   }).join('')}</div>`;
 }
 
-/* Pondération pour la note globale : les qualités les plus décisives pour gagner
-   (montagne, résistance, clm, classiques) comptent plus que le sprint (utile sur moins
-   de courses) ou la récupération/mental (effets plus indirects sur la performance brute). */
-const GLOBAL_RATING_WEIGHTS = {montagne:0.18, clm:0.15, classiques:0.15, resistance:0.16, sprint:0.12, recuperation:0.10, mental:0.14};
+</script>
+<script src="data/global-rating-weights.js"></script>
+<script>
 function globalRiderRating(stats){
   let sum = 0;
   STAT_KEYS.forEach(k=>{ sum += stats[k] * (GLOBAL_RATING_WEIGHTS[k]||0); });
@@ -3910,25 +3862,13 @@ function declineMentorRole(){
 <script src="data/rider-roles.js"></script>
 <script>
 
-/* Types de courses recommandées par rôle */
-const ROLE_RECOMMENDED_TYPES = {
-  'leader-gc':   ['grandtour','semitour'],
-  'leader-clas': ['monument','classique'],
-  'leader-spr':  ['classique','crit','semitour'],
-  'leader-clm':  ['semitour','grandtour'],
-  'equip-mont':  ['grandtour','semitour'],
-  'equip-poly':  [],
-};
+</script>
+<script src="data/role-recommended-types.js"></script>
+<script>
 
-/* Multiplicateurs salariaux par rôle */
-const ROLE_SALARY_MULT = {
-  'leader-gc':   1.8,
-  'leader-clas': 1.8,
-  'leader-spr':  1.8,
-  'leader-clm':  1.5,
-  'equip-mont':  1.0,
-  'equip-poly':  0.85,
-};
+</script>
+<script src="data/role-salary-mult.js"></script>
+<script>
 
 /* Calcule le rôle que propose une équipe à un coureur donné */
 /* Score de prestige qualitatif du palmarès :
@@ -4025,11 +3965,9 @@ function availableObjectives(rider){
 <script src="data/side-challenges.js"></script>
 <script>
 
-/* ---------- STAGE DE PRÉPARATION ----------
-   Une fois par saison, un stage optionnel permet de booster délibérément une qualité —
-   au prix d'un peu de fatigue, et le plus souvent d'un léger recul d'une qualité opposée :
-   on ne peut pas tout travailler à la fois, un vrai compromis de spécialisation. */
-const STAGE_PAIRS = {montagne:'sprint', sprint:'montagne', clm:'classiques', classiques:'clm', resistance:'recuperation', recuperation:'resistance', mental:null};
+</script>
+<script src="data/stage-pairs.js"></script>
+<script>
 
 /* ---------- ÉCRAN CONSOLIDÉ DE DÉBUT DE SAISON ----------
    Regroupe en un seul écran ce qui prenait auparavant 4-5 écrans successifs (priorité,
@@ -5247,45 +5185,9 @@ function convalescenceChoice(mode){
 <script src="data/rival-race-events.js"></script>
 <script>
 
-/* ---------- FEEDBACK NARRATIF DUEL RIVAL ----------
-   Affiché après le choix du joueur sur un event _isRivalEvent.
-   Segmenté selon le résultat (bon/mauvais) et le risk choisi. */
-const RIVAL_DUEL_FEEDBACK = {
-  good: {
-    sur: [
-      {fr:"Tu gères. {name} a tenté de faire l'écart mais tu as su placer tes relayeurs au bon moment — l'écart est resté contenu.", en:"{name} tried to break clear but your positioning was perfect. The gap never opened."},
-      {fr:"Lecture impeccable de la course. Tu n'as pas cédé à la provocation de {name}, et ça t'a payé.", en:"Flawless race reading. You didn't take {name}'s bait — and it paid off."},
-      {fr:"La prudence avait du sens ici. {name} avait l'air fort, mais tu l'as bien contenu.", en:"Caution made sense here. {name} looked strong, but you kept them in check."},
-    ],
-    equilibre: [
-      {fr:"Bon timing. Tu es resté dans la roue de {name} juste ce qu'il fallait — ni trop tôt, ni trop tard.", en:"Good timing. You stayed on {name}'s wheel just long enough — not too early, not too late."},
-      {fr:"Jeu d'équilibriste réussi. Tu as su doser ton effort face à {name} sans te découvrir.", en:"Perfectly balanced move. You measured your effort against {name} without overcommitting."},
-      {fr:"Décision équilibrée, résultat clair. {name} n'a pas réussi à t'isoler.", en:"Balanced call, clear result. {name} couldn't isolate you."},
-    ],
-    audacieux: [
-      {fr:"Pari gagnant. Tu as pris le contre-pied de {name} au moment où personne ne s'y attendait.", en:"Bold move, right call. You caught {name} off guard at exactly the right moment."},
-      {fr:"{name} ne t'a pas vu venir. L'audace a payé — le peloton va en parler.", en:"{name} didn't see it coming. The gamble paid off — the peloton will be talking about this."},
-      {fr:"Tu as pris le risque, et c'est passé. Face à {name}, il fallait oser.", en:"You took the risk, and it landed. Against {name}, you had to be bold."},
-    ],
-  },
-  bad: {
-    sur: [
-      {fr:"Trop sage, peut-être. {name} a pris de l'avance pendant que tu gérais — la prudence a un coût.", en:"Too cautious, maybe. {name} built a gap while you managed — caution has a price."},
-      {fr:"Tu t'es protégé, mais {name} en a profité pour prendre le large. L'écart va être difficile à combler.", en:"You protected yourself, but {name} used it to pull away. That gap will be hard to close."},
-      {fr:"Jouer la sécurité avait l'air raisonnable — mais {name} s'en est sorti mieux que toi.", en:"Playing it safe seemed reasonable — but {name} came out of it better than you."},
-    ],
-    equilibre: [
-      {fr:"La bonne intention, mais pas le bon moment. {name} avait une longueur d'avance sur toi dans cette séquence.", en:"Right instinct, wrong timing. {name} was a step ahead of you in this sequence."},
-      {fr:"L'équilibre n'a pas suffi. {name} a su faire la différence là où tu espérais limiter les dégâts.", en:"Balance wasn't enough. {name} made the difference exactly where you hoped to limit the damage."},
-      {fr:"Tu as bien essayé de tenir le cap, mais {name} t'a débordé sur cette phase.", en:"You tried to hold the line, but {name} got past you on this one."},
-    ],
-    audacieux: [
-      {fr:"L'audace ne passe pas à tous les coups. Cette fois-ci, {name} l'a vu venir et en a profité.", en:"Boldness doesn't always pay off. This time, {name} saw it coming and took advantage."},
-      {fr:"Trop risqué. Tu t'es découvert face à {name} et ça t'a coûté de l'énergie sans contrepartie.", en:"Too risky. You overcommitted against {name} and it cost you energy for nothing."},
-      {fr:"{name} t'attendait sur ce coup-là. L'attaque n'a pas surpris — elle a juste fatigué.", en:"{name} was waiting for that move. The attack didn't surprise — it just tired you out."},
-    ],
-  },
-};
+</script>
+<script src="data/rival-duel-feedback.js"></script>
+<script>
 
 function renderRivalDuelFeedback(){
   if(STATE) STATE._screen = 'rivalduel';
@@ -5489,16 +5391,9 @@ function beginRace(){
   }
 }
 
-/* Couleurs réelles des maillots annexes par grand tour (vérifiées) :
-   Tour de Gaule (TDF) : pois rouges (grimpeur) / vert (points) / blanc (jeune)
-   Giro dell'Impero (Giro) : bleu (grimpeur, maglia azzurra) / cyclamen (points, maglia ciclamino) / blanc (jeune)
-   Vuelta a Iberia (Vuelta) : pois bleus (grimpeur) / vert (points) / blanc (jeune)
-   Le maillot du meilleur jeune est blanc sur les 3 grands tours réels — pas de variation à faire dessus. */
-const GT_JERSEYS = {
-  tdf:    {kom:{icon:'🔴', label:'maillot à pois', labelEN:'polka dot jersey'},    points:{icon:'🟢', label:'maillot vert', labelEN:'green jersey'}},
-  giro:   {kom:{icon:'🔵', label:'maillot bleu', labelEN:'blue jersey'},       points:{icon:'🟣', label:'maillot cyclamen', labelEN:'cyclamen jersey'}},
-  vuelta: {kom:{icon:'🔵', label:'maillot à pois bleus', labelEN:'blue polka dot jersey'}, points:{icon:'🟢', label:'maillot vert', labelEN:'green jersey'}},
-};
+</script>
+<script src="data/gt-jerseys.js"></script>
+<script>
 function gtJerseys(raceId){
   const j = GT_JERSEYS[raceId] || GT_JERSEYS.tdf;
   if(SETTINGS.lang!=='en') return j;
@@ -6263,46 +6158,9 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
   `, true);
 }
 
-/* ---------- INTERVIEW D'APRÈS-COURSE ----------
-   Après une victoire marquante, un bref échange avec un journaliste fictif — le ton
-   choisi a un vrai effet différé : l'humilité rassure sans grand risque, la confiance
-   paie plus aujourd'hui mais se retourne contre le coureur si la course suivante n'est
-   pas au moins un podium (voir finalizeRace), et la pique enflamme un peu plus le
-   duel avec le rival croisé sur cette course, s'il y en avait un. */
-const INTERVIEW_REACTIONS_FR = {
-  humble: [
-    "Les commentateurs saluent ton humilité — « un vrai exemple pour la jeune génération ».",
-    "Le public apprécie ta modestie, même si certains regrettent un peu plus de panache.",
-    "Peu de bruit sur les réseaux, mais une sympathie tranquille qui s'installe durablement.",
-  ],
-  confiant: [
-    "Tes propos font le tour des réseaux — certains y voient de l'assurance, d'autres de la provocation.",
-    "Le ton confiant divise les commentateurs, mais personne ne reste indifférent.",
-    "Les paris s'enflamment sur les réseaux après cette déclaration osée.",
-  ],
-  piquant: [
-    "La pique fait immédiatement le buzz — les comptes rivaux s'en donnent à cœur joie dans les réponses.",
-    "Le milieu du cyclisme s'agite, entre ceux qui apprécient le culot et ceux qui s'en offusquent.",
-    "Tes mots enflamment la toile — pour le meilleur ou pour le pire.",
-  ],
-};
-const INTERVIEW_REACTIONS_EN = {
-  humble: [
-    "Commentators praise your humility — \"a real example for the younger generation\".",
-    "The public appreciates your modesty, though some wish for a bit more flair.",
-    "Not much noise online, but a quiet, lasting sympathy builds up.",
-  ],
-  confiant: [
-    "Your words spread fast online — some read confidence, others provocation.",
-    "The confident tone divides the commentators, but nobody stays indifferent.",
-    "Betting odds shift online after that bold statement.",
-  ],
-  piquant: [
-    "The jab instantly goes viral — rival accounts have a field day in the replies.",
-    "The cycling world stirs, split between those who admire the nerve and those offended by it.",
-    "Your words set social media alight — for better or worse.",
-  ],
-};
+</script>
+<script src="data/interview-reactions.js"></script>
+<script>
 function interviewReaction(choice){
   const pool = (SETTINGS.lang==='en' ? INTERVIEW_REACTIONS_EN : INTERVIEW_REACTIONS_FR)[choice] || [];
   return pool[Math.floor(Math.random()*pool.length)] || '';
