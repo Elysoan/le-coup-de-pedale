@@ -499,62 +499,9 @@ COUNTRIES.forEach(c=>{
 </script>
 <script src="data/i18n.js"></script>
 <script>
-function t(key){
-  const lang = SETTINGS.lang || 'fr';
-  if(lang==='en' && I18N.en[key] !== undefined) return I18N.en[key];
-  return null; // signale a l'appelant de retomber sur le texte francais en dur
-}
-/* Petit raccourci pour les endroits ou on veut : traduction si dispo, sinon la valeur
-   française déjà écrite en dur passée en 2e argument. */
-function tf(key, frText){
-  const v = t(key);
-  return v===null ? frText : v;
-}
-function setLang(lang){
-  SETTINGS.lang = lang;
-  applySettings();
-  saveSettings();
-  if(STATE && STATE.rider){ rerenderCurrentScreenForLang(); } else { renderMainMenu(); }
-}
-/* Depuis l'écran Réglages (accessible avec ou sans carrière en cours, contrairement à
-   setLang() ci-dessus qui suppose venir du menu principal ou d'un écran de run
-   suivi) : on reste simplement sur Réglages plutôt que de sauter ailleurs. */
-function setLangFromSettings(lang){
-  SETTINGS.lang = lang;
-  applySettings();
-  saveSettings();
-  renderSettingsScreen(true);
-}
-/* Redessine l'écran courant après un changement de langue en cours de partie, sur le
-   même principe que resumeSlot (dispatch par nom d'écran). */
-function rerenderCurrentScreenForLang(){
-  const screen = STATE._screen;
-  if(screen==='seasonsetup') renderSeasonSetupScreen();
-  else if(screen==='mentoroffer') renderMentorOffer();
-  else if(screen==='convalescence') renderConvalescenceScreen(STATE.runQueue[STATE.runRaceIdx]);
-  else if(screen==='calendar') renderCalendarScreen();
-  else if(screen==='rolechoice') renderRoleChoice(STATE.runQueue[STATE.runRaceIdx]);
-  else if(screen==='nextracebchoice') beginRaceOrFinish();
-  else if(screen==='currentevent') renderCurrentEvent();
-  else if(screen==='styleconfirm') renderStyleConfirmEvent(detectRiderProfile(STATE.rider)||STATE.rider.styleId);
-  else if(screen==='trajectorychoice') renderTrajectoryChoice();
-  else if(screen==='worldevents') renderWorldEventsScreen();
-  else if(screen==='pivotevent' && STATE._pendingPivot) renderPivotEvent(STATE._pendingPivot);
-  else if(screen==='seasonrecap' && STATE.seasonRecapData) renderSeasonRecap();
-  else if(screen==='contractscreen') renderContractScreen();
-  else if(screen==='personalevent' && STATE.pendingPersonalEvent) renderPersonalEvent();
-  else if(screen==='cancelrace') renderCancelRaceScreen();
-  else if(STATE.runQueue && STATE.runQueue.length) renderCalendarScreen();
-  else renderSeasonSetupScreen();
-}
-/* Réglages/Journal ouverts en cours de run (via NAV_RETURN_TO='inrun') ne touchent
-   jamais STATE._screen tant qu'ils sont affichés — sinon le "retour" perdrait la trace
-   du véritable écran de jeu sous-jacent. STATE._navReturnScreen capture ce nom d'écran
-   juste avant l'ouverture ; ce helper le restaure avant de redessiner. */
-function restoreNavReturnScreen(){
-  if(STATE && STATE._navReturnScreen) STATE._screen = STATE._navReturnScreen;
-  rerenderCurrentScreenForLang();
-}
+</script>
+<script src="screens/lang.js"></script>
+<script>
 
 </script>
 <script src="data/stat-labels.js"></script>
@@ -570,12 +517,9 @@ const STAT_LABELS = new Proxy(STAT_LABELS_FR, {
 <script src="data/name-pools.js"></script>
 <script>
 
-function generateRiderName(countryCode){
-  const pool = NAME_POOLS[countryCode] || NAME_POOLS.FR;
-  const f = pool.first[Math.floor(Math.random()*pool.first.length)];
-  const l = pool.last[Math.floor(Math.random()*pool.last.length)];
-  return `${f} ${l}`;
-}
+</script>
+<script src="lib/rider-generation.js"></script>
+<script>
 
 /* ---------- RIVAUX ---------- */
 
@@ -594,11 +538,6 @@ function generateRiderName(countryCode){
 const TEAMMATE_ARCHETYPE_LABELS = new Proxy(TEAMMATE_ARCHETYPE_LABELS_FR, {
   get(target, prop){ const v = t('arch_'+prop); return v!==null ? v : target[prop]; }
 });
-function generateTeammate(){
-  const archetype = TEAMMATE_ARCHETYPES[Math.floor(Math.random()*TEAMMATE_ARCHETYPES.length)];
-  const country = COUNTRIES[Math.floor(Math.random()*COUNTRIES.length)];
-  return {name: generateRiderName(country.code), countryCode: country.code, archetype, bond:50};
-}
 
 </script>
 <script src="data/teammate-events.js"></script>
@@ -614,33 +553,9 @@ function generateTeammate(){
    Une carrière longue et solide en WorldTour/Équipe de légende peut cumuler plusieurs
    millions d'euros (salaires + primes) sur une pleine carrière — un vrai jalon, réservé
    aux carrières qui montent vraiment en gamme, pas un simple palier de mi-carrière. */
-function salaryForSeason(rider){
-  const tierBase = {'Continentale':8000, 'ProTeam':18000, 'WorldTour':38000, 'Équipe de légende':70000}[currentTeam(rider).tier] || 8000;
-  const repBonus = Math.pow(rider.reputation / 100, 1.6) * 80000;
-  const roleMult = ROLE_SALARY_MULT[rider.role] || 1.0;
-  return Math.round((tierBase + repBonus) * roleMult);
-}
-
-/* Prime individuelle de course selon le prestige de l'épreuve et le résultat obtenu. */
-function prizeForResult(race, bestTier){
-  const tv = Math.max(0, TIER_VALUE[bestTier] ?? 0);
-  return Math.round(race.prestige * tv * 350);
-}
-
-/* Prime de classement par équipes : existe sur (presque) toutes les courses par étapes,
-   mais compte moins sur les grands tours (où la gloire individuelle domine) que sur les
-   courses secondaires. Dépend de la forme collective (confiance d'équipe). */
-function checkTeamVictory(race, bestTier){
-  if(bestTier==='abandon' || bestTier==='forfait') return 0;
-  if(race.type==='monument' || race.type==='classique' || race.type==='crit' || race.type==='champ') return 0; // pas de classement par equipes sur les courses d'un jour / championnats
-  const baseChance = race.type==='grandtour' ? 0.10 : 0.22;
-  const teamFactor = 0.5 + (STATE.rider.teamConfidence/100);
-  if(Math.random() >= baseChance*teamFactor) return 0;
-  const _moneyMult = (STATE.seasonWorldMods && STATE.seasonWorldMods.moneyBonus) || 1;
-  const bonus = Math.round((race.type==='grandtour' ? 2200 : 1000) * (0.7+Math.random()*0.6) * _moneyMult);
-  STATE.rider.money += bonus;
-  return bonus;
-}
+</script>
+<script src="lib/economy.js"></script>
+<script>
 
 </script>
 <script src="data/teams.js"></script>
@@ -673,30 +588,9 @@ STYLES.forEach(s=>{
 </script>
 <script src="data/style-badge-icons.js"></script>
 <script>
-function styleBadgeHTML(styleId){
-  const [c1,c2] = STYLE_BADGE_COLORS[styleId] || ['var(--text-soft)','var(--text-soft)'];
-  return `<div class="style-badge" style="background:linear-gradient(135deg, ${c1}, ${c2});">
-    <svg viewBox="0 0 24 24" width="26" height="26">${STYLE_BADGE_ICONS[styleId]||''}</svg>
-  </div>`;
-}
-
-/* Retourne true si la course est dans le domaine de prédilection du style du coureur.
-   Utilisé pour le bonus de perf et le badge ⭐ dans le calendrier. */
-function raceMatchesStyle(race, styleId){
-  const style = STYLES.find(s=>s.id===styleId);
-  if(!style) return false;
-  if(style.id==='polyvalent') return false; // le polyvalent n'a pas de bonus ciblé
-  // Match sur le type de course
-  const typeMatch = style.raceTypes.includes(race.type);
-  // Le sprinteur et le puncheur matchent sur le type seul (leurs stat clés — sprint/classiques —
-  // ne sont pas dans le focus des events mais c'est bien leur terrain de prédilection)
-  if(style.id === 'sprinteur' || style.id === 'puncheur') return typeMatch;
-  // Pour les autres profils : match sur type ET sur au moins une stat focus présente dans les events
-  const focusStats = new Set();
-  if(race.events) race.events.forEach(e=>{ if(e.focus) e.focus.forEach(f=>focusStats.add(f)); });
-  const focusMatch = style.raceFocus.length === 0 || style.raceFocus.some(f=>focusStats.has(f));
-  return typeMatch && focusMatch;
-}
+</script>
+<script src="lib/style-helpers.js"></script>
+<script>
 
 </script>
 <script src="data/races.js"></script>
@@ -704,31 +598,9 @@ function raceMatchesStyle(race, styleId){
 
 /* Choisit une variante aléatoire pour un évènement donné (permet de rejouer une même
    course d'une saison à l'autre sans retomber systématiquement sur le même scénario). */
-function pickVariant(def){
-  const v = def.variants[Math.floor(Math.random()*def.variants.length)];
-  const event = {focus:def.focus};
-  Object.defineProperty(event, 'title', {enumerable:true, get(){ return (SETTINGS.lang==='en' && v.titleEN) ? v.titleEN : v.title; }});
-  Object.defineProperty(event, 'desc', {enumerable:true, get(){ return (SETTINGS.lang==='en' && v.descEN) ? v.descEN : v.desc; }});
-  event.choices = def.choices.map(c => {
-    const choice = {risk:c.risk, tilt:c.tilt};
-    Object.defineProperty(choice, 'label', {enumerable:true, get(){ return (SETTINGS.lang==='en' && c.labelEN) ? c.labelEN : c.label; }});
-    return choice;
-  });
-  return event;
-}
-
-function RACES_DATA(){
-  return RACE_DEFS().map(r => {
-    let defs = r.eventDefs;
-    if(r.sampleWeeks && defs.length > r.sampleWeeks){
-      defs = shuffleArr(defs.slice()).slice(0, r.sampleWeeks);
-    }
-    const race = {...r, events: defs.map(pickVariant)};
-    const frName = race.name;
-    Object.defineProperty(race, 'name', {enumerable:true, get(){ const v = t('race_'+race.id); return v!==null ? v : frName; }});
-    return race;
-  });
-}
+</script>
+<script src="lib/race-data.js"></script>
+<script>
 
 </script>
 <script src="data/tier-order.js"></script>
@@ -781,55 +653,6 @@ const RISK_LABEL = new Proxy(RISK_LABEL_FR, {
 
 let STATE = null;
 
-function computeBaseStats(styleId){
-  const style = STYLES.find(s=>s.id===styleId);
-  const base = {montagne:40, sprint:40, clm:40, classiques:40, resistance:45, recuperation:45, mental:50};
-  const stats = {};
-  STAT_KEYS.forEach(k=>{
-    stats[k] = clamp(base[k] + (style.bonus[k]||0), 15, 90);
-  });
-  return stats;
-}
-
-function newRider(name, countryCode, styleId){
-  const stats = computeBaseStats(styleId);
-  return {
-    name: name || 'Coureur inconnu',
-    countryCode, styleId,
-    age: 19 + Math.floor(Math.random()*3),
-    stats,
-    reputation: 8,
-    teamId: starterTeamFor(styleId).id,
-    rareTrophiesAtStart: Array.from(UNLOCKED).filter(id=>{ const a=ACHIEVEMENTS.find(x=>x.id===id); return a && a.rare; }),
-    teamConfidence: 55,
-    contractYearsLeft: 2,
-    teamChanges: 0,
-    fatigue: 0,
-    season: 1,
-    money: 1500,
-    palmares: [],
-    careerFlags: {},
-    trajectory: null,
-    seasonLog: [],
-    retired: false,
-    isNationalChampion: false,
-    nationalTitles: 0,
-    olympicGold: 0,
-    stageWins: 0,
-    sponsor: null,
-    pendingConfidentBet: false,
-    teammate: null,
-    journal: [],
-    isMentor: false,
-    mentorOfferDeclined: false,
-    worldRank: 450,
-    fame: 20,
-    olympicSilver: 0,
-    olympicBronze: 0,
-    olympicSelections: 0,
-    role: null,
-  };
-}
 
 </script>
 <script src="lib/utils.js"></script>
@@ -839,46 +662,13 @@ function newRider(name, countryCode, styleId){
 <script src="lib/eligibility.js"></script>
 <script>
 
-function pickRaceOffers(){
-  const all = RACES_DATA();
-  const rider = STATE.rider;
-  const core = all.filter(r => (r.type==='grandtour' || r.type==='monument' || r.type==='champ') && !r.olympic);
-  core.forEach(r=>{
-    const access = raceAccessCheck(r, rider);
-    r.locked = !access.allowed;
-    r.lockReason = access.reason;
-  });
-  const rotatingPool = all.filter(r => r.type==='semitour' || r.type==='crit' || r.type==='classique');
-  let offered = core.concat(rotatingPool); // toutes les courses disponibles chaque saison
-  if(isOlympicSeason(rider) && Math.random() < olympicSelectionChance(rider)){
-    const jo = all.find(r=>r.olympic);
-    if(jo){
-      offered.push(jo);
-      rider.olympicSelections = (rider.olympicSelections||0) + 1;
-    }
-  }
-  return offered.sort((a,b)=>a.month-b.month);
-}
+</script>
+<script src="lib/season-prep.js"></script>
+<script>
 
 </script>
 <script src="data/buzz-chance-by-prestige.js"></script>
 <script>
-function assignSeasonBuzz(pool){
-  pool.forEach(race=>{ race.buzz = false; });
-  const eligible = pool
-    .filter(race=>!race.locked)
-    .map(race=>({race, roll:Math.random()}))
-    .filter(({race, roll})=>roll < (BUZZ_CHANCE_BY_PRESTIGE[race.prestige]||0.03));
-  eligible
-    .sort((a,b)=>(b.race.prestige-a.race.prestige) || (b.roll-a.roll))
-    .slice(0,3)
-    .forEach(({race})=>{ race.buzz = true; });
-}
-
-function statFocusAverage(rider, focus){
-  const vals = focus.map(k=>rider.stats[k]);
-  return vals.reduce((a,b)=>a+b,0)/vals.length;
-}
 
 </script>
 <script src="data/weather-types.js"></script>
@@ -891,234 +681,17 @@ WEATHER_TYPES.forEach(w=>{
 <script src="lib/weather.js"></script>
 <script>
 
-function resolveEvent(rider, event, choice, weatherId, racePrestige, isGrandTour, isHomeRace, isSignatureRace, raceType){
-  const statAvg = statFocusAverage(rider, event.focus);
-  const forme = clamp(100 - rider.fatigue*0.75 + (Math.random()*16-8), 5, 100);
-  /* Les stats pèsent plus lourd qu'avant (0.62 contre 0.55), la part de forme du jour et
-     de mental un peu moins — un coureur avec de meilleures stats doit gagner plus souvent,
-     sans que le résultat ne devienne pour autant totalement déterministe. */
-  let base = statAvg*0.62 + forme*0.26 + rider.stats.mental*0.12;
-  if(weatherId) base += weatherPerfModifier(weatherId, event.focus);
-
-  /* Ferveur du public à domicile : courir dans son propre pays donne un léger coup de
-     fouet mental, un classique du cyclisme (cf. l'avantage constaté des coureurs locaux
-     sur les classiques de leur pays). Effet modeste, jamais décisif à lui seul. */
-  if(isHomeRace) base += 3;
-
-  /* Course de cœur : celle choisie librement en début de carrière comme objectif
-     personnel. Un supplément d'envie modeste, comparable à la ferveur du public à
-     domicile — un attachement affectif qui peut se cumuler avec la ferveur locale. */
-  if(isSignatureRace) base += 3;
-
-  /* Spécialité de signature : le style du coureur correspond au profil de la course —
-     grimpeur sur un grand tour de montagne, sprinteur sur une classique rapide, etc.
-     Bonus significatif mais pas écrasant : un spécialiste gagne plus souvent sur son
-     terrain sans rendre les autres courses sans intérêt. */
-  if(rider.styleId && raceType){
-    const _raceProxy = {type: raceType, events: [event]};
-    if(raceMatchesStyle(_raceProxy, rider.styleId)) base += 5;
-  }
-
-  /* Bonus de faim : coureur qui a refusé de raccrocher (pivot S9) — regain de motivation
-     sur les 2 saisons suivant le refus. */
-  if(rider.careerFlags && rider.careerFlags.hungerBonus){
-    if(rider.season <= rider.careerFlags.hungerBonus + 2) base += 6;
-  }
-
-  /* Trajectoire de carrière :
-     - Spécialiste : +12% sur les courses de sa spécialité (type + focus matching)
-     - Globetrotter : pas de bonus perf direct (compensé par l'accès aux équipes)
-     - Leader : +5% sur les courses imposées par l'équipe */
-  if(rider.trajectory === 'specialiste' && raceType){
-    const _raceProxyTraj = {type: raceType, events: [event]};
-    if(raceMatchesStyle(_raceProxyTraj, rider.styleId)) base *= 1.12;
-  }
-  if(rider.trajectory === 'leader' && STATE && STATE.imposedRaceIds && raceType){
-    // Identifier si la course en cours est une course imposée
-    const _currentRace = STATE.runQueue && STATE.runQueue[STATE.runRaceIdx];
-    if(_currentRace && STATE.imposedRaceIds.includes(_currentRace.id)) base *= 1.05;
-  }
-
-  /* Sur les courses prestigieuses (monuments, grands tours...), un coureur très jeune
-     n'a statistiquement presque jamais course la victoire dans la réalité (le plus jeune
-     vainqueur de Paris-Roubaix depuis 1950 avait 22 ans) — un frein progressif s'applique
-     avant 24 ans, proportionnel au prestige de la course, sans jamais rendre la victoire
-     strictement impossible. */
-  if(racePrestige >= 3 && rider.age < 24){
-    const yearsUnder = 24 - rider.age;
-    const prestigeMult = racePrestige >= 4 ? 1 : 0.5;
-    base -= yearsUnder * 4 * prestigeMult;
-  }
-
-  /* Un grand tour se joue aussi sur l'expérience spécifique de courir 3 semaines
-     d'affilée (gestion de la fatigue cumulée, du rythme, des étapes) — indépendamment
-     de l'âge. Un coureur à son tout premier grand tour de carrière est freiné, un peu
-     moins au deuxième, plus du tout à partir du troisième. */
-  if(isGrandTour){
-    const priorGrandTours = rider.palmares.filter(p=>p.type==='grandtour').length;
-    if(priorGrandTours < 2){
-      base -= (2 - priorGrandTours) * 5;
-    }
-  }
-
-  /* Malus d'inexpérience : un coureur de S1-S3 est encore en rodage — il ne sait pas
-     lire une course, se positionner, gérer la pression. Ce malus disparaît progressivement
-     sur 4 saisons et ne s'applique plus à partir de la S4. Volontairement modéré pour
-     qu'un débutant garde une vraie chance de victoire sur une course facile dès la S1
-     (cf. les seuils de victoire par prestige plus bas).
-     S1 : -10, S2 : -5, S3 : -2, S4+ : 0 */
-  const season = rider.season || 1;
-  if(season === 1) base -= 10;
-  else if(season === 2) base -= 5;
-  else if(season === 3) base -= 2;
-  // S4+ : plus de malus — la progression naturelle des stats prend le relais.
-
-  let perf, spread;
-  if(choice.risk==='sur'){ perf = base*0.92; spread = 5; }
-  else if(choice.risk==='audacieux'){ perf = base*1.08; spread = 18; }
-  else if(choice.risk==='loufoque'){ perf = 35 + statAvg*0.25; spread = 32; }
-  else { perf = base; spread = 11; }
-
-  /* La variance se resserre modérément sur les courses les plus prestigieuses (le résultat
-     y reflète davantage le niveau réel), sans jamais l'écraser complètement — une partie
-     non négligeable de hasard doit rester, certaines carrières décollent vite, d'autres non. */
-  if(racePrestige >= 4) spread *= 0.72;
-  else if(racePrestige === 3) spread *= 0.86;
-
-  perf += (Math.random()*2-1)*spread;
-  perf = clamp(perf, 0, 118);
-
-  /* Les seuils victoire et podium varient selon le prestige de la course.
-     Gagner une petite course (prestige 1) est plus accessible qu'un monument (prestige 5),
-     ce qui permet à un débutant de décrocher une victoire sur une course facile dès la S1,
-     tout en gardant les Grands Tours et monuments hors de portée sans une vraie progression.
-     Victoire : P1=64, P2=70, P3=76, P4=82, P5=88
-     Podium   : P1=60, P2=64, P3=68, P4=70, P5=72 */
-  const _wm3 = (typeof STATE !== 'undefined' && STATE && STATE.seasonWorldMods) || {};
-  const _competUp = _wm3.competitionUp || 0;
-  /* Seuils de victoire par prestige. P1 à 67 (vs 70) pour que les jeunes puissent
-     gagner dès la S1-S2 sur petites courses ; P2 à 72 pour qu'un coureur mid-carrière
-     avec stats ~60 y accède raisonnablement. P5 (monuments, GT) inchangé à 88. */
-  const _vicTable = [0,67+_competUp,72+_competUp,77+_competUp,82+_competUp,88+_competUp];
-  const _podTable = [0,67,69,71,71,72];
-  const vicSeuil = (racePrestige && _vicTable[racePrestige]) ? _vicTable[racePrestige] : 88+_competUp;
-  const podSeuil = (racePrestige && _podTable[racePrestige]) ? _podTable[racePrestige] : 72;
-  let tier;
-  if(perf>=vicSeuil) tier='victoire';
-  else if(perf>=podSeuil) tier='podium';
-  else if(perf>=55) tier='top10';
-  else if(perf>=32) tier='peloton';
-  else tier='jourssans';
-
-  if(perf<20 && rider.fatigue>65 && Math.random()<0.22) tier='abandon';
-
-  let trained = null;
-  /* Progression des stats en course : les jeunes progressent plus vite, mais
-     un coureur expérimenté continue d'affiner ses qualités jusqu'à 33 ans.
-     Tranche 28-33 : probabilité réduite (20% vs 35%) et gain plus faible (0.2-0.4). */
-  if(TIER_VALUE[tier]>=2){
-    const trainProba = rider.age<=27 ? 0.35 : rider.age<=33 ? 0.20 : 0;
-    if(Math.random() < trainProba){
-      const gainAmt = rider.age<=27 ? (0.4+Math.random()*0.5) : (0.2+Math.random()*0.2);
-      const k = event.focus[Math.floor(Math.random()*event.focus.length)];
-      rider.stats[k] = clamp(rider.stats[k] + gainAmt, 15, 99);
-      trained = k;
-    }
-  }
-
-  /* Un choix risqué (audacieux ou loufoque) qui tourne mal peut aussi coûter un peu de
-     stat, pas seulement ne rien rapporter : surmenage, déconvenue physique ou morale. */
-  let detrained = null;
-  if((tier==='jourssans' || tier==='abandon') && (choice.risk==='audacieux' || choice.risk==='loufoque') && Math.random()<0.3){
-    const k = event.focus[Math.floor(Math.random()*event.focus.length)];
-    rider.stats[k] = clamp(rider.stats[k] - (0.4+Math.random()*0.6), 10, 99);
-    detrained = k;
-  }
-
-  return {tier, perf: Math.round(perf), trained, detrained};
-}
+</script>
+<script src="lib/race-resolution.js"></script>
+<script>
 
 
 </script>
 <script src="data/risk-fatigue-mult.js"></script>
 <script>
-function applyFatigue(rider, race, choice, weatherId){
-  /* Récupération individuelle : réduit l'accumulation de base */
-  const reduc = 1 - (rider.stats.recuperation/280);
-  /* Résistance : amortit l'impact de la difficulté sur les longues courses */
-  const resistanceFactor = 1 - clamp((rider.stats.resistance - 50) / 150, -0.2, 0.35);
-  /* Surcharge calendaire : au-delà de 45 jours courus, chaque jour supplémentaire
-     fatigue davantage — l'organisme ne récupère plus aussi bien entre les efforts.
-     Plus agressif qu'avant : 0.025 par jour (vs 0.018) pour que 65 jours de course
-     soit vraiment éprouvant. */
-  const daysSoFar = STATE.cumulativeDaysRaced || 0;
-  const overloadWear = daysSoFar > 45 ? 1 + (daysSoFar - 45) * 0.025 : 1;
-  /* Intensité selon durée : une étape de 21 jours coûte 45% de plus qu'une course d'un jour */
-  const intensity = 1 + Math.min(race.days, 21) / 21 * 0.45;
-  /* Prestige = peloton plus fort, course plus sélective, rythme plus élevé */
-  const prestigeFactor = 1 + (race.prestige - 1) * 0.12;
-  /* Proximité calendaire : deux courses dans le même mois (gap ≤ 0) ou très rapprochées
-     (gap = 1 semaine en pratique) génèrent une fatigue supplémentaire car la récupération
-     est incomplète. Ce facteur est calculé depuis STATE pour la course précédente. */
-  const prevRace = STATE.runQueue && STATE.runRaceIdx > 0 ? STATE.runQueue[STATE.runRaceIdx - 1] : null;
-  let proximityMult = 1;
-  if(prevRace){
-    const gap = race.month - prevRace.month;
-    if(gap <= 0) proximityMult = 1.25;      // même mois : +25% de fatigue
-    else if(gap === 1) proximityMult = 1.10; // mois suivant : +10%
-  }
-  const riskMult = choice ? (RISK_FATIGUE_MULT[choice.risk] || 1) : 1;
-  const weatherMult = weatherId ? weatherFatigueMult(weatherId) : 1;
-  /* Trajectoire Spécialiste : pénalité si trop de courses (>8 dans la saison).
-     Le spécialiste est taillé pour les grands rendez-vous, pas pour courir partout. */
-  const racesCount = STATE && STATE.runQueue ? STATE.runQueue.length : 0;
-  const specialistePenalty = (rider.trajectory === 'specialiste' && racesCount > 8) ? 1.15 : 1;
-  /* World events : modificateurs saisonniers de fatigue */
-  const _wm = (STATE && STATE.seasonWorldMods) || {};
-  let worldFatMult = 1;
-  if(_wm.globalFatigueReduction) worldFatMult *= _wm.globalFatigueReduction;
-  if(_wm.globalFatigueBoost) worldFatMult *= _wm.globalFatigueBoost;
-  if(_wm.julyFatigue && race.month === 7) worldFatMult *= _wm.julyFatigue;
-  if(_wm.springFatigue && race.month >= 3 && race.month <= 4 && (race.type === 'monument' || race.type === 'classique')) worldFatMult *= _wm.springFatigue;
-  /* Important : diviser par le nombre RÉEL d'events de cette course (canoniques +
-     phases bonus + event rival), pas seulement les canoniques (_baseEventCount, qui
-     sert uniquement à l'affichage du compteur de jours). Sinon les phases bonus/rival
-     ajoutent un coût de fatigue plein sans être comptées dans le diviseur, et la
-     fatigue totale de la course dépasse largement son fatCost prévu. */
-  const canonicalEvents = (race.events && race.events.length) || race._baseEventCount || 1;
-  const cost = (race.fatCost / canonicalEvents) * reduc * resistanceFactor * overloadWear * intensity * prestigeFactor * proximityMult * riskMult * weatherMult * specialistePenalty * worldFatMult;
-  rider.fatigue = clamp(rider.fatigue + cost, 0, 100);
-  /* Tracker le pic de fatigue saisonnière pour le défi fatigue-maitrisee */
-  if(STATE && rider.fatigue > (STATE._seasonMaxFatigue||0)) STATE._seasonMaxFatigue = rider.fatigue;
-}
-
-/* Récupération passive entre deux courses du calendrier, selon l'écart de mois et la
-   capacité de récupération du coureur. Cette récupération devient moins efficace à mesure
-   que le cumul réel de jours courus augmente, et sortir d'une course longue (typiquement
-   un grand tour) laisse une fatigue résiduelle qui résiste davantage à la récupération
-   qu'une simple accumulation de petites courses. */
-function applyInterRaceRecovery(rider, prevRace, nextRace){
-  if(!prevRace) return;
-  let gap = nextRace.month - prevRace.month;
-  if(gap < 0) gap += 12;
-  const daysSoFar = STATE.cumulativeDaysRaced || 0;
-  /* seasonFactor : la récupération devient moins efficace en fin de saison.
-     Plus agressif qu'avant (0.009 vs 0.007) et plancher à 0.25 (vs 0.3). */
-  const seasonFactor = clamp(1 - daysSoFar * 0.009, 0.25, 1);
-  /* Après un grand tour ou un semi-tour long (>14j), la fatigue résiduelle
-     résiste davantage à la récupération — l'organisme a vraiment souffert. */
-  const prevRaceDepth = 1 - Math.min(prevRace.days, 21) / 21 * 0.40;
-  /* Gap non-linéaire : même mois = presque pas de récupération possible.
-     1 mois ≈ 14 pts, 2 mois ≈ 33 pts, 3 mois ≈ 55 pts (légèrement réduit vs avant). */
-  const gapFactor = gap > 0 ? Math.pow(gap, 1.4) : 0;
-  const recovery = gapFactor * (11 + rider.stats.recuperation / 11) * seasonFactor * prevRaceDepth;
-  rider.fatigue = clamp(rider.fatigue - recovery, 0, 100);
-  /* Plancher saisonnier : l'accumulation de fatigue de fond ne peut pas être
-     effacée — même avec deux mois de repos, un coureur à 60j de course garde
-     une fatigue résiduelle. */
-  const seasonFloor = Math.min(45, daysSoFar * 1.0);
-  rider.fatigue = Math.max(rider.fatigue, seasonFloor);
-}
+</script>
+<script src="lib/fatigue.js"></script>
+<script>
 
 </script>
 <script src="lib/injury-risk.js"></script>
@@ -1130,22 +703,9 @@ function applyInterRaceRecovery(rider, prevRace, nextRace){
 /* Libellé de cause de blessure calculé à la demande (pas figé au moment de la blessure) —
    pour rester juste même si la langue est changée entre la blessure et l'affichage du
    résultat, plusieurs écrans plus tard. */
-function causeLabelFor(cause){
-  return cause==='chute' ? `💥 ${tf('fallWord','Chute')}` : `🥵 ${tf('overexertionWord','Surmenage')}`;
-}
-
-function handleInjury(cause, race, precomputedEntry){
-  STATE.hadInjuryThisSeason = true;
-  const causeLabel = causeLabelFor(cause);
-  const entry = precomputedEntry || {
-    title:causeLabel, choiceLabel:tf('bodyDoneRest','Corps à bout, le staff médical impose le repos'),
-    risk:'sur', tier:'abandon', perf:0, trained:null
-  };
-  STATE.runRaceAccum.push(entry);
-  STATE.rider.fatigue = clamp(STATE.rider.fatigue + (cause==='chute' ? 12 : 6), 0, 100);
-  STATE.pendingInjury = {severity: injurySeverity(STATE.rider, cause), cause, causeLabel};
-  finalizeRace();
-}
+</script>
+<script src="lib/injury.js"></script>
+<script>
 
 
 </script>
@@ -1168,25 +728,9 @@ function handleInjury(cause, race, precomputedEntry){
 </script>
 <script src="lib/starter-team.js"></script>
 <script>
-function offersForRider(rider){
-  const current = currentTeam(rider);
-  /* Globetrotter : sa visibilité internationale lui ouvre les portes plus vite.
-     Évènement mondial "Équipe rivale en crise" : +1 rang de recrutement supplémentaire
-     pour la saison, comme annoncé par son texte. */
-  const _wmRecruit = (typeof STATE !== 'undefined' && STATE && STATE.seasonWorldMods && STATE.seasonWorldMods.recruitmentBonus) || 0;
-  const tierBonus = (rider.trajectory === 'globetrotter' ? 2 : 1) + _wmRecruit;
-  const maxTierIdx = TEAM_TIER_ORDER[current.tier] + tierBonus;
-  const eligible = TEAMS.filter(t=> t.minRep <= rider.reputation + 10 && TEAM_TIER_ORDER[t.tier] <= maxTierIdx);
-  const renewed = rider.teamConfidence >= 28 && eligible.includes(current);
-  let offers = renewed ? [current] : [];
-  const others = shuffleArr(eligible.filter(t=>t.id!==current.id)).sort((a,b)=>b.minRep-a.minRep);
-  for(const t of others){
-    if(offers.length>=3) break;
-    offers.push(t);
-  }
-  if(offers.length===0) offers.push(TEAMS[0]);
-  return offers.slice(0,3);
-}
+</script>
+<script src="lib/transfers.js"></script>
+<script>
 
 /* ---------- HISTORIQUE DES CARRIÈRES (mémoire de session) ---------- */
 
@@ -1195,12 +739,9 @@ let CAREER_HISTORY = [];
 /* ---------- ALMANACH DE LÉGENDE (meilleur résultat par course, toutes carrières confondues) ---------- */
 
 let RACE_RECORDS = {};
-function recordGlobalRaceResult(race, tier, rider){
-  const existing = RACE_RECORDS[race.id];
-  if(!existing || TIER_VALUE[tier] > TIER_VALUE[existing.tier]){
-    RACE_RECORDS[race.id] = {tier, riderName: rider.name, season: rider.season};
-  }
-}
+</script>
+<script src="lib/race-records.js"></script>
+<script>
 
 /* ---------- CLASSEMENT MONDIAL (backend Cloudflare Worker, optionnel) ----------
    Le Worker se déploie séparément (voir worker/README.md) et son URL vient remplacer
@@ -1234,58 +775,9 @@ let LAST_LEADERBOARD_ERROR = null; // 'offline' | 'server'
 <script src="lib/career-legacy.js"></script>
 <script>
 
-function recordCareer(rider){
-  const wins = rider.palmares.filter(p=>p.tier==='victoire').length;
-  const podiums = rider.palmares.filter(p=>p.tier==='podium').length;
-  // Victoires par type de course
-  const winsByType = {};
-  rider.palmares.filter(p=>p.tier==='victoire').forEach(p=>{
-    const race = RACES_DATA().find(r=>r.id===p.raceId);
-    const type = race ? race.type : 'autre';
-    winsByType[type] = (winsByType[type]||0) + 1;
-  });
-  // Podiums par type de course
-  const podiumsByType = {};
-  rider.palmares.filter(p=>p.tier==='podium').forEach(p=>{
-    const race = RACES_DATA().find(r=>r.id===p.raceId);
-    const type = race ? race.type : 'autre';
-    podiumsByType[type] = (podiumsByType[type]||0) + 1;
-  });
-  // Meilleur classement mondial atteint (le pic réel, pas le classement au moment de l'arrêt)
-  const bestRank = rider.peakWorldRank || rider.worldRank || 450;
-  // Evaluation du defi si mode defi actif
-  const cr = window._creation || {};
-  let challengeResult = null;
-  if(cr.challengeMode && cr.challengeObj){
-    try { challengeResult = cr.challengeObj.check(rider) ? 'success' : 'fail'; } catch(e){ challengeResult = 'fail'; }
-  }
-  CAREER_HISTORY.push({
-    name: rider.name,
-    countryCode: rider.countryCode,
-    styleId: rider.styleId,
-    seasons: rider.season - 1,
-    retireAge: rider.age,
-    wins, podiums,
-    winsByType, podiumsByType,
-    stageWins: rider.stageWins || 0,
-    bestRank,
-    finalReputation: Math.round(rider.reputation),
-    finalTeam: currentTeam(rider).name,
-    title: legacyTitleKey(rider),
-    challengeMode: cr.challengeMode || false,
-    challengeObjId: cr.challengeObj ? cr.challengeObj.id : null,
-    challengeObjLabel: cr.challengeObj ? cr.challengeObj.label : null,
-    challengeResult,
-  });
-}
-
-function topCareers(n){
-  /* Les carrières en mode défi sont volontairement handicapées par des contraintes
-     imposées (équipe/pays/style tirés au sort) — les mélanger à score égal avec des
-     carrières libres dans le Hall of Fame les désavantagerait injustement. Leur succès
-     se lit via leur propre badge de réussite/échec, pas via ce classement. */
-  return CAREER_HISTORY.filter(c=>!c.challengeMode).sort((a,b)=>careerScore(b)-careerScore(a)).slice(0,n);
-}
+</script>
+<script src="lib/career-history.js"></script>
+<script>
 
 </script>
 <script src="data/achievements.js"></script>
@@ -1367,75 +859,9 @@ const TYPE_LABEL = new Proxy(TYPE_LABEL_FR, {
   get(target, prop){ const v = t('type_'+prop); return v!==null ? v : target[prop]; }
 });
 
-function heroHTML(title, subtitle, kicker){
-  return `<div class="screen-hero">
-    ${kicker ? `<p class="kicker">${kicker}</p>` : ''}
-    <h1>${title}</h1>
-    ${subtitle ? `<p>${subtitle}</p>` : ''}
-  </div>`;
-}
-function app(){ return document.getElementById('app'); }
-function setHTML(html, keepScroll){
-  app().innerHTML = html;
-  if(STATE && STATE.rider){
-    app().insertAdjacentHTML('beforeend', `<button class="footer-link" style="display:block;margin:18px auto 0;text-align:center;" onclick="renderMainMenu()">${tf('mainMenu','🏠 Menu principal')}</button>`);
-    app().insertAdjacentHTML('beforeend', `<button class="footer-link" style="display:block;margin:6px auto 0;text-align:center;" onclick="renderRaceAlmanac()">${tf('raceAlmanac','📖 Almanach des courses')}</button>`);
-    /* Réglages jusqu'ici seulement accessibles hors course (menu principal/création) —
-       un joueur en pleine saison qui veut passer en thème sombre devait tout quitter. */
-    app().insertAdjacentHTML('beforeend', `<button class="footer-link" style="display:block;margin:6px auto 0;text-align:center;" onclick="NAV_RETURN_TO='inrun';STATE._navReturnScreen=STATE._screen;renderSettingsScreen()">${tf('accessibility','♿ Accessibilité')}</button>`);
-  }
-  app().insertAdjacentHTML('beforeend', `<a href="https://x.com/lecoupdepedale" target="_blank" rel="noopener" style="display:block;text-align:center;margin:14px auto 6px;font-size:0.72rem;color:var(--text-soft);text-decoration:none;opacity:0.75;">𝕏 @lecoupdepedale</a>`);
-  /* Accessibilité clavier : les éléments cliquables non-natifs (div/span avec onclick,
-     utilisés pour les cartes de sélection) doivent être atteignables au Tab et activables
-     au clavier — voir le listener keydown délégué posé une seule fois au démarrage. */
-  app().querySelectorAll('[onclick]').forEach(el=>{
-    const tag = el.tagName;
-    if(tag==='BUTTON'||tag==='A'||tag==='SELECT'||tag==='INPUT') return;
-    if(el.hasAttribute('disabled')) return;
-    if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
-    if(!el.hasAttribute('role')) el.setAttribute('role','button');
-    /* Contrôles de sélection personnalisés (row-item/chip/opt-card/team-card) : leur état
-       "choisi" n'était jusqu'ici signalé que par une couleur de bordure/fond (classe
-       active/selected/picked), invisible pour une technologie d'assistance. On expose
-       cet état via aria-pressed pour tous ces éléments, sans toucher aux gabarits HTML
-       un par un — sauf là où un aria-pressed explicite existe déjà dans le code. */
-    if(!el.hasAttribute('aria-pressed') && (el.classList.contains('row-item') || el.classList.contains('chip') || el.classList.contains('opt-card') || el.classList.contains('team-card'))){
-      const isOn = el.classList.contains('active') || el.classList.contains('selected') || el.classList.contains('picked');
-      el.setAttribute('aria-pressed', String(isOn));
-    }
-  });
-  if(!keepScroll) window.scrollTo(0,0);
-  /* Gestion du focus au changement d'écran : setHTML() remplace tout le contenu de #app
-     à chaque navigation, ce qui laisse le focus clavier sur un nœud détruit (retombe
-     silencieusement sur <body>) et ne prévient jamais un lecteur d'écran qu'un nouvel
-     écran s'est affiché. On déplace le focus sur le titre du nouvel écran et on
-     l'annonce via une région aria-live permanente, hors de #app pour survivre au
-     remplacement. Uniquement sur une vraie navigation (!keepScroll) : les mises à jour
-     en place du même écran (ex. cocher une course au calendrier, qui passe keepScroll)
-     ne doivent pas renvoyer le focus clavier tout en haut à chaque coche. */
-  if(!keepScroll){
-    /* h1 en priorité (le vrai titre de l'écran) : riderHeaderHTML() place un <h2> avec
-       le nom du coureur en tête de nombreux écrans, avant le titre spécifique de
-       l'écran — chercher "h1, h2" sans distinction ramènerait presque toujours ce nom
-       plutôt que le titre réel. */
-    const _heading = app().querySelector('h1') || app().querySelector('h2');
-    if(_heading){
-      if(!_heading.hasAttribute('tabindex')) _heading.setAttribute('tabindex','-1');
-      _heading.focus({preventScroll:true});
-      const _announcer = document.getElementById('sr-announcer');
-      if(_announcer) _announcer.textContent = _heading.textContent;
-    }
-  }
-  saveGame();
-  const bars = app().querySelectorAll('.stat-fill.animated-fill');
-  if(bars.length){
-    requestAnimationFrame(()=>{
-      requestAnimationFrame(()=>{
-        bars.forEach(el=>{ el.style.width = el.getAttribute('data-w') + '%'; });
-      });
-    });
-  }
-}
+</script>
+<script src="core/ui.js"></script>
+<script>
 
 </script>
 <script src="lib/stat-display.js"></script>
@@ -1445,150 +871,14 @@ function setHTML(html, keepScroll){
 <script src="data/global-rating-weights.js"></script>
 <script>
 
-function globalStatsPanelHTML(){
-  const rating = globalRiderRating(STATE.rider.stats);
-  const openLabel = tf('expand','▼ Déplier');
-  const closeLabel = tf('collapse','▲ Replier');
-  return `<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="const b=document.getElementById('statsPanelBody'), a=document.getElementById('statsPanelArrow'); const open = b.style.display!=='none'; b.style.display = open?'none':'block'; a.textContent = open?'${openLabel}':'${closeLabel}';">
-      <h3 style="margin:0;">📊 ${tf('statsGlobalRating','Statistiques — Note globale')} : ${rating}/100</h3>
-      <span class="small" id="statsPanelArrow">${openLabel}</span>
-    </div>
-    <div id="statsPanelBody" style="display:none;margin-top:8px;">
-      ${statBarsHTML(STATE.rider.stats)}
-    </div>
-  </div>`;
-}
-
-function riderHeaderHTML(){
-  const r = STATE.rider;
-  const c = COUNTRIES.find(x=>x.code===r.countryCode);
-  const team = currentTeam(r);
-  return `<div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-      <div style="display:flex;gap:12px;align-items:center;">
-        <div class="avatar">${c.flag}</div>
-        <div>
-          <h2>${r.name}</h2>
-          <p class="small">${(()=>{ const _s=STYLES.find(s=>s.id===r.styleId); return _s?`${_s.icon} ${_s.name}`:''; })()}${r.trajectory?` · ${{'specialiste':'🎯','globetrotter':'🌍','leader':'👑'}[r.trajectory]||''} ${tf('trajectory_'+r.trajectory, r.trajectory)}`:''}  · ${r.age} ${tf('yo','ans')} · ${tf('season','Saison')} ${r.season}${r.isNationalChampion?` · 🏅 ${tf('nationalChampionBadge','Champion national')}`:''}</p>
-        </div>
-      </div>
-      <div style="text-align:right;">
-        <span class="pill">🎽 ${teamTierLabel(team.tier)}</span>
-        <p class="small mono" style="margin:4px 0 0;">💰 ${Math.round(r.money).toLocaleString('fr-FR')} €</p>
-      </div>
-    </div>
-    ${(()=>{
-      const detailsHTML = `
-        <p class="small">${riderRole(r)}${r.role ? ` · ${(RIDER_ROLES.find(x=>x.id===r.role)||{icon:'',name:'',nameEN:''}).icon} ${SETTINGS.lang==='en'?(RIDER_ROLES.find(x=>x.id===r.role)||{nameEN:''}).nameEN:(RIDER_ROLES.find(x=>x.id===r.role)||{name:''}).name}` : ''} — ${team.name} · 📋 ${tf('contractWord','contrat')} : ${r.contractYearsLeft} ${tf(r.contractYearsLeft>1?'seasonsLeftBareP':'seasonsLeftBare','saison'+(r.contractYearsLeft>1?'s':'')+' restante'+(r.contractYearsLeft>1?'s':''))}</p>
-        <p class="small">🌍 <strong>${r.worldRank}${r.worldRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('worldwide','mondial')}${(()=>{
-          // Rang par style et national calculé depuis le worldRank
-          // (5 styles à répartition égale, pays avec poids réalistes)
-          const COUNTRY_WEIGHT = {FR:1.6,BE:1.4,IT:1.5,NL:1.3,ES:1.4,DE:1.0,AU:1.0,GB:1.0,
-            CO:0.9,DK:1.0,CH:0.7,SI:0.5,US:0.7,NO:0.8,LU:0.4,PT:0.7,PL:0.6,IE:0.5,ER:0.4,RW:0.4};
-          const TOTAL_WEIGHT = Object.values(COUNTRY_WEIGHT).reduce((a,b)=>a+b,0);
-          const wk = COUNTRY_WEIGHT[r.countryCode] || 0.7;
-          const countryShare = wk / TOTAL_WEIGHT;
-          const styleShare = 1/5; // 5 styles équilibrés
-          const styleRank = Math.max(1, Math.round(r.worldRank * styleShare));
-          const countryRank = Math.max(1, Math.round(r.worldRank * countryShare));
-          const styleLabel = STYLES.find(s=>s.id===r.styleId);
-          const countryObj = COUNTRIES.find(x=>x.code===r.countryCode);
-          let extra = '';
-          extra += ` · ${styleLabel?styleLabel.icon||'':''} <strong>${styleRank}${styleRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('amongStyle','chez les')} ${styleLabel?styleLabel.name.toLowerCase():''}s`;
-          extra += ` · ${countryObj?countryObj.flag:''} <strong>${countryRank}${countryRank===1?tf('ordinalSt','er'):tf('ordinalTh','e')}</strong> ${tf('ofCountry','de')} ${countryObj?countryObj.name:''}`;
-          return extra;
-        })()}</p>
-        ${r.sponsor ? `<p class="small">${r.sponsor.icon} ${tf('sponsorWord','Sponsor')} : ${r.sponsor.name}</p>` : ''}
-        ${(()=>{
-          /* Suivi de l'objectif de saison en temps réel */
-          const _obj = STATE && STATE.seasonObjective;
-          const _res = STATE && STATE.seasonSummary && STATE.seasonSummary.results;
-          if(!_obj || _obj === 'aucun' || !_res) return '';
-          const _lang = SETTINGS.lang === 'en';
-          const _objDef = SEASON_OBJECTIVES.find(o=>o.id===_obj);
-          if(!_objDef) return '';
-          let _met = null;
-          if(_obj==='survive'||_obj==='solide'){
-            /* Ces objectifs ne peuvent être qu'en cours (null) ou échoués (false) en cours de
-               saison — "atteint" ne peut être déclaré qu'à la fin de la saison, une fois
-               que toutes les courses sont terminées. */
-            if(_res.some(x=>x.bestTier==='abandon'||x.bestTier==='forfait')) _met = false;
-            // sinon : _met reste null (en cours), jamais true ici
-          }
-          else if(_obj==='top10') _met = _res.some(x=>x.prestige>=3&&['victoire','podium','top10'].includes(x.bestTier));
-          else if(_obj==='podium') _met = _res.some(x=>x.prestige>=3&&['victoire','podium'].includes(x.bestTier));
-          else if(_obj==='etapes') _met = _res.some(x=>(x.type==='grandtour'||x.type==='semitour')&&['victoire','podium'].includes(x.bestTier));
-          else if(_obj==='victoire') _met = _res.some(x=>x.prestige>=3&&x.bestTier==='victoire');
-          else if(_obj==='monument') _met = _res.some(x=>x.prestige>=4&&x.bestTier==='victoire');
-          const _icon = _met===true ? '✅' : _met===false ? '❌' : '🎯';
-          const _color = _met===true ? 'var(--green-dark)' : _met===false ? 'var(--red)' : 'var(--text-soft)';
-          const _objLabel = (_lang && _objDef.labelEN) ? _objDef.labelEN : _objDef.label;
-          const _status = _met===true ? (_lang?'achieved':'atteint') : _met===false ? (_lang?'failed':'échoué') : (_lang?'in progress':'en cours');
-          return `<p class="small" style="color:${_color};margin:2px 0 0;">${_icon} ${tf('seasonObjective','Objectif')} : ${_objLabel} — <em>${_status}</em></p>`;
-        })()}
-        ${r.teammate ? `<p class="small">🤝 ${tf('teammateWord','Coéquipier')} : ${r.teammate.name} (${TEAMMATE_ARCHETYPE_LABELS[r.teammate.archetype]})${r.isMentor?` · 🧑‍🏫 ${tf('youAreMentor','Tu es son mentor')}`:''}</p>` : ''}
-        <button class="btn ghost" style="margin-top:6px;font-size:0.78rem;padding:6px 10px;" onclick="NAV_RETURN_TO='inrun';STATE._navReturnScreen=STATE._screen;renderCareerJournal()">📖 ${tf('careerJournal','Journal de carrière')}</button>
-      `;
-      const openLabel = tf('expand','▼ Déplier');
-      const closeLabel = tf('collapse','▲ Replier');
-      return `<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin-top:4px;" onclick="const b=document.getElementById('riderDetailsBody'), a=document.getElementById('riderDetailsArrow'); const open = b.style.display!=='none'; b.style.display = open?'none':'block'; a.textContent = open?'${openLabel}':'${closeLabel}';">
-        <span class="small" style="color:var(--text-soft);font-weight:700;">${tf('riderDetails','Détails du coureur')}</span>
-        <span class="small" id="riderDetailsArrow">${openLabel}</span>
-      </div>
-      <div id="riderDetailsBody" style="display:none;">${detailsHTML}</div>`;
-    })()}
-    <div class="grid2" style="margin-top:8px;">
-      <div class="stat-row">
-        <div class="stat-label"><span>⭐ ${tf('reputationWord','Réputation')}</span><span>${Math.round(r.reputation)}</span></div>
-        <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.reputation))}%;background:${gaugeLevelColor(r.reputation)};"></div></div>
-      </div>
-      <div class="stat-row">
-        <div class="stat-label"><span>🤝 ${tf('teamConfidenceWord','Confiance équipe')}</span><span>${Math.round(r.teamConfidence)}</span></div>
-        <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.teamConfidence))}%;background:linear-gradient(90deg,var(--blue),var(--green));"></div></div>
-      </div>
-    </div>
-    ${(()=>{
-      const _pscore = palmaresPrestigeScore(r);
-      const _plabel = palmaresPrestigeLabel(_pscore, SETTINGS.lang==='en');
-      if(!_plabel) return '';
-      return `<p class="small" style="color:${_plabel.color};margin:2px 0 4px;">🏅 ${_plabel.label}</p>`;
-    })()}
-    <div class="stat-row">
-      <div class="stat-label"><span>🔥 ${tf('fatigueWord','Fatigue')}</span><span style="${r.fatigue>55?'color:var(--red);font-weight:800;':''}">${Math.round(r.fatigue)}</span></div>
-      <div class="stat-track"><div class="stat-fill" style="width:${Math.min(100,Math.round(r.fatigue))}%;background:linear-gradient(90deg,var(--green),var(--red));"></div></div>
-      ${r.fatigue>55 ? `<p class="small" style="color:var(--red);font-weight:700;margin:4px 0 0;">⚠️ ${tf('fatigueAlert','Fatigue élevée — risque de blessure accru, envisage de lever le pied')}</p>` : ''}
-      ${(()=>{
-        const canCancel = r.fatigue>70 && STATE.runQueue && (STATE.freeCancelsRemaining||0)>0 && STATE.runQueue.slice(STATE.runRaceIdx||0).some(rc=>!STATE.imposedRaceIds.includes(rc.id));
-        if(!canCancel) return '';
-        return `<button class="btn ghost" style="margin-top:6px;font-size:0.78rem;padding:6px 10px;" onclick="renderCancelRaceScreen()">🩹 ${tf('manageCalendar','Gérer mon calendrier')} (${STATE.freeCancelsRemaining})</button>`
-          + tipBox('free-cancel', "Au-delà de 70 de fatigue, tu peux annuler jusqu'à 2 courses à venir par saison sans pénalité — aucun forfait, aucune perte de réputation — pour souffler.", tf('tipFreeCancel'));
-      })()}
-    </div>
-  </div>` + globalStatsPanelHTML();
-}
+</script>
+<script src="core/rider-cards.js"></script>
+<script>
 
 /* ---- Création ---- */
 
 window._creation = {name:'', country: COUNTRIES[0].code, style:null};
 
-function playerCardHTML(cr){
-  if(!cr.style || !cr.name) return '';
-  const country = COUNTRIES.find(c=>c.code===cr.country);
-  const style = STYLES.find(s=>s.id===cr.style);
-  const stats = computeBaseStats(cr.style);
-  const top3 = STAT_KEYS.slice().sort((a,b)=>stats[b]-stats[a]).slice(0,3);
-  return `<div style="display:flex;gap:12px;align-items:center;text-align:left;">
-    ${styleBadgeHTML(cr.style)}
-    <div style="flex:1;min-width:0;">
-      <strong class="pc-name">${cr.name}</strong>
-      <p class="small" style="margin:2px 0 0;">${country.flag} ${country.name} · ${style.name}</p>
-      <div class="chip-row" style="margin-top:6px;">
-        ${top3.map(k=>`<span class="pill">${STAT_ICONS[k]} ${Math.round(stats[k])}</span>`).join('')}
-      </div>
-    </div>
-  </div>`;
-}
 
 </script>
 <script src="screens/creation.js"></script>
@@ -1636,43 +926,9 @@ let COMPARATOR_COUNTRY_PANEL_OPEN = false;
 
 /* ---- Entraînement ---- */
 
-function rivalsCardHTML(){
-  if(!STATE.rivals || STATE.rivals.length===0) return '';
-  return `<div class="card">
-    <h3>🥊 ${tf('careerRivals','Rivaux de carrière')}</h3>
-    ${STATE.rivals.map(rv=>{
-      const rec = STATE.rivalRecords[rv.name] || {wins:0, losses:0};
-      const country = COUNTRIES.find(c=>c.code===rv.countryCode);
-      return `<div class="race-item" style="cursor:default;">
-        <div>
-          <strong>${country?country.flag:''} ${rv.name}</strong>
-          <p class="small" style="margin:2px 0 0;">${STYLES.find(s=>s.id===rv.styleId).name}${rv.age?` · ${rv.age} ${tf('yo','ans')}`:''} · ${rivalTierLabel(rv.strength)}</p>
-        </div>
-        <span class="pill mono">${rec.wins}${tf('winAbbr','V')} - ${rec.losses}${tf('lossAbbr','D')}</span>
-      </div>`;
-    }).join('')}
-  </div>`;
-}
-
-function startNewSeason(){
-  STATE._seasonEnding = false;
-  STATE.trainingFocus = null;
-  STATE.rider.isNationalChampion = false;
-  STATE.seasonWorldMods = {};
-  STATE.activeWorldEvents = [];
-  STATE._seasonMaxFatigue = 0;
-  /* Globetrotter : arrive en début de saison avec une fatigue résiduelle — il tourne
-     trop, ne récupère jamais vraiment. Contrepartie : accès plus rapide aux équipes sup. */
-  if(STATE.rider.trajectory === 'globetrotter' && STATE.rider.season > 1){
-    STATE.rider.fatigue = clamp((STATE.rider.fatigue || 0) + 8, 0, 100);
-  }
-  const r = STATE.rider;
-  if(r.age>=33 && r.teammate && !r.isMentor && !r.mentorOfferDeclined){
-    renderMentorOffer();
-  } else {
-    renderSeasonSetupScreen();
-  }
-}
+</script>
+<script src="screens/season-flow.js"></script>
+<script>
 
 </script>
 <script src="data/sponsor-brands.js"></script>
@@ -1708,28 +964,9 @@ function startNewSeason(){
 
 /* Retourne les objectifs pertinents pour ce coureur cette saison.
    Filtre selon réputation, saison, et exclut ceux déjà accomplis récemment. */
-function availableObjectives(rider){
-  const rep = rider.reputation;
-  const season = rider.season || 1;
-  const recentSeasons = (rider.palmares||[]).filter(p=>p.season===rider.season-1||p.season===rider.season);
-  const hadMonumentWin = recentSeasons.some(p=>p.prestige>=4 && p.tier==='victoire');
-  const hadGTWin = recentSeasons.some(p=>p.type==='grandtour' && p.tier==='victoire');
-  const hadPodium = recentSeasons.some(p=>p.prestige>=3 && (p.tier==='victoire'||p.tier==='podium'));
-  const hadTop10 = recentSeasons.some(p=>p.prestige>=3 && (p.tier==='victoire'||p.tier==='podium'||p.tier==='top10'));
-  const hadNoAbandon = !recentSeasons.some(p=>p.tier==='abandon'||p.tier==='forfait');
-
-  return SEASON_OBJECTIVES.filter(o=>{
-    if(o.id==='aucun') return true;
-    if(rep < o.minRep || rep > o.maxRep) return false;
-    if(season < (o.minSeason||1)) return false;
-    // Ne pas reproposer un objectif déjà accompli facilement
-    if(o.id==='survive' && hadNoAbandon && rep > 10) return false;
-    if(o.id==='top10' && hadTop10 && rep > 30) return false;
-    if(o.id==='podium' && hadPodium && rep > 50) return false;
-    if(o.id==='monument' && (hadMonumentWin || hadGTWin)) return false;
-    return true;
-  });
-}
+</script>
+<script src="lib/season-objectives-logic.js"></script>
+<script>
 
 </script>
 <script src="data/side-challenges.js"></script>
@@ -1827,55 +1064,6 @@ const WACKY_CHOICE_LABELS = new Proxy(WACKY_CHOICE_LABELS_FR, {
 <script src="lib/world-rank.js"></script>
 <script>
 
-function updateWorldRank(rider, bestTier, racePrestige, perf){
-  if(typeof rider.worldRank !== 'number') rider.worldRank = 450;
-  if(typeof rider.peakWorldRank !== 'number') rider.peakWorldRank = rider.worldRank;
-  if(bestTier==='forfait') return;
-  const prestigeMult = 1 + (racePrestige-1)*0.35;
-  if(bestTier==='abandon'){
-    rider.worldRank = clamp(Math.round(rider.worldRank + 5*prestigeMult), 1, 900);
-    rider.worldRank = Math.min(rider.worldRank, worldRankCeiling(rider));
-    rider.peakWorldRank = Math.min(rider.peakWorldRank, rider.worldRank);
-    return;
-  }
-  const pos = placementNumber(bestTier, perf);
-  if(pos!==null && pos <= 29){
-    /* La victoire compte à part : un gain plein, jamais partagé avec les places
-       suivantes. Du 2e au 29e, la progression est dégressive mais plafonnée à un peu
-       plus de la moitié du gain d'une victoire — fidèle aux vrais barèmes UCI, où le
-       vainqueur touche largement plus que le 2e ou 3e (pas un simple partage linéaire). */
-    const improvementFactor = pos===1 ? 1.0 : 0.55 * (30 - pos) / 29;
-    const maxSwing = 38;
-    const delta = Math.round(maxSwing * improvementFactor * prestigeMult);
-    rider.worldRank = clamp(rider.worldRank - delta, 1, 900);
-    rider.worldRank = Math.max(rider.worldRank, worldRankFloor(rider));
-  } else if(pos!==null && pos >= 60){
-    /* Au-delà de la 30e place, plus aucune amélioration possible — mais un très mauvais
-       résultat peut quand même coûter un peu de terrain, comme une contre-performance
-       qui n'échappe pas aux observateurs. */
-    rider.worldRank = clamp(Math.round(rider.worldRank + 2*prestigeMult), 1, 900);
-    rider.worldRank = Math.min(rider.worldRank, worldRankCeiling(rider));
-  }
-  // Entre la 30e et la 59e place : zone neutre, aucun mouvement dans un sens ou l'autre.
-  rider.peakWorldRank = Math.min(rider.peakWorldRank, rider.worldRank);
-}
-
-function riderFormStatus(rider){
-  const results = STATE.seasonSummary ? STATE.seasonSummary.results : [];
-  const last = results[results.length-1];
-  /* Même pondération que "forme" dans resolveEvent (100 - fatigue*0.75) — pour que le
-     libellé affiché reflète vraiment ce qui compte dans le calcul de performance. */
-  let score = 100 - rider.fatigue*0.75;
-  if(last){
-    if(last.bestTier==='victoire') score += 12;
-    else if(last.bestTier==='podium') score += 6;
-    else if(last.bestTier==='jourssans' || last.bestTier==='abandon') score -= 10;
-  }
-  if(score>=75) return {icon:'💪', label:tf('formGreat','En pleine forme')};
-  if(score>=50) return {icon:'🙂', label:tf('formOk','Jambes correctes')};
-  if(score>=25) return {icon:'😓', label:tf('formHeavy','Jambes lourdes')};
-  return {icon:'🥵', label:tf('formExhausted','Épuisé')};
-}
 
 </script>
 <script src="screens/current-event.js"></script>
