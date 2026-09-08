@@ -1165,19 +1165,9 @@ function handleInjury(cause, race, precomputedEntry){
 </script>
 <script src="data/style-team-specialty.js"></script>
 <script>
-function totalCareerWins(){
-  return CAREER_HISTORY.reduce((sum,c)=>sum+(c.wins||0), 0);
-}
-function starterTeamFor(styleId){
-  const total = totalCareerWins();
-  let tier = null;
-  if(total>=60) tier = 'WorldTour';
-  else if(total>=25) tier = 'ProTeam';
-  if(!tier) return TEAMS.find(t=>t.id==='velo-passion');
-  const pool = TEAMS.filter(t=>t.tier===tier);
-  const specialty = STYLE_TEAM_SPECIALTY[styleId] || null;
-  return (specialty && pool.find(t=>t.specialty===specialty)) || pool.find(t=>!t.specialty) || pool[0];
-}
+</script>
+<script src="lib/starter-team.js"></script>
+<script>
 function offersForRider(rider){
   const current = currentTeam(rider);
   /* Globetrotter : sa visibilité internationale lui ouvre les portes plus vite.
@@ -4464,14 +4454,9 @@ function beginRace(){
 </script>
 <script src="data/gt-jerseys.js"></script>
 <script>
-function gtJerseys(raceId){
-  const j = GT_JERSEYS[raceId] || GT_JERSEYS.tdf;
-  if(SETTINGS.lang!=='en') return j;
-  return {
-    kom:{icon:j.kom.icon, label:j.kom.labelEN},
-    points:{icon:j.points.icon, label:j.points.labelEN},
-  };
-}
+</script>
+<script src="lib/celebration-theme.js"></script>
+<script>
 
 function renderRoleChoice(race){
   if(STATE) STATE._screen='rolechoice';
@@ -5030,22 +5015,6 @@ function checkRivalAppearance(race, bestTier){
    classement général du Tour de Gaule n'est pas le rose du Giro, ni le vert d'un
    maillot de points ; par défaut (course "normale"), on reste sur le corail de la
    marque plutôt que d'inventer une couleur qui n'existe pas dans le vrai cyclisme. */
-function emojiToHex(e){
-  const map = {'🔴':'#E5534B', '🟢':'#3CB878', '🔵':'#3E8EF7', '🟣':'#9B6BF2'};
-  return map[e] || '#FF8A3D';
-}
-function celebrationTheme(race, bestTier, jersey){
-  if(bestTier !== 'victoire') return {hex:'#FF8A3D', emoji:'🏆'};
-  const GC_COLORS = {tdf:{hex:'#FFD34D', emoji:'🟡'}, giro:{hex:'#FF8FC7', emoji:'🎀'}, vuelta:{hex:'#E5534B', emoji:'🔴'}};
-  if(jersey && jersey.tier==='victoire'){
-    const jerseys = gtJerseys(race.id);
-    if(jersey.type==='grimpeur') return {hex: emojiToHex(jerseys.kom.icon), emoji: jerseys.kom.icon};
-    if(jersey.type==='sprinteur') return {hex: emojiToHex(jerseys.points.icon), emoji: jerseys.points.icon};
-    if(jersey.type==='jeune') return {hex:'#D8D2C0', emoji:'⚪'};
-  }
-  if(race.type==='grandtour' && GC_COLORS[race.id]) return GC_COLORS[race.id];
-  return {hex:'#FF8A3D', emoji:'🏆'};
-}
 
 function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
   if(STATE) STATE._screen='raceresult';
