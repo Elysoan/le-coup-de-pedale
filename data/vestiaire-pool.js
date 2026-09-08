@@ -1,0 +1,15 @@
+/* ---------- POOL VESTIAIRE ----------
+   Courts messages narratifs d'ambiance générés en début de saison — pas de choix,
+   pas de mécanique : juste une phrase qui plante le contexte humain du groupe. */
+const VESTIAIRE_POOL = [
+  {icon:'💬', fr:"Un vétéran de l'équipe a glissé dans le vestiaire : ‘Cette saison, on va faire quelque chose de bien.’ Personne n'a répondu. Tout le monde a souri.", en:"A team veteran murmured in the locker room: ‘This season, we’re going to do something special.’ No one replied. Everyone smiled."},
+  {icon:'🎧', fr:"L'ambiance au camp d'entraînement est studieuse. Chacun travaille en silence, écouteurs vissés aux oreilles. Le groupe est sérieux.", en:"The atmosphere at training camp is focused. Everyone works in silence, earphones on. The group means business."},
+  {icon:'⚡', fr:"La compétition interne est perceptible dès les premières sorties. Chaque montée se transforme en mini-duel. C'est bon signe.", en:"Internal competition is palpable from the first rides. Every climb becomes a mini-duel. That's a good sign."},
+  {icon:'🌧️', fr:"Le stage hivernal a été rude. Pluie, froid, routes cassées. Mais tout le groupe est allé au bout. Ça soude.", en:"Winter camp was brutal. Rain, cold, broken roads. But everyone made it through. That kind of thing bonds a team."},
+  {icon:'😴', fr:"Le directeur sportif est entré dans la salle de réunion avec une seule diapositive. ‘La saison commence maintenant.’ Silence. Tout était dit.", en:"The team director walked into the meeting room with a single slide. ‘The season starts now.’ Silence. That said it all."},
+  {icon:'🤝', fr:"Un nouveau coéquipier a rejoint l'équipe cet hiver. Il est discret, observateur. Le genre de profil qui surprend au printemps.", en:"A new teammate joined the squad this winter. Quiet, observant. The kind of rider who surprises you in spring."},
+  {icon:'📰', fr:"Un journaliste a prédit en janvier que ton équipe serait décevante cette saison. L'article est affiché dans le couloir du centre d'entraînement.", en:"A journalist predicted in January that your team would disappoint this season. The article is pinned up in the training centre hallway."},
+  {icon:'🏔️', fr:"Au stage altitude, quelqu'un a tracé ‘S'EN SOUVENIR’ sur un tableau blanc. Personne ne l'a effacé avant le départ.", en:"At altitude camp, someone wrote ‘REMEMBER THIS’ on a whiteboard. Nobody erased it before leaving."},
+  {icon:'🔥', fr:"L'hiver a été court. Trop court, peut-être. Mais tout le groupe ressent cette faim particulière qui n'appartient qu'aux débuts de saison.", en:"The winter felt short. Too short, maybe. But the whole group feels that particular hunger that only comes at the start of a season."},
+  {icon:'📦', fr:"Les nouveaux maillots sont arrivés ce matin. Quand on les a sortis des cartons, personne n'a rien dit, mais tout le monde les a essayés aussitôt.", en:"The new jerseys arrived this morning. When they came out of the boxes, nobody said a word — but everyone tried them on straight away."},
+];

@@ -27,9 +27,15 @@ function pass(msg){
    pas de balise statique en dehors. On isole donc ces blocs et on retire les commentaires
    (/* *​/ et //) avant de chercher quoi que ce soit : sinon un commentaire qui EXPLIQUE
    pourquoi on évite tel ou tel élément (il y en a, volontairement, dans ce fichier même)
-   se ferait à tort repérer comme une régression. */
+   se ferait à tort repérer comme une régression. Les <script src="..."> locaux (ex.
+   data/*.js, extraits d'index.html) sont inclus aussi : ce ne sont que des données pour
+   l'instant, mais rien ne garantit que ça reste vrai indéfiniment. */
 const scriptBlocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
-const allScripts = scriptBlocks.join('\n');
+const localSrcFiles = [...html.matchAll(/<script src="([^"]+)">/g)]
+  .map(m => m[1])
+  .filter(src => !/^https?:\/\//.test(src));
+const dataScripts = localSrcFiles.map(src => fs.readFileSync(path.join(__dirname, '..', src), 'utf8'));
+const allScripts = scriptBlocks.concat(dataScripts).join('\n');
 const withoutComments = allScripts
   .replace(/\/\*[\s\S]*?\*\//g, ' ')
   .replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -54,6 +60,37 @@ const withoutComments = allScripts
     fail(`${matches.length} appel(s) à ${fn}() natif trouvé(s) — bloque le rendu de la page (automatisation ET joueurs mobiles). Utiliser un composant de confirmation inline dans le style du jeu (voir confirmSeasonSetup/autoSelectCalendar pour un exemple existant).`);
   }
 });
+
+// ---- 3. Chaque <script> (inline ou src local) est syntaxiquement valide pris isolément ----
+// Un navigateur parse chaque balise <script> indépendamment : une découpe qui coupe un
+// commentaire ou une chaîne en plein milieu (ex. lors d'une extraction de data/*.js) peut
+// rester invisible si on ne vérifie que la concaténation de tout le JS — chaque moitié
+// prise séparément est pourtant invalide, et le bloc qui échoue n'exécute plus RIEN,
+// y compris les déclarations de fonctions qu'il contient (bug réellement rencontré).
+{
+  let scriptFailures = 0;
+  const scriptRe = /<script(?:\s+src="([^"]+)")?[^>]*>([\s\S]*?)<\/script>/g;
+  let sm;
+  while((sm = scriptRe.exec(html))){
+    const srcAttr = sm[1];
+    let code, label;
+    if(srcAttr){
+      if(/^https?:\/\//.test(srcAttr)) continue;
+      code = fs.readFileSync(path.join(__dirname, '..', srcAttr), 'utf8');
+      label = srcAttr;
+    } else {
+      code = sm[2];
+      label = `bloc inline à l'offset ${sm.index}`;
+    }
+    try{
+      new Function(code);
+    }catch(e){
+      scriptFailures++;
+      fail(`Erreur de syntaxe dans ${label} (pris isolément) : ${e.message}`);
+    }
+  }
+  if(scriptFailures === 0) pass('Chaque <script> (inline ou src local) est syntaxiquement valide pris isolément.');
+}
 
 console.log('');
 if(failures > 0){

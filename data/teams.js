@@ -1,0 +1,28 @@
+/* ---------- ÉQUIPES ---------- */
+
+const TEAMS = [
+  {id:'velo-passion', name:'Vélo Passion Formation', tier:'Continentale', minRep:0, specialty:null},
+  {id:'nord-espoir', name:"Nord Cyclisme Espoir", tier:'Continentale', minRep:0, specialty:'classiques'},
+  {id:'forge-cyclisme', name:'Forge Cyclisme', tier:'Continentale', minRep:0, specialty:'resistance'},
+  {id:'littoral-dev', name:'Littoral Racing Development', tier:'Continentale', minRep:0, specialty:'sprint'},
+  {id:'rhone-competition', name:'Rhône Compétition', tier:'ProTeam', minRep:18, specialty:'montagne'},
+  {id:'etoile-sud', name:'Étoile du Sud Cyclisme', tier:'ProTeam', minRep:18, specialty:'sprint'},
+  {id:'atlas-continental', name:'Atlas Continental Racing', tier:'ProTeam', minRep:24, specialty:null},
+  {id:'cime-verte', name:'Cime Verte Racing', tier:'ProTeam', minRep:20, specialty:'montagne'},
+  {id:'voltage-cycling', name:'Voltage Cycling Team', tier:'ProTeam', minRep:22, specialty:'clm'},
+  {id:'panthere-pro', name:'Panthère Continentale Pro', tier:'ProTeam', minRep:18, specialty:'classiques'},
+  {id:'alpine-racing', name:'Alpine Racing Team', tier:'WorldTour', minRep:42, specialty:'montagne'},
+  {id:'meridian-pro', name:'Meridian Pro Cycling', tier:'WorldTour', minRep:42, specialty:'clm'},
+  {id:'horizon-wt', name:'Horizon Développement WT', tier:'WorldTour', minRep:48, specialty:'classiques'},
+  {id:'zenith-racing', name:'Zenith Racing', tier:'WorldTour', minRep:44, specialty:null},
+  {id:'falcon-elite', name:'Falcon Elite Cycling', tier:'WorldTour', minRep:45, specialty:'sprint'},
+  {id:'granite-wt', name:'Granite WorldTeam', tier:'WorldTour', minRep:50, specialty:'resistance'},
+  {id:'stellar-project', name:'Stellar Cycling Project', tier:'Équipe de légende', minRep:72, specialty:null},
+  {id:'aurum-racing', name:'Aurum Racing', tier:'Équipe de légende', minRep:80, specialty:'sprint'},
+  {id:'titan-legacy', name:'Titan Legacy Cycling', tier:'Équipe de légende', minRep:75, specialty:'montagne'},
+  {id:'eclipse-dynasty', name:'Eclipse Racing Dynasty', tier:'Équipe de légende', minRep:78, specialty:'clm'},
+  {id:'caraibe-dev', name:'Caraïbes Cyclisme Développement', tier:'Continentale', minRep:0, specialty:'sprint'},
+  {id:'pyrenees-pro', name:'Pyrénées Cycling Pro', tier:'ProTeam', minRep:20, specialty:'montagne'},
+  {id:'soleil-levant', name:'Équipe Soleil Levant', tier:'WorldTour', minRep:46, specialty:'classiques'},
+  {id:'veloce-dynasty', name:'Veloce Racing Dynasty', tier:'Équipe de légende', minRep:76, specialty:'resistance'},
+];
