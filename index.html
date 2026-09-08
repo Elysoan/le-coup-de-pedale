@@ -934,7 +934,9 @@ function newRider(name, countryCode, styleId){
   };
 }
 
-function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+</script>
+<script src="lib/utils.js"></script>
+<script>
 
 function currentTeam(rider){
   return TEAMS.find(t=>t.id===rider.teamId) || TEAMS[0];
@@ -1373,14 +1375,6 @@ function difficultyForRace(race, rider){
   return {label:tf('diffEasy','Facile'), cls:'diff-1'};
 }
 
-function shuffleArr(arr){
-  const a = arr.slice();
-  for(let i=a.length-1;i>0;i--){
-    const j = Math.floor(Math.random()*(i+1));
-    [a[i],a[j]] = [a[j],a[i]];
-  }
-  return a;
-}
 
 /* L'équipe impose 3 courses par saison : en priorité liées à l'axe d'entraînement
    choisi par le joueur et à la spécialité de l'équipe, sinon tirées au hasard.
