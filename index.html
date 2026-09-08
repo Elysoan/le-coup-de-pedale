@@ -1219,9 +1219,9 @@ let LEADERBOARD_COUNTRY_FILTER = 'all';
    de la page et gardent l'habillage visuel du jeu. Un seul panneau ouvert à la fois. */
 let LEADERBOARD_STYLE_PANEL_OPEN = false;
 let LEADERBOARD_COUNTRY_PANEL_OPEN = false;
-function leaderboardConfigured(){
-  return typeof LEADERBOARD_API_URL === 'string' && /^https?:\/\//.test(LEADERBOARD_API_URL);
-}
+</script>
+<script src="lib/misc-pure-helpers.js"></script>
+<script>
 /* Distingue "hors-ligne / requête n'a jamais abouti" (fetch qui lève une exception)
    de "le serveur a répondu, mais en erreur" (res.ok===false) — pour ne plus renvoyer
    le même message générique quelle que soit la cause réelle de l'échec. */
@@ -3518,26 +3518,6 @@ function maybeShowMidSeasonPersonalEvent(){
   }
 }
 
-/* Détecte le profil émergent du coureur selon ses résultats récents et ses stats dominantes. */
-function detectRiderProfile(rider){
-  // On ne propose que si le profil actuel semble confirmé OU si les résultats divergent
-  const results = (rider.palmares||[]).filter(p=>p.season===rider.season||p.season===rider.season-1);
-  if(results.length < 2) return null; // pas assez de données
-  const stats = rider.stats;
-  // Profil suggéré basé sur la stat dominante
-  // Scores normalisés : chaque profil est évalué sur sa stat principale uniquement
-  // pour éviter que les profils mixtes (puncheur, rouleur) ne surpassent les purs spécialistes
-  const statScores = {
-    grimpeur: stats.montagne,
-    sprinteur: stats.sprint,
-    rouleur: stats.clm,
-    puncheur: stats.classiques,
-    polyvalent: (stats.montagne+stats.sprint+stats.clm+stats.classiques+stats.resistance)/5,
-  };
-  const best = Object.entries(statScores).reduce((a,b)=>b[1]>a[1]?b:a)[0];
-  // Ne proposer que si le profil détecté diffère du style actuel (vrais ajustements uniquement)
-  return best !== rider.styleId ? best : rider.styleId;
-}
 
 function renderStyleConfirmEvent(suggestedStyleId){
   if(STATE) STATE._screen='styleconfirm';
@@ -3686,11 +3666,6 @@ function dismissTip(id){
   if(el) el.remove();
 }
 
-function raceFocusIcons(race){
-  const stats = new Set();
-  race.events.forEach(e=>{ e.focus.forEach(f=>stats.add(f)); });
-  return [...stats].map(k=>STAT_ICONS[k]||'').join(' ');
-}
 
 /* ---- Forme prévisionnelle (lecture, pas une nouvelle décision) ----
    Le calendrier se construit entièrement en amont de la saison — pas de gestion
@@ -5126,10 +5101,6 @@ function renderRaceResult(race, bestTier, repGain, confDelta, prize, teamPrize){
 </script>
 <script src="data/interview-reactions.js"></script>
 <script>
-function interviewReaction(choice){
-  const pool = (SETTINGS.lang==='en' ? INTERVIEW_REACTIONS_EN : INTERVIEW_REACTIONS_FR)[choice] || [];
-  return pool[Math.floor(Math.random()*pool.length)] || '';
-}
 
 function renderInterviewScreen(){
   if(STATE) STATE._screen='interview';
