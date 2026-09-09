@@ -33,6 +33,10 @@ jobs:
         working-directory: tests
         run: npm run lint
 
+      - name: Tests unitaires (lib/)
+        working-directory: tests
+        run: npm run unit
+
       - name: Simulation de carrières (run rapide)
         if: github.event_name != 'schedule'
         working-directory: tests
