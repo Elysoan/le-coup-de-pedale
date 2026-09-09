@@ -33,6 +33,9 @@ jobs:
         working-directory: tests
         run: npm run lint
 
+      - name: Build (vérifie que dist/index.html s'assemble sans erreur)
+        run: node scripts/build.js
+
       - name: Tests unitaires (lib/)
         working-directory: tests
         run: npm run unit
